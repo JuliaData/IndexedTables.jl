@@ -296,7 +296,7 @@ function union{D}(I::Indexes{D}, J::Indexes{D})
     while true
         if i <= lI && j <= lJ
             ri, rj = I[i], J[j]
-            c = cmp(ri, rj)
+            c = cmp_tup(ri, rj)
             if c == 0
                 pushrow!(K, ri)
                 i += 1
@@ -328,7 +328,7 @@ function intersect{D}(I::Indexes{D}, J::Indexes{D})
     i = j = 1
     while i <= lI && j <= lJ
         ri, rj = I[i], J[j]
-        c = cmp(ri, rj)
+        c = cmp_tup(ri, rj)
         if c == 0
             pushrow!(K, ri)
             i += 1
@@ -527,5 +527,7 @@ function convert_dimension(x::NDSparse, d::Int, xlat::Dict, agg=+)
 end
 
 sum(x::NDSparse) = sum(x.data)
+
+include("tuplesort.jl")
 
 end # module

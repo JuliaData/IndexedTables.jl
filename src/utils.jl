@@ -103,15 +103,3 @@ function next{I1,I2}(p::Prod{I1,I2}, st)
     x = prod_next(p, st)
     ((x[1][1],x[1][2]...), x[2])
 end
-
-@generated function isless_tup{N}(t1::NTuple{N}, t2::NTuple{N})
-    ex = :()
-    for n in N:-1:1
-        if n == N
-            ex = :(t1[$n] < t2[$n])
-        else
-            ex = :((t1[$n] == t2[$n]) ? ($ex) : (t1[$n] < t2[$n]))
-        end
-    end
-    ex
-end
