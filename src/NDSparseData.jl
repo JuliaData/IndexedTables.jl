@@ -6,8 +6,8 @@ import Base:
     linearindexing, ==, broadcast, broadcast!, empty!, copy, similar, sum, merge,
     permutedims
 
-export NDSparse, Indexes, WithDefault, flush!, merge, intersect, aggregate!, where,
-    pairs, convertdim
+export NDSparse, Indexes, WithDefault, flush!, merge, intersect, aggregate!,
+    convertdim
 
 include("utils.jl")
 
@@ -257,24 +257,6 @@ function _getindex(t::NDSparse, idxs)
     out = convert(Vector{Int32}, range_estimate(I.columns[1], idxs[1]))
     filter!(i->row_in(I[i], idxs), out)
     NDSparse(Indexes(map(x->x[out], I.columns)...), t.data[out], t.default)
-end
-
-# iterators over indices - lazy getindex
-
-function where(d::NDSparse, idxs...)
-    I = d.indexes
-    data = d.data
-    rng = range_estimate(I.columns[1], idxs[1])
-    (data[i] for i in Filter(r->row_in(I[r], idxs), rng))
-end
-
-pairs(d::NDSparse) = (d.indexes[i]=>d.data[i] for i in 1:length(d))
-
-function pairs(d::NDSparse, idxs...)
-    I = d.indexes
-    data = d.data
-    rng = range_estimate(I.columns[1], idxs[1])
-    (I[i]=>data[i] for i in Filter(r->row_in(I[r], idxs), rng))
 end
 
 # setindex!
