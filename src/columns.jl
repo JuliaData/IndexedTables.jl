@@ -19,13 +19,22 @@ immutable Columns{D<:Tup, C<:Tup} <: AbstractVector{D}
     end
 end
 
+@generated function _named_columns(cols::Tuple, names::Tuple)
+    name_syms = [n.parameters[1] for n in names.parameters]
+    eltypes = map(eltype, cols.parameters)
+    coltypes = cols.parameters
+    quote
+        dt = @NT($(name_syms...)){$(eltypes...)}
+        ct = @NT($(name_syms...)){$(coltypes...)}
+        Columns{dt,ct}(ct($cols...))
+    end
+end
+
 function Columns(cols::AbstractVector...; names::Union{Vector{Symbol},Tuple{Vararg{Symbol}},Void}=nothing)
     if isa(names, Void)
         Columns{eltypes(typeof(cols)),typeof(cols)}(cols)
     else
-        dt = eval(:(@NT($(names...)))){map(eltype, cols)...}
-        ct = eval(:(@NT($(names...)))){map(typeof, cols)...}
-        Columns{dt,ct}(ct(cols...))
+        _named_columns(cols, map(x->Val{x}(), (names...)))
     end
 end
 
