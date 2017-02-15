@@ -35,7 +35,7 @@ Keyword arguments:
 * `presorted::Bool`: If true, the indices are assumed to already be sorted and no sorting is done.
 * `copy::Bool`: If true, the storage for the new array will not be shared with the passed indices and data. If false (the default), the passed arrays will be copied only if necessary for sorting. The only way to guarantee sharing of data is to pass `presorted=true`.
 """
-function NDSparse{T,D,C}(I::Columns{D,C}, d::AbstractVector{T}; agg=nothing, presorted=false, copy=false)
+function NDSparse{T<:AbstractVector, D,C}(I::Columns{D,C}, d::T; agg=nothing, presorted=false, copy=false)
     length(I) == length(d) || error("index and data must have the same number of elements")
     # ensure index is a `Columns` that generates tuples
     dt = D
@@ -56,7 +56,7 @@ function NDSparse{T,D,C}(I::Columns{D,C}, d::AbstractVector{T}; agg=nothing, pre
             d = Base.copy(d)
         end
     end
-    nd = NDSparse{T,dt,C,typeof(d)}(I, d, similar(I,0), similar(d,0))
+    nd = NDSparse{eltype(T),dt,C,typeof(d)}(I, d, similar(I,0), similar(d,0))
     agg===nothing || aggregate!(agg, nd)
     return nd
 end
@@ -68,7 +68,10 @@ Construct an NDSparse array from columns. The last argument is the data column, 
 """
 function NDSparse(columns...; names=nothing, rest...)
     keys, data = columns[1:end-1], columns[end]
-    NDSparse(Columns(keys..., names=names), data; rest...)
+    keycols = Columns(keys..., names=names)
+    @show typeof(keycols) typeof(data)
+    @show rest
+    NDSparse(keycols, data; rest...)
 end
 
 similar(t::NDSparse) = NDSparse(similar(t.index), empty!(similar(t.data)))
