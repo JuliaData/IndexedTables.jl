@@ -143,7 +143,7 @@ The `Table` constructor also accepts the `agg` argument.
 The aggregation operation can also be done by itself, in-place, using the
 function `aggregate!`.
 
-Calling `select` with `column=>predicate` will filter `column` by applying `predicate`:
+Calling `select` with `column=>predicate` will apply that predicate to the column:
 
     julia> select(hitemps, 2=>isfriday)
     ───────────────────────┬───
