@@ -3,7 +3,7 @@
 [![codecov.io](http://codecov.io/github/JuliaComputing/IndexedTables.jl/coverage.svg?branch=master)](http://codecov.io/github/JuliaComputing/IndexedTables.jl?branch=master)
 
 # IndexedTables.jl
-This package provides a table data structure where some of the columns form a sorted index.
+This package provides a tablular data structure where some of the columns form a sorted index.
 This structure is equivalent to an N-dimensional sparse array, and follows the array API
 to the extent possible.
 
@@ -228,7 +228,7 @@ The following call therefore gives monthly high temperatures:
 
 ## Assignment
 
-`Table` supports indexed assignment just like other arrays, but there are
+`IndexedTable` supports indexed assignment just like other arrays, but there are
 caveats.
 Since data is stored in a compact, sorted representation, inserting a single
 element is potentially very inefficient (`O(n)`, since it requires moving up to half
@@ -248,10 +248,10 @@ rarely.
 
 ## Named columns
 
-`Table` is built on a simpler data structure called `Columns` that groups
+An `IndexedTable` is built on a simpler data structure called `Columns` that groups
 a set of vectors together.
-This structure is used to store the index part of an `Table`, and an
-`Table` can be constructed by passing one of these objects directly.
+This structure is used to store the index part of an `IndexedTable`, and an
+`IndexedTable` can be constructed by passing one of these objects directly.
 `Columns` allows names to be associated with its constituent vectors.
 Together, these features allow `Table` arrays with named dimensions:
 
