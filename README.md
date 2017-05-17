@@ -54,7 +54,7 @@ On construction, `Table` takes ownership of the columns and sorts them in place
 ## Importing data
 
 Importing data from column-based sources is straightforward.
-For example, csv files can be imported with the following snippet:
+For example, csv files can be imported this way:
 
     julia> using IndexedTables, IndexedTables.Table
     julia> using CSV
