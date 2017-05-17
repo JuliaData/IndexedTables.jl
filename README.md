@@ -54,9 +54,10 @@ On construction, `Table` takes ownership of the columns and sorts them in place
 ## Importing data
 
 Importing data from column-based sources is straightforward.
-For example, csv files can be imported using CSV.jl with the following snippet:
+For example, csv files can be imported with the following snippet:
 
-    Table(CSV.read(filename).columns...)
+    julia> using CSV
+    julia> table = Table(CSV.read(filename).columns...)
 
 Of course, this assumes the file already has the "data column" in the rightmost
 position.
@@ -73,7 +74,7 @@ indices:
 
 If the given indices exactly match the element types of the index columns,
 then the result is a scalar.
-In other cases, a new `Table` is returned, giving data for all matching
+In other cases, a new `IndexedTable` is returned, giving data for all matching
 locations:
 
     julia> hitemps["Boston", :]
@@ -82,7 +83,7 @@ locations:
     "Boston"  2016-07-07 │ 83
     "Boston"  2016-07-08 │ 76
 
-Like other arrays, `Table` generates its data values when iterated.
+Like other arrays, `IndexedTable` generates its data values when iterated.
 This allows the usual reduction functions (among others) in Base to work:
 
     julia> maximum(hitemps["Boston", :])
