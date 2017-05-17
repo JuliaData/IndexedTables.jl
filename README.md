@@ -51,6 +51,28 @@ order than we initially provided.
 On construction, `Table` takes ownership of the columns and sorts them in place
 (the original vectors are modified).
 
+## Permuting dimensions
+
+As with other multi-dimensional arrays, dimensions can be permuted to change
+the sort order.
+With `Table` the interpretation of this operation is especially natural:
+simply imagine passing the index columns to the constructor in a different order,
+and repeating the sorting process:
+
+    julia> permutedims(hitemps, [2, 1])
+    ───────────────────────┬───
+    2016-07-06  "Boston"   │ 95
+    2016-07-06  "New York" │ 91
+    2016-07-07  "Boston"   │ 83
+    2016-07-07  "New York" │ 89
+    2016-07-08  "Boston"   │ 76
+    2016-07-08  "New York" │ 91
+
+Now the data is sorted first by date.
+In some cases such dimension permutations are needed for performance.
+The leftmost column is esssentially the primary key --- indexing is fastest
+in this dimension.
+
 ## Importing data
 
 Importing data from column-based sources is straightforward.
@@ -84,33 +106,11 @@ locations:
     "Boston"  2016-07-07 │ 83
     "Boston"  2016-07-08 │ 76
 
-Like other arrays, `IndexedTable` generates its data values when iterated.
-This allows the usual reduction functions (among others) in Base to work:
+As with other array types, `IndexedTable` generates its data values when iterated.
+This allows the usual reduction functions in Base (and some others) to work:
 
     julia> maximum(hitemps["Boston", :])
     95
-
-## Permuting dimensions
-
-As with other multi-dimensional arrays, dimensions can be permuted to change
-the sort order.
-With `Table` the interpretation of this operation is especially natural:
-simply imagine passing the index columns to the constructor in a different order,
-and repeating the sorting process:
-
-    julia> permutedims(hitemps, [2, 1])
-    ───────────────────────┬───
-    2016-07-06  "Boston"   │ 95
-    2016-07-06  "New York" │ 91
-    2016-07-07  "Boston"   │ 83
-    2016-07-07  "New York" │ 89
-    2016-07-08  "Boston"   │ 76
-    2016-07-08  "New York" │ 91
-
-Now the data is sorted first by date.
-In some cases such dimension permutations are needed for performance.
-The leftmost column is esssentially the primary key --- indexing is fastest
-in this dimension.
 
 ## Select and aggregate
 
@@ -143,8 +143,7 @@ The `Table` constructor also accepts the `agg` argument.
 The aggregation operation can also be done by itself, in-place, using the
 function `aggregate!`.
 
-`select` also supports filtering columns with arbitrary predicates, by
-passing `column=>predicate` pairs:
+Calling `select` with `column=>predicate` will filter `column` by applying `predicate`:
 
     julia> select(hitemps, 2=>isfriday)
     ───────────────────────┬───
