@@ -60,11 +60,11 @@ For example, csv files can be imported using CSV.jl with the following snippet:
 
 Of course, this assumes the file already has the "data column" in the rightmost
 position.
-If not, the columns can be reordered first.
+If not, first reorder the columns.
 
 ## Indexing
 
-Most lookup and filtering operations on `Table` are done via indexing.
+Most lookup and filtering operations on an `IndexedTable` are done via indexing.
 Our `hitemps` array behaves like a 2-d array of integers, accepting two
 indices:
 
