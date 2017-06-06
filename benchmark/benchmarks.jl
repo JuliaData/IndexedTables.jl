@@ -1,103 +1,147 @@
 using PkgBenchmark
 using IndexedTables
+using IntervalSets: (..)
 
-###
-# Helpers
-###
+srand(666)
 
-function copy_unflushed(cols, data)
-   IndexedTable(Columns(map(c->similar(c, 0), cols)...), similar(data, 0), Columns(deepcopy(cols)...), copy(data))
+@benchgroup "construction" begin
+    N = 10000
+    a = rand(0:0.001:2, N)
+    b = rand(0:0.001:2, N)
+    c = rand(N)
+
+    sorted = sort!(Columns(a, b))
+
+    @bench "vectors" IndexedTable(a, b, c)
+    @bench "vectors-agg" IndexedTable(a, b, c, agg=+)
+    #@bench "sorted" IndexedTable(sorted, agg=+, presorted=true)
+    @bench "vectors-in-place" IndexedTable(a, b, c, copy=false)
 end
 
-function copy_flushed(cols, data)
-   IndexedTable(deepcopy(cols)..., copy(data))
+@benchgroup "indexing" begin
+    N = 10000
+    a = rand(0:0.001:2, N)
+    b = rand(0:0.001:2, N)
+    c = rand(N)
+
+    t1 = IndexedTable(a, b, c, agg=+)
+    i, j = t1.index[rand(1:length(t1))]
+
+    # fast cases:
+    @bench "const-const" $t1[$i, $j]
+    @bench "colon-const" $t1[:, $j]
+    @bench "colon-colon" $t1[:, :]
+
+    @bench "interval-colon" $t1[0.2..0.8, :]
+    @bench "interval-const" $t1[0.2..0.8, $j]
+    @bench "const-interval" $t1[$i, 0.2..0.8]
+
+    # slow cases
+    @bench "range-colon" $t1[0.2:eps():0.8, :]
+    @bench "range-const" $t1[0.2:eps():0.8, $j]
+    @bench "interval-interval" $t1[0.2..0.8, 0.2..0.8]
+    @bench "range-interval" $t1[0.2:eps():0.8, 0.2..0.8]
+
+    x = sort!(a[200:800])
+    @bench "vector-interval" $t1[$x, 0.2..0.8]
+    y = sort!(b[400:600])
+    @bench "vector-vector" $t1[$x, $y]
 end
 
-###
-# Seeding
-###
+let
+    N = 10000
+    a = rand(0:0.001:2, N)
+    b = rand(0:0.001:2, N)
+    c = rand(N)
+    t1 = IndexedTable(a, b, c, agg=+)
+    @benchgroup "select" begin
+        @bench "select-filter" select($t1, 1 => x -> x > 0.5, 2 => x -> x < 0.5)
+        @bench "select-pick-1" select($t1, 1, agg=+)
+        @bench "select-pick-2" select($t1, 2, agg=+)
+    end
 
-seed = 103
-srand(seed)
+    t2 = IndexedTable(a, b, Columns(c, rand(N)))
+    t3 = IndexedTable(a, b, Columns(c, [randstring(2) for i=1:N]))
+    @benchgroup "filter" begin
+        @bench "filter-float" filter(x->x>0.5, $t1)
+        @bench "filter-float-float" filter(x->x[1]>0.5, $t2)
+        # the below is much slower than the above
+        # since each x is stack allocated
+        @bench "filter-float-string" filter(x->x[1]>0.5, $t3)
+    end
 
-###
-# Indexing
-###
+    @benchgroup "aggregate" begin
+        N = 10000
+        a = rand(1:10, N)
+        b = rand(1:10, N)
+        c = rand(N)
+        t4 = IndexedTable(a, b, c)
+        @bench "in-place" aggregate!(+, $(copy(t4)))
+        @bench "out-of-place" aggregate(+, $(copy(t4)))
+        @bench "vec" aggregate_vec(sum, $t4)
+    end
 
-function indexing_suite(N::Int, D::Int, cols, data, vect_size, flushed_arr)
-   unit_get_index = Base.ith_all(rand(1 : N), (cols...))
-   range_get_indices = let start = rand(1 : N - vect_size)
-      (map(x -> UnitRange(sort!([x[start], x[start + vect_size]])...), cols)...)
-   end
-   vector_get_indices = let v = rand(1 : N, vect_size)
-      (map(x -> sort(x[v]), cols)...)
-   end
-   unit_set_index = map(x -> N + 1 + x, unit_get_index)
-   range_set_indices = (map(x -> x : (x + vect_size), sort(rand(1 : (N - vect_size), D)))...)
-   vector_set_indices = map(x -> x .+ N, vector_get_indices)
+    @benchgroup "reducedim" begin
+        N = 10000
+        a = rand(0:0.001:2, N)
+        b = rand(0:0.001:2, N)
+        c = rand(N)
+        t4 = IndexedTable(a, b, c)
+        @bench "dim-1" reducedim(+, $t4, 1)
+        @bench "dim-2" reducedim(+, $t4, 2)
+        @bench "vec-dim-1" reducedim_vec(+, $t4, 1)
+        @bench "vec-dim-2" reducedim_vec(+, $t4, 2)
+    end
 
-   unit_val = true
-   range_vals = trues(mapreduce(length, +, 0, range_set_indices))
-   vector_vals = trues(mapreduce(length, +, 0, vector_set_indices))
+    let
 
-   @benchgroup "getindex" begin
-       @bench "unit" getindex($flushed_arr, $unit_get_index...)
-       @bench "range" getindex($flushed_arr, $range_get_indices...)
-       @bench "vector" getindex($flushed_arr, $vector_get_indices...)
-   end
+        function maketable(N)
+            a = rand(0:0.001:2, N)
+            b = rand(0:0.001:2, N)
+            c = rand(N)
+            IndexedTable(a, b, c)
+        end
+        big1 = maketable(10000)
+        big2 = maketable(10000)
+        small1 = maketable(1000)
+        small2 = maketable(1000)
+        @benchgroup "innerjoin" begin
+            @bench "small-small" innerjoin($small1, $small2)
+            @bench "small-big"   innerjoin($small1, $big1)
+            @bench "big-small"   innerjoin($big1, $small1)
+            @bench "big-big"     innerjoin($big1, $big2)
+        end
 
-   @benchgroup "setindex!" begin
-       @bench "overwrite", "unit" setindex!(arr, $unit_val, $unit_get_index...) setup=(arr=copy_flushed($cols, $data))
-       @bench "overwrite", "range" setindex!(arr, $range_vals, $range_set_indices...) setup=(arr=copy_flushed($cols, $data))
-       #@bench "overwrite", "vector" setindex!(arr, $vector_vals, $vector_get_indices...) setup=(arr=copy_flushed($cols, $data))
+        @benchgroup "leftjoin" begin
+            @bench "small-small" leftjoin($small1, $small2)
+            @bench "small-big"   leftjoin($small1, $big1)
+            @bench "big-small"   leftjoin($big1, $small1)
+            @bench "big-big"     leftjoin($big1, $big2)
 
-       @bench "freshwrite", "unit" setindex!(arr, $unit_val, $unit_set_index...) setup=(arr=copy_flushed($cols, $data))
-       #@bench "freshwrite", "vector" setindex!(arr, $vector_vals, $vector_set_indices...) setup=(arr=copy_flushed($cols, $data))
-   end
+            @bench "in-place-small-small" leftjoin!($(copy(small1)), $small2)
+            @bench "in-place-small-big"   leftjoin!($(copy(small1)), $big1)
+            @bench "in-place-big-small"   leftjoin!($(copy(big1)), $small1)
+            @bench "in-place-big-big"     leftjoin!($(copy(big1)), $big2)
+        end
+    end
+
+    @benchgroup "merge" begin
+        @bench "small-small" merge($small1, $small2)
+        @bench "small-big"   merge($small1, $big1)
+        @bench "big-small"   merge($big1, $small1)
+        @bench "big-big"     merge($big1, $big2)
+
+        @bench "small-small-agg" merge($(copy(small1)),$(copy(small2)), agg=+)
+        @bench "small-big-agg"   merge($(copy(small1)),$(copy(big1)), agg=+)
+        @bench "big-small-agg"   merge($(copy(big1)),  $(copy(small1)), agg=+)
+        @bench "big-big-agg"     merge($(copy(big1)),  $(copy(big2)), agg=+)
+    end
+
+    @benchgroup "asofjoin" begin
+        @bench "small-small" asofjoin($small1, $small2)
+        @bench "small-big"   asofjoin($small1, $big1)
+        @bench "big-small"   asofjoin($big1, $small1)
+        @bench "big-big"     asofjoin($big1, $big2)
+    end
 end
 
-function build_suite(S, N, D, vect_size, cols, data, flushed_arr)
-   @benchgroup "Construction" ["Construction"] begin
-       numeric_data = rand(Int, N)
-       mixed_data = let sz = div(N, 4)
-          vcat(rand(Int, sz), rand(sz), map(x->randstring(5), 1 : sz), bitrand(N - 3*sz))::Vector{Any}
-       end
-
-       @bench "numeric" IndexedTable(c..., d) setup=(c = deepcopy($cols); d = copy($numeric_data))
-       @bench "mixed" IndexedTable(c..., d) setup=(c = deepcopy($cols); d = $mixed_data)
-   end
-
-   @benchgroup "Flush" ["Flush"] begin
-       @bench "flushed" flush!($flushed_arr)
-   end
-
-   @benchgroup "Indexing" ["Indexing"] indexing_suite(N, D, cols, data, vect_size, flushed_arr)
-
-   @benchgroup "Operations" ["Operations"] begin
-       data_ = rand(1:S, N)
-       cols_ = [rand(1 : S, N) for _ in 1 : D]
-       filter_function=x->x<S/2
-
-       @bench "merge" merge(target, to_merge) setup=(target = copy_flushed($cols, $data); to_merge = copy_flushed($cols_, $data))
-       @bench "naturaljoin" naturaljoin(left, right, |) setup=(left = copy_flushed($cols, $data); right = copy_flushed($cols_, $data))
-       @bench "select" select($flushed_arr, $(map(d -> d => filter_function, 1 : D))...)
-       @bench "filter" filter($filter_function, $flushed_arr)
-   end
-end
-
-function main()
-   println("Usage: julia run.jl [Array scale] [Number of elements] [Number of dimensions] [vect_size]")
-
-   S = try parse(Int, ARGS[1]) catch 10^4 end                 # Size of array along any dimension.
-   N = try parse(Int, ARGS[2]) catch 10^3 end                 # Number of entries in array
-   D = try parse(Int, ARGS[3]) catch 3 end                    # Number of dimensions.
-   vect_size = try parse(Int, ARGS[4]) catch div(N, 10) end   # Size of vector indices
-
-   cols = [rand(1 : S, N) for _ in 1 : D]                     # Columns for IndexedTable object
-   data = trues(N)                                            # Data for IndexedTable object
-   flushed_arr = copy_flushed(cols, data)                     # IndexedTable object)
-
-   build_suite(S, N, D, vect_size, cols, data, flushed_arr)
-end
-
-main()
