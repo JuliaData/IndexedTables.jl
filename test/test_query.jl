@@ -86,3 +86,35 @@ let A = rand(3,3), B = rand(3,3), C = rand(3,3)
     @test merge(t1, t2, agg=+) == IndexedTable(Columns(a=[0,1,1,2,2,3], b=[1,1,2,1,2,2]), [1,1,4,6,4,4])
     @test merge(t1, t2, agg=nothing) == IndexedTable(Columns(a=[0,1,1,1,2,2,2,3], b=[1,1,2,2,1,1,2,2]), [1,1,2,2,3,3,4,4])
 end
+
+let
+    # scalar
+    x=IndexedTable(Columns(a=[1,1,1,2,2],b=[1,2,3,1,2]),[1,2,3,4,5])
+    t = mapslices(y->sum(y), x, (1,))
+    @test t == IndexedTable(Columns(b=[1,2,3]), [5,7,3])
+
+    # scalar
+    r = Ref(0)
+    t = mapslices(x, [:a]) do slice
+        r[] += 1
+        n = length(slice)
+        IndexedTable(Columns(c=[1:n;]), [r[] for i=1:n])
+    end
+    @test t == IndexedTable(Columns(b=[1,1,2,2,3], c=[1,2,1,2,1]), [1,1,2,2,3])
+
+    # dedup names
+    x=IndexedTable(Columns(a=[1],b=[1]),Columns(c=[1]))
+    t = mapslices(x,[:b]) do slice
+            IndexedTable(Columns(a=[2], c=[2]),
+                         Columns(d=[1]))
+    end
+    @test t==IndexedTable(Columns(a_1=[1], a_2=[2], c=[2]), Columns(d=[1]))
+
+    # signleton slices
+    x=IndexedTable(Columns(a=[1,2,3,4]),Columns(b=[1,2,3,4]))
+    t = mapslices(x,()) do slice
+            IndexedTable(Columns(z=[7]),
+                         Columns(y=[1]))
+    end
+    @test t == IndexedTable(Columns(a=[1,2,3,4], z=[7,7,7,7]), Columns(y=[1,1,1,1]))
+end

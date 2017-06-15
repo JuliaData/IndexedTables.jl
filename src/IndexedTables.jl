@@ -5,7 +5,7 @@ using NamedTuples, PooledArrays
 
 import Base:
     show, eltype, length, getindex, setindex!, ndims, map, convert,
-    ==, broadcast, empty!, copy, similar, sum, merge, merge!,
+    ==, broadcast, empty!, copy, similar, sum, merge, merge!, mapslices,
     permutedims, reducedim, serialize, deserialize
 
 export IndexedTable, flush!, aggregate!, aggregate_vec, where, pairs, convertdim, columns, column,

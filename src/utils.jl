@@ -254,3 +254,11 @@ function sort_int_range_sub_by!(x, ioffs, n, by, rangelen, minval, temp)
     end
     x
 end
+
+function append_n!(X::Vector, val, n)
+    l = length(X)
+    resize!(X, l+n)
+    for i in (1:n)+l
+        @inbounds X[i] = val
+    end
+end
