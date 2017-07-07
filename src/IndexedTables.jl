@@ -192,7 +192,84 @@ end
 
 # map and convert
 
-map(f, x::IndexedTable) = IndexedTable(copy(x.index), map(f, x.data), presorted=true)
+function _map_onerror!(i, val, f, out, inp)
+    n = length(inp)
+
+    T = promote_type(eltype(out), typeof(val))
+    if (T <: Tup) && (length(val) == nfields(T) && !any(t->t<:Vararg, T.parameters))
+        # There are just as many columns but the types of the
+        # elements has changed
+        cols = map(t->Array{t}(n), (T.parameters...))
+        promoted = Columns{T, typeof(cols)}(cols)
+    else
+        promoted = Array{T}(n)
+    end
+
+    # move existing data to new vector
+    rng = CartesianRange((1:(i-1),))
+    copy!(promoted, rng, out, rng)
+
+    # use current value
+    promoted[i] = val
+
+    # retry
+    _map!(f, promoted, inp, i+1)
+end
+
+function map(f, x::IndexedTable)
+    y1 = f(x.data[1])
+    if isa(y1, Tup)
+        data = Columns(map(x->[x], y1))
+        resize!(data, length(x.data))
+        y = (_map!(f, data, x.data, 2))
+        IndexedTable(copy(x.index), y, presorted=true)
+    else
+        IndexedTable(copy(x.index), map(f, x.data), presorted=true)
+    end
+end
+
+function _map!(f, data::AbstractArray, x, start)
+    @inbounds for i = start:length(x)
+        val = f(x[i])
+        try
+            data[i] = val
+        catch err
+            if isa(err, InexactError) ||
+                (isa(err, MethodError) && err.f === convert)
+
+                showerror(STDERR, err, catch_backtrace())
+                _map_onerror!(i, val, f, data, x)
+            else
+                rethrow(err)
+            end
+        end
+    end
+    data
+end
+
+function _map!(f, y::Columns, x::Columns, start)
+    @assert length(y) == length(x)
+    @inbounds for i = start:length(x)
+        v = f(x[i])
+        try
+            if nfields(v) == nfields(x.columns)
+                y[i] = v
+            else
+                return _map_onerror!(i, v, f, y, x)
+            end
+        catch err
+            if isa(err, InexactError) ||
+                (isa(err, MethodError) && err.f === convert)
+
+                showerror(STDERR, err, catch_backtrace())
+                _map_onerror!(i, v, f, y, x)
+            else
+                rethrow(err)
+            end
+        end
+    end
+    y
+end
 
 # lift projection on arrays of structs
 map{T,D<:Tuple,C<:Tup,V<:Columns}(p::Proj, x::IndexedTable{T,D,C,V}) =
