@@ -33,6 +33,29 @@ let c = Columns([1,1,1,2,2], [1,2,4,3,5]),
 end
 
 let
+    t = IndexedTable([1,2,3], Columns(x=[4,5,6]))
+    @test isa(map(x->x.x, t).data, Vector)
+    @test map(x->x.x, t).data == [4,5,6]
+
+    t1 = map(x->@NT(x=x.x,y=x.x^2), t)
+    @test isa(t1.data, Columns)
+    @test fieldnames(eltype(t1.data)) == [:x,:y]
+
+    t2 = map(x->(x.x,x.x^2), t)
+    @test isa(t2.data, Columns)
+    @test isa(t2.data.columns, Tuple{Vector{Int}, Vector{Int}})
+
+    t3 = map(x->ntuple(identity, x.x), t)
+    @test isa(t3.data, Vector)
+    @test eltype(t3.data) <: Tuple{Vararg{Int}}
+
+    y = [1, 1//2, "x"]
+    t4 = map(x->(x.x, y[x.x-3]), t)
+    @test isa(t4.data, Columns)
+    @test eltype(t4.data) <: Tuple{Int, Any}
+end
+
+let
     t = IndexedTable([1], Columns([1]))
     @test map(pick(1), t).data == [1]
 
