@@ -56,6 +56,12 @@ let
 end
 
 let
+    t = IndexedTable([1], Columns([1]))
+    @test map(pick(1), t).data == [1]
+
+    t = IndexedTable([1], Columns(x=[1]))
+    @test map(pick(:x), t).data == [1]
+
     x = Columns([1], [2.0])
     @test map(pick(2), x) == [2.0]
     @test map(@pick(2), x) == Columns([2.0])
