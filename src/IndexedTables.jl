@@ -4,12 +4,12 @@ using Compat
 using NamedTuples, PooledArrays
 
 import Base:
-    show, eltype, length, getindex, setindex!, ndims, map, convert,
+    show, eltype, length, getindex, setindex!, ndims, map, convert, keys, values,
     ==, broadcast, empty!, copy, similar, sum, merge, merge!, mapslices,
     permutedims, reducedim, serialize, deserialize
 
 export IndexedTable, flush!, aggregate!, aggregate_vec, where, pairs, convertdim, columns, column,
-    update!, aggregate, reducedim_vec, dimlabels
+    update!, aggregate, reducedim_vec, dimlabels, withkeys, withvalues, as
 
 const Tup = Union{Tuple,NamedTuple}
 const DimName = Union{Int,Symbol}
@@ -101,6 +101,21 @@ ndims(t::IndexedTable) = length(t.index.columns)
 length(t::IndexedTable) = (flush!(t);length(t.index))
 eltype{T,D,C,V}(::Type{IndexedTable{T,D,C,V}}) = T
 dimlabels{T,D,C,V}(::Type{IndexedTable{T,D,C,V}}) = fieldnames(C)
+@inline keys(t::IndexedTable) = t.index
+@inline values(t::IndexedTable) = t.data
+@inline keys(tbl::IndexedTable, col) = getfield(tbl.index.columns, col)
+@inline values(tbl::IndexedTable, col) = getfield(tbl.data.columns, col)
+
+firstkey(t::IndexedTable) = first(keys(t))
+lastkey(t::IndexedTable) = last(keys(t))
+
+function withvalues(f, tbl::IndexedTable)
+    IndexedTable(tbl.index, f(tbl.data))
+end
+
+function withkeys(f, tbl::IndexedTable)
+    IndexedTable(f(tbl.index), tbl.data)
+end
 
 """
 `dimlabels(t::IndexedTable)`

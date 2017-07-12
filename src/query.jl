@@ -1,3 +1,5 @@
+import Base.select
+
 filt_by_col!(f, col, indxs) = filter!(i->f(col[i]), indxs)
 
 """
@@ -7,7 +9,7 @@ Filter based on index columns. Conditions are accepted as column-function pairs.
 
 Example: `select(arr, 1 => x->x>10, 3 => x->x!=10 ...)`
 """
-function Base.select(arr::IndexedTable, conditions::Pair...)
+function select(arr::IndexedTable, conditions::Pair...)
     flush!(arr)
     indxs = [1:length(arr);]
     cols = arr.index.columns
@@ -26,6 +28,88 @@ Select a subset of index columns. If the resulting array has duplicate index ent
 function Base.select(arr::IndexedTable, which::DimName...; agg=nothing)
     flush!(arr)
     IndexedTable(Columns(arr.index.columns[[which...]]), arr.data, agg=agg, copy=true)
+end
+
+immutable As
+    f
+    src::Union{Symbol, Int}
+    dest::Symbol
+end
+as(f, x,y) = As(f, x,y)
+as(x,y) = as(identity, x,y)
+
+function select_col(t, n)
+    if isa(n, Int)
+        if n <= length(keys(t).columns)
+            return keys(t, n)
+        end
+        n = n - length(keys(t).columns)
+        if isa(values(t), Columns)
+            return t.data.columns[n]
+        elseif n == 1
+            return t.data
+        end
+    else
+        if haskey(keys(t).columns, n)
+            return keys(t, n)
+        end
+
+        if isa(values(t), Columns) && haskey(values(t).columns, n)
+            return values(t, n)
+        end
+    end
+
+    error("Couldn't find column named $n")
+end
+
+"""
+    select(t, names::Tuple)
+
+Extract a subset of columns from a table. Returns a `Columns` object containing the
+columns named in `names`. Integer column numbers can be used as well.
+
+Integer column numbers are counted first for key columns and then for data columns of `t`.
+For example, column 4 would be the second data column if `t` has 2 index columns.
+
+To rename a column in the output table, use `as(:src_col, :dest_col)` in place of the column
+name.  Optionally, you can pass a function to apply to the column vector as the first argument to
+`as`. I.e. `as(f, :src_col, :dest_col)` will apply `f` on the `:src_col` column of `t`.
+`f` must return another vector as the same length as the input.
+
+"""
+function select(t::IndexedTable, names::Tuple)
+    cols = Dict()
+    for n in names
+        if isa(n, As)
+            cols[n.dest] = n.f(select_col(t, n.src))
+        else
+            cols[n] = select_col(t, n)
+        end
+    end
+    dest_names = [isa(n, As) ? n.dest : n for n in names]
+    return Columns((cols[n] for n in dest_names)...;
+                   names=all(n->isa(n, Symbol), dest_names) ? dest_names : nothing)
+end
+
+
+"""
+    select(t::IndexedTable, key_cols => value_cols)
+
+Create a new table taking columns specified in `key_cols` as the key columns, and
+those named by `value_cols` as value columns. `key_cols` and `value_cols` are tuples
+of column names as they appear in `t`. Integer column numbers can be used as well.
+
+Integer column numbers are counted first for key columns and then for data columns of `t`.
+For example, column 4 would be the second data column if `t` has 2 index columns.
+
+To rename a column in the output table, use `as(:src_col, :dest_col)` in place of the column
+name.  Optionally, you can pass a function to apply to the column vector as the first argument to
+`as`. I.e. `as(f, :src_col, :dest_col)` will apply `f` on the `:src_col` column of `t`.
+`f` must return another vector as the same length as the input.
+"""
+function select{T<:Tuple}(t::IndexedTable, kvcols::Pair{T})
+    ks, vs = kvcols
+    IndexedTable(select(t, ks), select(t, vs))
 end
 
 # Filter on data field

@@ -424,10 +424,13 @@ If `dimmap` is not specified, it is determined automatically using index column
 names and types.
 """
 function broadcast(f::Function, A::IndexedTable, B::IndexedTable; dimmap=nothing)
+    out_T = Base.promote_op(f, eltype(A), eltype(B))
+    out = IndexedTable(similar(typeof(A.index), 0), similar(arrayof(out_T), 0))
+
     if ndims(B) > ndims(A)
-        _broadcast!((x,y)->f(y,x), similar(B), B, A, dimmap=dimmap)
+        _broadcast!((x,y)->f(y,x), out, B, A, dimmap=dimmap)
     else
-        _broadcast!(f, similar(A), A, B, dimmap=dimmap)
+        _broadcast!(f, out, A, B, dimmap=dimmap)
     end
 end
 

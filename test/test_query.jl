@@ -23,6 +23,20 @@ let a = IndexedTable([12,21,32], [52,41,34], [11,53,150]), b = IndexedTable([12,
     @test length(c.index) == 1
 end
 
+let
+    t = IndexedTable(Columns(x=[1], y=[2]), Columns(a=[3], b=[4]))
+    @test select(t, (:x,)) == Columns(x=[1])
+    @test select(t, (:a,)) == Columns(a=[3])
+    @test select(t, (1,)) == Columns([1])
+    @test select(t, (3,)) == Columns([3])
+    @test select(t, (:x,:a)) == Columns(x=[1], a=[3])
+    @test select(t, (as(:x, :b),as(:a, :c))) == Columns(b=[1], c=[3])
+    @test select(t, (:y,:x)=>(as(:x, :c),:a)) == IndexedTable(Columns(y=[2], x=[1]),
+                                                              Columns(c=[1], a=[3]))
+    @test select(t, (:y,:x)=>(as(-, :x, :c),:a)) == IndexedTable(Columns(y=[2], x=[1]),
+                                                              Columns(c=[-1], a=[3]))
+end
+
 let a = IndexedTable([1,1,2,2], [1,2,1,2], [6,7,8,9])
     @test select(a, 1, agg=+) == IndexedTable([1,2], [13,17])
     @test select(a, 2, agg=+) == IndexedTable([1,2], [14,16])

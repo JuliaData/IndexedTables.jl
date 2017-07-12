@@ -263,3 +263,17 @@ function append_n!(X, val, n)
     end
     X
 end
+
+"""
+`arrayof(T)`
+
+Returns the type of `Columns` or `Vector` suitable to store
+values of type T. Nested tuples beget nested Columns.
+"""
+Base.@pure function arrayof(T)
+    if T<:Tup
+        Columns{T, Tuple{map(arrayof, T.parameters)...}}
+    else
+        Vector{T}
+    end
+end

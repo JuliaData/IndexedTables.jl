@@ -46,6 +46,12 @@ summary{D<:Tuple}(c::Columns{D}) = "Columns{$D}"
 empty!(c::Columns) = (foreach(empty!, c.columns); c)
 similar{D,C}(c::Columns{D,C}) = Columns{D,C}(map(similar, c.columns))
 similar{D,C}(c::Columns{D,C}, n::Integer) = Columns{D,C}(map(a->similar(a,n), c.columns))
+function Base.similar{T<:Columns}(::Type{T}, n::Int)::T
+    T_cols = T.parameters[2]
+    f = T_cols <: Tuple ? tuple : T_cols
+    T(f(map(t->similar(t, n), T.parameters[2].parameters)...))
+end
+
 copy{D,C}(c::Columns{D,C}) = Columns{D,C}(map(copy, c.columns))
 
 getindex{D<:Tuple}(c::Columns{D}, i::Integer) = ith_all(i, c.columns)
