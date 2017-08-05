@@ -59,7 +59,7 @@ function _naturaljoin(left::IndexedTable, right::IndexedTable, op, data)
     IndexedTable(I, data, presorted=true)
 end
 
-map{T,S,D}(f, x::IndexedTable{T,D}, y::IndexedTable{S,D}) = naturaljoin(x, y, f)
+map(f, x::IndexedTable{T,D}, y::IndexedTable{S,D}) where {T,S,D} = naturaljoin(x, y, f)
 
 # left join
 
@@ -150,7 +150,7 @@ end
 
 # merge - union join
 
-function count_overlap{D}(I::Columns{D}, J::Columns{D})
+function count_overlap(I::Columns{D}, J::Columns{D}) where D
     lI, lJ = length(I), length(J)
     i = j = 1
     overlap = 0
@@ -178,9 +178,9 @@ function promoted_similar(x::AbstractArray, y::AbstractArray, n)
 end
 
 # assign y into x out-of-place
-merge{T,S,D<:Tuple}(x::IndexedTable{T,D}, y::IndexedTable{S,D}; agg = IndexedTables.right) = (flush!(x);flush!(y); _merge(x, y, agg))
+merge(x::IndexedTable{T,D}, y::IndexedTable{S,D}; agg = IndexedTables.right) where {T,S,D<:Tuple} = (flush!(x);flush!(y); _merge(x, y, agg))
 # merge without flush!
-function _merge{T,S,D}(x::IndexedTable{T,D}, y::IndexedTable{S,D}, agg)
+function _merge(x::IndexedTable{T,D}, y::IndexedTable{S,D}, agg) where {T,S,D}
     I, J = x.index, y.index
     lI, lJ = length(I), length(J)
     #if isless(I[end], J[1])
@@ -262,7 +262,7 @@ function merge(x::IndexedTable, xs::IndexedTable...; agg = nothing)
 end
 
 # merge in place
-function merge!{T,S,D<:Tuple}(x::IndexedTable{T,D}, y::IndexedTable{S,D}; agg = IndexedTables.right)
+function merge!(x::IndexedTable{T,D}, y::IndexedTable{S,D}; agg = IndexedTables.right) where {T,S,D<:Tuple}
     flush!(x)
     flush!(y)
     _merge!(x, y, agg)

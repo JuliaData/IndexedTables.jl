@@ -8,7 +8,7 @@ import Base:
 
 export Columns
 
-immutable Columns{D<:Tup, C<:Tup} <: AbstractVector{D}
+struct Columns{D<:Tup, C<:Tup} <: AbstractVector{D}
     columns::C
 
     @compat function (::Type{Columns{D,C}}){D<:Tup,C<:Tup}(c)
@@ -40,23 +40,23 @@ length(c::Columns) = length(c.columns[1])
 ndims(c::Columns) = 1
 size(c::Columns) = (length(c),)
 @compat Base.IndexStyle(::Type{<:Columns}) = IndexLinear()
-summary{D<:Tuple}(c::Columns{D}) = "Columns{$D}"
+summary(c::Columns{D}) where {D<:Tuple} = "Columns{$D}"
 
 empty!(c::Columns) = (foreach(empty!, c.columns); c)
-similar{D,C}(c::Columns{D,C}) = Columns{D,C}(map(similar, c.columns))
-similar{D,C}(c::Columns{D,C}, n::Integer) = Columns{D,C}(map(a->similar(a,n), c.columns))
+similar(c::Columns{D,C}) where {D,C} = Columns{D,C}(map(similar, c.columns))
+similar(c::Columns{D,C}, n::Integer) where {D,C} = Columns{D,C}(map(a->similar(a,n), c.columns))
 function Base.similar{T<:Columns}(::Type{T}, n::Int)::T
     T_cols = T.parameters[2]
     f = T_cols <: Tuple ? tuple : T_cols
     T(f(map(t->similar(t, n), T.parameters[2].parameters)...))
 end
 
-copy{D,C}(c::Columns{D,C}) = Columns{D,C}(map(copy, c.columns))
+copy(c::Columns{D,C}) where {D,C} = Columns{D,C}(map(copy, c.columns))
 
-getindex{D<:Tuple}(c::Columns{D}, i::Integer) = ith_all(i, c.columns)
-getindex{D<:NamedTuple}(c::Columns{D}, i::Integer) = D(ith_all(i, c.columns)...)
+getindex(c::Columns{D}, i::Integer) where {D<:Tuple} = ith_all(i, c.columns)
+getindex(c::Columns{D}, i::Integer) where {D<:NamedTuple} = D(ith_all(i, c.columns)...)
 
-getindex{D,C}(c::Columns{D,C}, p::AbstractVector) = Columns{D,C}(map(c->c[p], c.columns))
+getindex(c::Columns{D,C}, p::AbstractVector) where {D,C} = Columns{D,C}(map(c->c[p], c.columns))
 
 @inline setindex!(I::Columns, r::Tup, i::Integer) = (foreach((c,v)->(c[i]=v), I.columns, r); I)
 
@@ -130,8 +130,8 @@ sort(c::Columns) = c[sortperm(c)]
 map(p::ProjFn, c::Columns) = Columns(p(c.columns))
 map(p::Proj, c::Columns) = p(c.columns)
 
-vcat{D<:Tup,C<:Tuple}(c::Columns{D,C}, cs::Columns{D,C}...) = Columns{D,C}((map(vcat, map(x->x.columns, (c,cs...))...)...,))
-vcat{D<:Tup,C<:NamedTuple}(c::Columns{D,C}, cs::Columns{D,C}...) = Columns{D,C}(C(map(vcat, map(x->x.columns, (c,cs...))...)...,))
+vcat(c::Columns{D,C}, cs::Columns{D,C}...) where {D<:Tup,C<:Tuple} = Columns{D,C}((map(vcat, map(x->x.columns, (c,cs...))...)...,))
+vcat(c::Columns{D,C}, cs::Columns{D,C}...) where {D<:Tup,C<:NamedTuple} = Columns{D,C}(C(map(vcat, map(x->x.columns, (c,cs...))...)...,))
 
 function Base.vcat(c::Columns, cs::Columns...)
     fns = map(fieldnames, (map(x->x.columns, (c, cs...))))
@@ -145,7 +145,7 @@ function Base.vcat(c::Columns, cs::Columns...)
     Columns(map(vcat, map(x->x.columns, (c,cs...))...))
 end
 
-@compat abstract type SerializedColumns end
+@compat abstract type type end
 
 function serialize(s::AbstractSerializer, c::Columns)
     Base.Serializer.serialize_type(s, SerializedColumns)
@@ -188,7 +188,7 @@ end
 
 copyrow!(I::Columns, i, src) = foreach(c->copyelt!(c, i, src), I.columns)
 
-@generated function rowless{D,C}(c::Columns{D,C}, i, j)
+@generated function rowless(c::Columns{D,C}, i, j) where {D,C}
     N = length(C.parameters)
     ex = :(cmpelts(getfield(c.columns,$N), i, j) < 0)
     for n in N-1:-1:1
@@ -201,7 +201,7 @@ copyrow!(I::Columns, i, src) = foreach(c->copyelt!(c, i, src), I.columns)
     ex
 end
 
-@generated function roweq{D,C}(c::Columns{D,C}, i, j)
+@generated function roweq(c::Columns{D,C}, i, j) where {D,C}
     N = length(C.parameters)
     ex = :(cmpelts(getfield(c.columns,1), i, j) == 0)
     for n in 2:N
@@ -212,7 +212,7 @@ end
 
 # uses number of columns from `d`, assuming `c` has more or equal
 # dimensions, for broadcast joins.
-@generated function rowcmp{D}(c::Columns, i, d::Columns{D}, j)
+@generated function rowcmp(c::Columns, i, d::Columns{D}, j) where D
     N = length(D.parameters)
     ex = :(cmp(getfield(c.columns,$N)[i], getfield(d.columns,$N)[j]))
     for n in N-1:-1:1
@@ -229,7 +229,7 @@ end
 # all columns are equal except left >= right in last column.
 # Could be generalized to some number of trailing columns, but I don't
 # know whether that has applications.
-@generated function row_asof{D,C}(c::Columns{D,C}, i, d::Columns{D,C}, j)
+@generated function row_asof(c::Columns{D,C}, i, d::Columns{D,C}, j) where {D,C}
     N = length(C.parameters)
     if N == 1
         ex = :(!isless(getfield(c.columns,1)[i], getfield(d.columns,1)[j]))
