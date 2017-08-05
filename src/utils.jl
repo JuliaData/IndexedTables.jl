@@ -12,7 +12,7 @@ Base.@pure astuple{T<:NamedTuple}(::Type{T}) = Tuple{T.parameters...}
 astuple{T<:Tuple}(::Type{T}) = T
 
 # sizehint, making sure to return first argument
-_sizehint!{T}(a::Array{T,1}, n::Integer) = (sizehint!(a, n); a)
+_sizehint!(a::Array{T,1}, n::Integer) where {T} = (sizehint!(a, n); a)
 _sizehint!(a::AbstractArray, sz::Integer) = a
 
 # argument selectors
@@ -61,15 +61,15 @@ end
 
 # family of projection functions
 
-immutable ProjFn{F}
+struct ProjFn{F}
     f::F
 end
 
 (p::ProjFn)(x::Tup) = p.f(x)
 
-immutable Proj{f} end
+struct Proj{f} end
 
-function (p::Proj{f}){f}(x::Tup)
+function (p::Proj{f})(x::Tup) where f
     getfield(x, f)
 end
 
@@ -117,9 +117,9 @@ pick(fld) = Proj{fld}()
 
 import Base: length, eltype, start, next, done
 
-@compat abstract type AbstractProdIterator end
+@compat abstract type type end
 
-immutable Prod2{I1, I2} <: AbstractProdIterator
+struct Prod2{I1, I2} <: AbstractProdIterator
     a::I1
     b::I2
 end
@@ -154,7 +154,7 @@ end
 next(p::Prod2, st) = prod_next(p, st)
 done(p::AbstractProdIterator, st) = st[3]
 
-immutable Prod{I1, I2<:AbstractProdIterator} <: AbstractProdIterator
+struct Prod{I1, I2<:AbstractProdIterator} <: AbstractProdIterator
     a::I1
     b::I2
 end
@@ -162,7 +162,7 @@ end
 product(a, b, c...) = Prod(a, product(b, c...))
 eltype{I1,I2}(::Type{Prod{I1,I2}}) = tuple_type_cons(eltype(I1), eltype(I2))
 
-function next{I1,I2}(p::Prod{I1,I2}, st)
+function next(p::Prod{I1,I2}, st) where {I1,I2}
     x = prod_next(p, st)
     ((x[1][1],x[1][2]...), x[2])
 end
@@ -171,7 +171,7 @@ end
 
 sortperm_fast(x; alg=MergeSort, kwargs...) = sortperm(x, alg=alg, kwargs...)
 
-function sortperm_fast{T<:Integer}(v::Vector{T})
+function sortperm_fast(v::Vector{T}) where T<:Integer
     n = length(v)
     if n > 1
         min, max = extrema(v)
@@ -183,7 +183,7 @@ function sortperm_fast{T<:Integer}(v::Vector{T})
     return sortperm(v, alg=MergeSort)
 end
 
-function sortperm_int_range{T<:Integer}(x::Vector{T}, rangelen, minval)
+function sortperm_int_range(x::Vector{T}, rangelen, minval) where T<:Integer
     offs = 1 - minval
     n = length(x)
 
@@ -211,7 +211,7 @@ function sort_sub_by!(v, i0, i1, by, order, temp)
     sort!(v, i0, i1, MergeSort, order, temp)
 end
 
-function sort_sub_by!{T<:Integer}(v, i0, i1, by::Vector{T}, order, temp)
+function sort_sub_by!(v, i0, i1, by::Vector{T}, order, temp) where T<:Integer
     min = max = by[v[i0]]
     @inbounds for i = i0+1:i1
         val = by[v[i]]
@@ -324,12 +324,12 @@ Base.@pure function strip_unionall(T)
     end
 end
 
-@inline function _promote_op{S}(f, ::Type{S})
+@inline function _promote_op(f, ::Type{S}) where S
     t = Core.Inference.return_type(f, Tuple{Base._default_type(S)})
     strip_unionall(t)
 end
 
-@inline function _promote_op{S,T}(f, ::Type{S}, ::Type{T})
+@inline function _promote_op(f, ::Type{S}, ::Type{T}) where {S,T}
     t = Core.Inference.return_type(f, Tuple{Base._default_type(S),
                                         Base._default_type(T)})
     strip_unionall(t)
@@ -344,26 +344,26 @@ end
 
 _map_params(f, T::Type{Tuple{}},S::Type{Tuple{}}) = ()
 
-map_params{T,S}(f, ::Type{T}, ::Type{S}) = f(T,S)
-map_params{T}(f, ::Type{T}) = map_params((x,y)->f(x), T, T)
+map_params(f, ::Type{T}, ::Type{S}) where {T,S} = f(T,S)
+map_params(f, ::Type{T}) where {T} = map_params((x,y)->f(x), T, T)
 @inline _tuple_type_head{T<:Tuple}(::Type{T}) = Base.tuple_type_head(T)
 @inline _tuple_type_tail{T<:Tuple}(::Type{T}) = Base.tuple_type_tail(T)
 
 #function map_params{N}(f, T::Type{T} where T<:Tuple{Vararg{Any,N}}, S::Type{S} where S<: Tuple{Vararg{Any,N}})
-Base.@pure function map_params{T<:Tuple,S<:Tuple}(f, ::Type{T}, ::Type{S})
+Base.@pure function map_params(f, ::Type{T}, ::Type{S}) where {T<:Tuple,S<:Tuple}
     if nfields(T) != nfields(S)
         MethodError(map_params, (typeof(f), T,S))
     end
     Tuple{_map_params(f, T,S)...}
 end
 
-_tuple_type_head{NT<: NamedTuple}(T::Type{NT}) = fieldtype(NT, 1)
+_tuple_type_head(T::Type{NT}) where {NT<: NamedTuple} = fieldtype(NT, 1)
 
-Base.@pure function _tuple_type_tail{NT<: NamedTuple}(T::Type{NT})
+Base.@pure function _tuple_type_tail(T::Type{NT}) where NT<: NamedTuple
     Tuple{Base.argtail(NT.parameters...)...}
 end
 
-Base.@pure @generated function map_params{T<:NamedTuple,S<:NamedTuple}(f, ::Type{T}, ::Type{S})
+Base.@pure @generated function map_params(f, ::Type{T}, ::Type{S}) where {T<:NamedTuple,S<:NamedTuple}
     if fieldnames(T) != fieldnames(S)
         MethodError(map_params, (T,S))
     end

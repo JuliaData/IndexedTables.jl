@@ -17,7 +17,7 @@ const DimName = Union{Int,Symbol}
 include("utils.jl")
 include("columns.jl")
 
-immutable IndexedTable{T, D<:Tuple, C<:Columns, V<:AbstractVector}
+struct IndexedTable{T, D<:Tuple, C<:Columns, V<:AbstractVector}
     index::C
     data::V
 
@@ -41,7 +41,7 @@ Keyword arguments:
 * `presorted::Bool`: If true, the indices are assumed to already be sorted and no sorting is done.
 * `copy::Bool`: If true, the storage for the new array will not be shared with the passed indices and data. If false (the default), the passed arrays will be copied only if necessary for sorting. The only way to guarantee sharing of data is to pass `presorted=true`.
 """
-function IndexedTable{T,C<:Columns}(I::C, d::AbstractVector{T}; agg=nothing, presorted=false, copy=false)
+function IndexedTable(I::C, d::AbstractVector{T}; agg=nothing, presorted=false, copy=false) where {T,C<:Columns}
     length(I) == length(d) || error("index and data must have the same number of elements")
 
     if !presorted && !issorted(I)
@@ -94,7 +94,7 @@ end
 
 _convert(::Type{<:Tuple}, tup::Tuple) = tup
 _convert{T<:NamedTuple}(::Type{T}, tup::Tuple) = T(tup...)
-convertkey{V,K,I}(t::IndexedTable{V,K,I}, tup::Tuple) = _convert(eltype(I), tup)
+convertkey(t::IndexedTable{V,K,I}, tup::Tuple) where {V,K,I} = _convert(eltype(I), tup)
 
 ndims(t::IndexedTable) = length(t.index.columns)
 length(t::IndexedTable) = (flush!(t);length(t.index))
@@ -309,7 +309,7 @@ if isless(Base.VERSION, v"0.5.0-")
 writemime(io::IO, m::MIME"text/plain", t::IndexedTable) = show(io, t)
 end
 
-function show{T,D<:Tuple}(io::IO, t::IndexedTable{T,D})
+function show(io::IO, t::IndexedTable{T,D}) where {T,D<:Tuple}
     flush!(t)
     n = length(t)
     n == 0 && (return print(io, "empty table $D => $T"))
@@ -356,7 +356,7 @@ function show{T,D<:Tuple}(io::IO, t::IndexedTable{T,D})
     end
 end
 
-@compat abstract type SerializedIndexedTable end
+@compat abstract type type end
 
 function serialize(s::AbstractSerializer, x::IndexedTable)
     flush!(x)
@@ -389,7 +389,7 @@ function map(f, x::IndexedTable)
 end
 
 # lift projection on arrays of structs
-map{T,D<:Tuple,C<:Tup,V<:Columns}(p::Proj, x::IndexedTable{T,D,C,V}) =
+map(p::Proj, x::IndexedTable{T,D,C,V}) where {T,D<:Tuple,C<:Tup,V<:Columns} =
     IndexedTable(x.index, p(x.data.columns), presorted=true)
 
 (p::Proj)(x::IndexedTable) = map(p, x)

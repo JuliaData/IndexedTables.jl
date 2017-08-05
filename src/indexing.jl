@@ -2,7 +2,7 @@
 
 getindex(t::IndexedTable, idxs...) = (flush!(t); _getindex(t, idxs))
 
-_getindex{T,D<:Tuple}(t::IndexedTable{T,D}, idxs::D) = _getindex_scalar(t, idxs)
+_getindex(t::IndexedTable{T,D}, idxs::D) where {T,D<:Tuple} = _getindex_scalar(t, idxs)
 _getindex(t::IndexedTable, idxs::Tuple{Vararg{Real}}) = _getindex_scalar(t, idxs)
 
 function _getindex_scalar(t, idxs)
@@ -26,19 +26,19 @@ import Base: tail
 @inline _row_in(c1, r, i1, rI::Tuple{}, ri) = _in(c1[r],i1)
 
 range_estimate(col, idx) = 1:length(col)
-range_estimate{T}(col::AbstractVector{T}, idx::T) = searchsortedfirst(col, idx):searchsortedlast(col,idx)
+range_estimate(col::AbstractVector{T}, idx::T) where {T} = searchsortedfirst(col, idx):searchsortedlast(col,idx)
 range_estimate(col, idx::AbstractArray) = searchsortedfirst(col,first(idx)):searchsortedlast(col,last(idx))
 
 const _fwd = Base.Order.ForwardOrdering()
 
 range_estimate(col, idx, lo, hi) = 1:length(col)
-range_estimate{T}(col::AbstractVector{T}, idx::T, lo, hi) =
+range_estimate(col::AbstractVector{T}, idx::T, lo, hi) where {T} =
     searchsortedfirst(col, idx, lo, hi, _fwd):searchsortedlast(col, idx, lo, hi, _fwd)
 range_estimate(col, idx::AbstractArray, lo, hi) =
     searchsortedfirst(col, first(idx), lo, hi, _fwd):searchsortedlast(col, last(idx), lo, hi, _fwd)
 
 isconstrange(col, idx) = false
-isconstrange{T}(col::AbstractVector{T}, idx::T) = true
+isconstrange(col::AbstractVector{T}, idx::T) where {T} = true
 isconstrange(col, idx::AbstractArray) = isequal(first(idx), last(idx))
 
 function range_estimate(I::Columns, idxs)
@@ -73,7 +73,7 @@ end
 Returns an iterator over data items where the given indices match. Accepts the
 same index arguments as `getindex`.
 """
-function where{N}(d::IndexedTable, idxs::Vararg{Any,N})
+function where(d::IndexedTable, idxs::Vararg{Any,N}) where N
     I = d.index
     cs = astuple(I.columns)
     data = d.data
@@ -87,7 +87,7 @@ end
 Replace data values `x` with `f(x)` at each location that matches the given
 indices.
 """
-function update!{N}(f::Union{Function,Type}, d::IndexedTable, idxs::Vararg{Any,N})
+function update!(f::Union{Function,Type}, d::IndexedTable, idxs::Vararg{Any,N}) where N
     I = d.index
     cs = astuple(I.columns)
     data = d.data
@@ -108,7 +108,7 @@ pairs(d::IndexedTable) = (d.index[i]=>d.data[i] for i in 1:length(d))
 Similar to `where`, but returns an iterator giving `index=>value` pairs.
 `index` will be a tuple.
 """
-function pairs{N}(d::IndexedTable, idxs::Vararg{Any,N})
+function pairs(d::IndexedTable, idxs::Vararg{Any,N}) where N
     I = d.index
     cs = astuple(I.columns)
     data = d.data
@@ -128,9 +128,9 @@ setindex!(t::IndexedTable, rhs::AbstractVector, I::Columns) = merge!(t, IndexedT
 
 # assigning a single item
 
-_setindex!{T,D}(t::IndexedTable{T,D}, rhs::AbstractArray, idxs::D) = _setindex_scalar!(t, rhs, idxs)
+_setindex!(t::IndexedTable{T,D}, rhs::AbstractArray, idxs::D) where {T,D} = _setindex_scalar!(t, rhs, idxs)
 _setindex!(t::IndexedTable, rhs::AbstractArray, idxs::Tuple{Vararg{Real}}) = _setindex_scalar!(t, rhs, idxs)
-_setindex!{T,D}(t::IndexedTable{T,D}, rhs, idxs::D) = _setindex_scalar!(t, rhs, idxs)
+_setindex!(t::IndexedTable{T,D}, rhs, idxs::D) where {T,D} = _setindex_scalar!(t, rhs, idxs)
 #_setindex!(t::IndexedTable, rhs, idxs::Tuple{Vararg{Real}}) = _setindex_scalar!(t, rhs, idxs)
 
 function _setindex_scalar!(t, rhs, idxs)
@@ -144,7 +144,7 @@ end
 _setindex!(t::IndexedTable, rhs::IndexedTable, idxs::Tuple{Vararg{Real}}) = _setindex!(t, rhs.data, idxs)
 _setindex!(t::IndexedTable, rhs::IndexedTable, idxs) = _setindex!(t, rhs.data, idxs)
 
-function _setindex!{T,D}(d::IndexedTable{T,D}, rhs::AbstractArray, idxs)
+function _setindex!(d::IndexedTable{T,D}, rhs::AbstractArray, idxs) where {T,D}
     for idx in idxs
         isa(idx, AbstractVector) && (issorted(idx) || error("indices must be sorted for ranged/vector indexing"))
     end
@@ -181,7 +181,7 @@ end
 
 # broadcast assignment of a single value into all matching locations
 
-function _setindex!{T,D}(d::IndexedTable{T,D}, rhs, idxs)
+function _setindex!(d::IndexedTable{T,D}, rhs, idxs) where {T,D}
     for idx in idxs
         isa(idx, AbstractVector) && (issorted(idx) || error("indices must be sorted for ranged/vector indexing"))
     end
