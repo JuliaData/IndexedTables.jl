@@ -37,6 +37,7 @@ let
     y = IndexedTable(Columns(a=[1,1], b=[1,2]), [3,4])
 
     @test column(x, :a) == [1,1]
+    @test column(x, [5,6]) == [5,6]
     @test column(x, :b) == [1,2]
     @test column(x, :c) == [3,4]
     @test column(x, 3) == [3,4]
@@ -50,6 +51,8 @@ let
     @test rows(x, :b) == [1, 2]
     @test rows(x, (:b, :c)) == [@NT(b=1,c=3), @NT(b=2,c=4)]
     @test rows(x, (:c, as(-, :b, :x))) == [@NT(c=3, x=-1),@NT(c=4, x=-2)]
+    @test rows(x, (:c, [1,2] |> as(:x))) == [@NT(c=3, x=1),@NT(c=4, x=2)]
+    @test rows(x, (:c, [1,2])) == [(3,1), (4,2)]
 
     @test keys(x) == [@NT(a=1,b=1), @NT(a=1,b=2)]
     @test keys(x, :a) == [1, 1]

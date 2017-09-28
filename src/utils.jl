@@ -169,7 +169,7 @@ end
 
 # sortperm with counting sort
 
-sortperm_fast(x; alg=MergeSort, kwargs...) = sortperm(x, alg=alg, kwargs...)
+sortperm_fast(x) = sortperm_fast(sortproxy(x))
 
 function sortperm_fast(v::Vector{T}) where T<:Integer
     n = length(v)
@@ -256,6 +256,54 @@ function sort_int_range_sub_by!(x, ioffs, n, by, rangelen, minval, temp)
         x[i+ioffs] = temp[i]
     end
     x
+end
+
+_widen(::Type{UInt8}) = UInt16
+_widen(::Type{UInt16}) = UInt32
+_widen(::Type{UInt32}) = UInt64
+
+function _label{T, I<:Integer}(xs::AbstractArray{T},
+                               ::Type{I}=UInt8,
+                               start = 1,
+                               labels = Vector{I}(length(xs)),
+                               label_map::Dict{T,I} = Dict{T, I}(),
+                               nlabels = zero(I),
+                              )
+
+    @inbounds for i in start:length(xs)
+        x = xs[i]
+        lbl = get(label_map, x, zero(I))
+        if lbl !== zero(I)
+            labels[i] = lbl
+        else
+            if nlabels == typemax(I)
+                I2 = _widen(I)
+                return _label(xs, I2, i, convert(Vector{I2}, labels),
+                              convert(Dict{T, I2}, label_map), nlabels)
+            end
+            nlabels += one(I)
+            lbl = nlabels
+            labels[i] = lbl
+            label_map[x] = lbl
+        end
+    end
+    ks = collect(keys(label_map))
+    uq = sort!(ks, by=k->label_map[k])
+    uq, labels
+end
+
+function _int_getindex!(p, idxs)
+    n = length(idxs)
+    @inbounds @simd for i = 1:n
+        idxs[i] = p[idxs[i]]
+    end
+    idxs
+end
+
+function sortproxy(xs)
+    uq, labels = _label(xs)
+    p = convert(Vector{eltype(labels)}, invperm(sortperm(uq)))
+    _int_getindex!(p, labels)
 end
 
 function append_n!(X, val, n)

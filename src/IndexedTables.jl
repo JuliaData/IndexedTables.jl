@@ -169,7 +169,7 @@ function column(t::IndexedTable, col::Symbol)
         return column(values(t), col)
     end
 
-    error("Couldn't find column named $n")
+    error("Couldn't find column named $col")
 end
 
 ## Column-wise iteration:
@@ -187,6 +187,7 @@ columns(t::IndexedTable) = concat_tup(columns(keys(t)),
                                       columns(values(t)))
 
 _name(x::Union{Int, Symbol}) = x
+_name(x::AbstractArray) = 0
 function _output_tuple(which::Tuple)
     names = map(_name, which)
     if all(x->isa(x, Symbol), names)
@@ -271,16 +272,24 @@ values(t::IndexedTable, which...) = rows(values(t), which...)
 
 struct As{F}
     f::F
-    src::Union{Int, Symbol}
+    src::Union{Void, Int, Symbol}
     dest::Union{Int, Symbol}
 end
 
 as(f, src, dest) = As(f, src, dest)
 as(src, dest) = as(identity, src, dest)
+as(xs::AbstractArray, dest) = as(xs, nothing, dest)
+as(name::Symbol) = x -> as(x, name)
 
 _name(x::As) = x.dest
 function column(t::Union{IndexedTable, AbstractVector}, a::As)
     a.f(column(t, a.src))
+end
+function column(t::Union{IndexedTable, AbstractVector}, a::As{<:AbstractVector})
+    a.f
+end
+function column(t::Union{IndexedTable, AbstractVector}, a::AbstractArray)
+    a
 end
 
 """

@@ -10,11 +10,10 @@ Example: `select(arr, 1 => x->x>10, 3 => x->x!=10 ...)`
 function Base.select(arr::IndexedTable, conditions::Pair...)
     flush!(arr)
     indxs = [1:length(arr);]
-    cols = arr.index.columns
     for (c,f) in conditions
-        filt_by_col!(f, cols[c], indxs)
+        filt_by_col!(f, column(arr, c), indxs)
     end
-    IndexedTable(Columns(map(x->x[indxs], cols)), arr.data[indxs], presorted=true)
+    IndexedTable(keys(arr)[indxs], values(arr)[indxs], presorted=true)
 end
 
 """
@@ -25,15 +24,21 @@ Select a subset of index columns. If the resulting array has duplicate index ent
 """
 function Base.select(arr::IndexedTable, which::DimName...; agg=nothing)
     flush!(arr)
-    IndexedTable(Columns(arr.index.columns[[which...]]), arr.data, agg=agg, copy=true)
+    if eltype(keys(arr)) <: NamedTuple
+        fn = fieldnames(eltype(keys(arr)))
+        names = map(x->isa(x, Int) ? fn[x] : x, which)
+    else
+        names = which
+    end
+    IndexedTable(keys(arr, (names...)), values(arr), agg=agg, copy=true)
 end
 
 # Filter on data field
 function Base.filter(fn::Function, arr::IndexedTable)
     flush!(arr)
-    data = arr.data
+    data = values(arr)
     indxs = filter(i->fn(data[i]), eachindex(data))
-    IndexedTable(Columns(map(x->x[indxs], arr.index.columns)), data[indxs], presorted=true)
+    IndexedTable(keys(arr)[indxs], data[indxs], presorted=true)
 end
 
 # aggregation
@@ -44,21 +49,25 @@ end
 Combine adjacent rows with equal indices using the given 2-argument reduction function,
 in place.
 """
-function aggregate!(f, x::IndexedTable)
-    idxs, data = x.index, x.data
+function aggregate!(f, x::IndexedTable;
+                    by = keyselector(x),
+                    with = valueselector(x),
+                    presorted = false)
+    idxs, data = rows(x, by), rows(x, with)
     n = length(idxs)
     newlen = 0
     i1 = 1
+    perm = presorted ? Base.OneTo(length(idxs)) : sortperm(x, by)
     while i1 <= n
-        val = data[i1]
+        val = data[perm[i1]]
         i = i1+1
-        while i <= n && roweq(idxs, i, i1)
-            val = f(val, data[i])
+        while i <= n && roweq(idxs, perm[i], perm[i1])
+            val = f(val, data[perm[i]])
             i += 1
         end
         newlen += 1
         if newlen != i1
-            copyrow!(idxs, newlen, i1)
+            copyrow!(idxs, newlen, perm[i1])
         end
         data[newlen] = val
         i1 = i
@@ -68,69 +77,86 @@ function aggregate!(f, x::IndexedTable)
     x
 end
 
-"""
-`aggregate(f::Function, arr::IndexedTable)`
+function valueselector(t)
+    isa(values(t), Columns) ?
+        ((ndims(t) + (1:nfields(eltype(values(t)))))...) :
+        ndims(t) + 1
+end
 
-Combine adjacent rows with equal indices using the given 2-argument reduction function,
-returning the result in a new array.
-"""
-function aggregate(f, x::IndexedTable)
-    idxs, data = aggregate_to(f, x.index, x.data)
-    IndexedTable(idxs, data, presorted=true, copy=false)
+function keyselector(t)
+    ntuple(identity, ndims(t))
+end
+
+function Base.sortperm(t::IndexedTable, by)
+    canonorder = map(i->colindex(eltype(keys(t)), eltype(t), i), by)
+
+    sorted_cols = 0
+    for (i, c) in enumerate(canonorder)
+        c != i && break
+        sorted_cols += 1
+    end
+
+    if sorted_cols == length(by)
+        # first n index columns
+        return Base.OneTo(length(t))
+    end
+
+    bycols = columns(t, by)
+    if sorted_cols > 0
+        nxtcol = bycols[sorted_cols+1]
+        p = [1:length(t);]
+        refine_perm!(p, bycols, sorted_cols, rows(t, by[1:sorted_cols]), sortproxy(nxtcol), 1, length(t))
+        return p
+    else
+        return sortperm(rows(bycols))
+    end
+end
+
+function aggregate(f, t::IndexedTable;
+                   by = keyselector(t),
+                   with = valueselector(t),
+                   presorted=false)
+    bycol = rows(t, by)
+    perm = presorted ? Base.OneTo(length(bycol)) : sortperm(t, by)
+    IndexedTable(aggregate_to(f, bycol, rows(t, with), perm)...; presorted=true)
+end
+
+function colindex(K, V, col)
+    if isa(col, Int) && 1 <= col <= nfields(K) + nfields(V)
+        return col
+    elseif isa(col, Symbol)
+        if col in fieldnames(K)
+            return findfirst(fieldnames(K), col)
+        elseif col in fieldnames(V)
+            return nfields(K) + findfirst(fieldnames(V), col)
+        end
+    elseif isa(col, As)
+        return colindex(K, V, col.src)
+    end
+    error("column $col not found.")
 end
 
 # aggregate out of place, building up new indexes and data
-function aggregate_to(f, src_idxs, src_data)
+function aggregate_to(f, src_idxs, src_data, perm=Base.OneTo(length(src_idxs)))
     dest_idxs, dest_data = similar(src_idxs,0), similar(src_data,0)
     n = length(src_idxs)
     i1 = 1
     while i1 <= n
-        val = src_data[i1]
+        val = src_data[perm[i1]]
         i = i1+1
-        while i <= n && roweq(src_idxs, i, i1)
-            val = f(val, src_data[i])
+        while i <= n && roweq(src_idxs, perm[i], perm[i1])
+            val = f(val, src_data[perm[i]])
             i += 1
         end
-        push!(dest_idxs, src_idxs[i1])
+        push!(dest_idxs, src_idxs[perm[i1]])
         push!(dest_data, val)
         i1 = i
     end
     dest_idxs, dest_data
 end
 
-# returns a new vector where each element is computed by applying `f` to a vector of
-# all values associated with equal indexes. idxs is modified in place.
-function _aggregate_vec!(f, idxs::Columns, data)
-    n = length(idxs)
-    local newdata
-    newlen = 0
-    i1 = 1
-    while i1 <= n
-        i = i1+1
-        while i <= n && roweq(idxs, i, i1)
-            i += 1
-        end
-        val = f(data[i1:(i-1)])
-        if newlen == 0
-            newdata = [val]
-            if isa(val, Tup)
-                newdata = convert(Columns, newdata)
-            end
-        else
-            push!(newdata, val)
-        end
-        newlen += 1
-        if newlen != i1
-            copyrow!(idxs, newlen, i1)
-        end
-        i1 = i
-    end
-    resize!(idxs, newlen)
-    newlen==0 ? Union{}[] : newdata
-end
-
 # out of place vector aggregation
-function aggregate_vec_to(f, src_idxs, src_data)
+function aggregate_vec_to(f, src_idxs, src_data, perm=Base.OneTo(length(src_idxs)))
     n = length(src_idxs)
     dest_idxs = similar(src_idxs,0)
     local newdata
@@ -138,10 +164,10 @@ function aggregate_vec_to(f, src_idxs, src_data)
     i1 = 1
     while i1 <= n
         i = i1+1
-        while i <= n && roweq(src_idxs, i, i1)
+        while i <= n && roweq(src_idxs, perm[i], perm[i1])
             i += 1
         end
-        val = f(src_data[i1:(i-1)])
+        val = f(src_data[perm[i1:(i-1)]])
         if newlen == 0
             newdata = [val]
             if isa(val, Tup)
@@ -151,24 +177,24 @@ function aggregate_vec_to(f, src_idxs, src_data)
             push!(newdata, val)
         end
         newlen += 1
-        push!(dest_idxs, src_idxs[i1])
+        push!(dest_idxs, src_idxs[perm[i1]])
         i1 = i
     end
     (dest_idxs, (newlen==0 ? Union{}[] : newdata))
 end
 
 # vector aggregation, not modifying or computing new indexes. only returns new data.
-function _aggregate_vec(f, idxs::Columns, data)
+function _aggregate_vec(f, idxs, data, perm)
     n = length(idxs)
     local newdata
     newlen = 0
     i1 = 1
     while i1 <= n
         i = i1+1
-        while i <= n && roweq(idxs, i, i1)
+        while i <= n && roweq(idxs, perm[i], perm[i1])
             i += 1
         end
-        val = f(data[i1:(i-1)])
+        val = f(data[perm[i1:(i-1)]])
         if newlen == 0
             newdata = [val]
             if isa(val, Tup)
@@ -183,24 +209,30 @@ function _aggregate_vec(f, idxs::Columns, data)
     newlen==0 ? Union{}[] : newdata
 end
 
+function _aggregate_vec(ks, vs, names, funs, perm)
+    n = length(funs)
+    n == 0 && return IndexedTable(ks, vs, presorted=true)
+    n != length(names) && return IndexedTable(ks, vs, presorted=true)
+    datacols = Any[ _aggregate_vec(funs[i], ks, vs, perm) for i = 1:n-1 ]
+    idx, lastcol = aggregate_vec_to(funs[n], ks, vs)
+    IndexedTable(idx, Columns(datacols..., lastcol, names = names), presorted=true)
+end
+
+
 """
 `aggregate_vec(f::Function, x::IndexedTable)`
 
 Combine adjacent rows with equal indices using a function from vector to scalar,
 e.g. `mean`.
 """
-function aggregate_vec(f, x::IndexedTable)
-    idxs, data = aggregate_vec_to(f, x.index, x.data)
-    IndexedTable(idxs, data, presorted=true, copy=false)
-end
+function aggregate_vec(f, x::IndexedTable;
+                       by=keyselector(x),
+                       with=valueselector(x),
+                       presorted=false)
 
-function _aggregate_vec(x::IndexedTable, names::Vector, funs::Vector)
-    n = length(funs)
-    n == 0 && return x
-    n != length(names) && return x
-    datacols = Any[ _aggregate_vec(funs[i], x.index, x.data) for i = 1:n-1 ]
-    idx, lastcol = aggregate_vec_to(funs[n], x.index, x.data)
-    IndexedTable(idx, Columns(datacols..., lastcol, names = names), presorted=true)
+    perm = presorted ? Base.OneTo(length(x)) : sortperm(x, by)
+    idxs, data = aggregate_vec_to(f, rows(x, by), rows(x, with), perm)
+    IndexedTable(idxs, data, presorted=true, copy=false)
 end
 
 """
@@ -209,8 +241,14 @@ end
 Combine adjacent rows with equal indices using multiple functions from vector to scalar.
 The result has multiple data columns, one for each function, named based on the functions.
 """
-function aggregate_vec(fs::Vector, x::IndexedTable)
-    _aggregate_vec(x, map(Symbol, fs), fs)
+function aggregate_vec(fs::Vector, x::IndexedTable;
+                       names=map(Symbol, fs),
+                       by=keyselector(x),
+                       with=valueselector(x),
+                       presorted=false)
+
+    perm = presorted ? Base.OneTo(length(x)) : sortperm(x, by)
+    _aggregate_vec(rows(x, by), rows(x, with), names, fs, perm)
 end
 
 """
@@ -219,8 +257,8 @@ end
 Combine adjacent rows with equal indices using multiple functions from vector to scalar.
 The result has multiple data columns, one for each function provided by `funs`.
 """
-function aggregate_vec(x::IndexedTable; funs...)
-    _aggregate_vec(x, [x[1] for x in funs], [x[2] for x in funs])
+function aggregate_vec(t::IndexedTable; funs...)
+    aggregate_vec([x[2] for x in funs], t, names = [x[1] for x in funs])
 end
 
 
@@ -275,20 +313,12 @@ reducedim(f, x::IndexedTable, dims::Symbol) = reducedim(f, x, [dims])
 Like `reducedim`, except uses a function mapping a vector of values to a scalar instead
 of a 2-argument scalar function.
 """
-function reducedim_vec(f, x::IndexedTable, dims)
+function reducedim_vec(f, x::IndexedTable, dims; with=valueselector(x))
     keep = setdiff([1:ndims(x);], map(d->fieldindex(x.index.columns,d), dims))
     if isempty(keep)
         throw(ArgumentError("to remove all dimensions, use `reduce(f, A)`"))
     end
-    cols = Columns(x.index.columns[[keep...]])
-    if issorted(cols)
-        idxs, d = aggregate_vec_to(f, cols, x.data)
-    else
-        p = sortperm(cols)
-        idxs = cols[p]
-        xd = x.data[p]
-        d = _aggregate_vec!(f, idxs, xd)
-    end
+    idxs, d = aggregate_vec_to(f, keys(x, (keep...)), columns(x, with), sortperm(x, (keep...)))
     IndexedTable(idxs, d, presorted=true, copy=false)
 end
 

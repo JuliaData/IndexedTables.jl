@@ -2,33 +2,54 @@ export naturaljoin, innerjoin, leftjoin, asofjoin, leftjoin!
 
 ## Joins
 
-# Natural Join (Both NDSParse arrays must have the same number of columns, in the same order)
-
-function naturaljoin(left::IndexedTable, right::IndexedTable, op)
-    lD, rD = left.data, right.data
-    _naturaljoin(left, right, op, similar(lD, typeof(op(lD[1],rD[1])), 0))
+function naturaljoin(left::IndexedTable, right::IndexedTable, op; kwargs...)
+    naturaljoin(left, right; op=op, kwargs...)
 end
 
 const innerjoin = naturaljoin
 
-combine_op(a, b) = tuple
-combine_op(a::Columns, b::Columns) = (l, r)->(l..., r...)
-combine_op(a, b::Columns) = (l, r)->(l, r...)
-combine_op(a::Columns, b) = (l, r)->(l..., r)
 similarz(a) = similar(a,0)
 
-function naturaljoin(left::IndexedTable, right::IndexedTable)
-    lD, rD = left.data, right.data
-    op = combine_op(lD, rD)
-    cols(v) = (v,)
-    cols(v::Columns) = v.columns
-    _naturaljoin(left, right, op, Columns((map(similarz,cols(lD))...,map(similarz,cols(rD))...)))
+function naturaljoin(left::IndexedTable, right::IndexedTable;
+                     by=keyselector(left),
+                     leftby=by, rightby=by,
+                     leftwith=valueselector(left),
+                     op=nothing,
+                     rightwith=valueselector(right))
+
+    flush!(left); flush!(right)
+
+    lD, rD = rows(left, leftwith), rows(right, rightwith)
+    lO = nothing
+    rO = nothing
+
+    if op === nothing
+        tup = if eltype(lD) <: NamedTuple && eltype(rD) <: NamedTuple
+            namedtuple(fieldnames(eltype(lD))...,
+                       fieldnames(eltype(rD))...)
+        else
+            tuple
+        end
+        lO = isa(lD, Columns) ? rows(map(similarz, columns(lD))) : similarz(lD)
+        rO = isa(rD, Columns) ? rows(map(similarz, columns(rD))) : similarz(rD)
+        data = Columns(tup(columns(lO)...,
+                           columns(rO)...))
+    else
+        outT = _promote_op(op, eltype(lD), eltype(rD))
+        if outT <: Tup
+            data = Columns(map(x->Vector{x}, [outT.parameters...])...;
+                           names=outT<:Tuple ? nothing : fieldnames(outT))
+        else
+            data = Vector{outT}(0)
+        end
+    end
+
+    lI, rI = rows(left, leftby), rows(right, rightby)
+    lP, rP = sortperm(left, leftby), sortperm(right, rightby)
+    _naturaljoin(op, data, lO, rO, lI, rI, lD, rD, lP, rP)
 end
 
-function _naturaljoin(left::IndexedTable, right::IndexedTable, op, data)
-    flush!(left); flush!(right)
-    lI, rI = left.index, right.index
-    lD, rD = left.data, right.data
+function _naturaljoin(op, data, lO, rO, lI, rI, lD, rD, lP, rP)
     ll, rr = length(lI), length(rI)
 
     # Guess the length of the result
@@ -42,10 +63,17 @@ function _naturaljoin(left::IndexedTable, right::IndexedTable, op, data)
     i = j = 1
 
     while i <= ll && j <= rr
-        c = rowcmp(lI, i, rI, j)
+        li = lP[i]
+        rj = rP[j]
+        c = rowcmp(lI, li, rI, rj)
         if c == 0
-            push!(I, lI[i])
-            push!(data, op(lD[i], rD[j]))
+            push!(I, lI[li])
+            if op === nothing
+                push!(lO, lD[li])
+                push!(rO, rD[rj])
+            else
+                push!(data, op(lD[li], rD[rj]))
+            end
             i += 1
             j += 1
         elseif c < 0
@@ -63,89 +91,126 @@ map(f, x::IndexedTable{T,D}, y::IndexedTable{S,D}) where {T,S,D} = naturaljoin(x
 
 # left join
 
-function leftjoin(left::IndexedTable, right::IndexedTable, op = IndexedTables.right)
+function leftjoin(left::IndexedTable, right::IndexedTable, op = IndexedTables.right;
+                  by=keyselector(left),
+                  with=valueselector(left),
+                  leftby=by, rightby=by,
+                  leftwith=with, rightwith=with,
+                 )
     flush!(left); flush!(right)
-    lI, rI = left.index, right.index
-    lD, rD = left.data, right.data
-    ll, rr = length(lI), length(rI)
+    lI, rI = rows(left, leftby), rows(right, rightby)
+    lP, rP = sortperm(left, leftby), sortperm(right, rightby)
+    lD, rD = rows(left, leftwith), rows(right, rightwith)
+
+    # allow right table to have different column names
 
     data = similar(lD)
-
-    i = j = 1
-
-    while i <= ll && j <= rr
-        c = rowcmp(lI, i, rI, j)
-        if c < 0
-            @inbounds data[i] = lD[i]
-            i += 1
-        elseif c == 0
-            @inbounds data[i] = op(lD[i], rD[j])
-            i += 1
-            j += 1
-        else
-            j += 1
-        end
-    end
-    data[i:ll] = lD[i:ll]
-
-    IndexedTable(copy(lI), data, presorted=true)
+    _leftjoin!(op, copy(lI), rI, lP, rP, lD, rD, data)
 end
 
-function leftjoin!(left::IndexedTable, right::IndexedTable, op = IndexedTables.right)
+function leftjoin!(left::IndexedTable, right::IndexedTable, op = IndexedTables.right;
+                  by=keyselector(left),
+                  with=valueselector(left),
+                  leftby=by, rightby=by,
+                  leftwith=with, rigthwith=with,
+                 )
     flush!(left); flush!(right)
-    lI, rI = left.index, right.index
-    lD, rD = left.data, right.data
+    lI, rI = rows(left, leftby), rows(right, rightby)
+    lP, rP = sortperm(left, leftby), sortperm(right, rightby)
+    lD, rD = rows(left, leftwith), rows(right, with)
+
+    # allow right table to have different column names
+
+    data = similar(lD)
+    _leftjoin!(op, lI, rI, lP, rP, lD, rD, lD)
+end
+
+function _leftjoin!(op, lI, rI, lP, rP, lD, rD, data)
     ll, rr = length(lI), length(rI)
+    datacols = astuple(columns(data))
+    rcols = astuple(columns(rD))
 
     i = j = 1
 
-    while i <= ll && j <= rr
-        c = rowcmp(lI, i, rI, j)
+    @inbounds while i <= ll && j <= rr
+        li = lP[i]
+        rj = rP[j]
+        c = rowcmp(lI, li, rI, rj)
         if c < 0
+            data[i] = lD[li]
             i += 1
         elseif c == 0
-            @inbounds lD[i] = op(lD[i], rD[j])
+            if isa(op, typeof(IndexedTables.right)) # optimization
+                foreach(datacols, rcols) do dc, rc
+                    @inbounds dc[i] = rc[rj]
+                end
+            else
+                data[i] = op(lD[li], rD[rj])
+            end
             i += 1
-            j += 1
         else
             j += 1
         end
     end
-    left
+    if lD !== data
+        data[i:ll] = lD[i:ll]
+    end
+
+    if !isa(lP, Base.OneTo)
+        permute!(lI, lP)
+    end
+
+    IndexedTable(lI, data, presorted=true)
 end
 
 # asof join
 
-function asofjoin(left::IndexedTable, right::IndexedTable)
+function asofjoin(left::IndexedTable, right::IndexedTable;
+                  by=keyselector(left), with=valueselector(left),
+                  leftby=by, rightby=by,
+                  leftwith=with, rightwith=with,
+                 )
     flush!(left); flush!(right)
-    lI, rI = left.index, right.index
-    lD, rD = left.data, right.data
-    ll, rr = length(lI), length(rI)
+    lI, rI = rows(left, leftby), rows(right, rightby)
+    lP, rP = sortperm(left, leftby), sortperm(right, rightby)
+    lD, rD = rows(left, leftwith), rows(right, with)
 
     data = similar(lD)
+    _asofjoin!(copy(lI), rI, lP, rP, lD, rD, data)
+end
 
+function _asofjoin!(lI, rI, lP, rP, lD, rD, data)
+    ll, rr = length(lI), length(rI)
     i = j = 1
 
-    while i <= ll && j <= rr
-        c = rowcmp(lI, i, rI, j)
+    @inbounds while i <= ll && j <= rr
+        li = lP[i]
+        rj = rP[j]
+        c = rowcmp(lI, li, rI, rj)
         if c < 0
-            @inbounds data[i] = lD[i]
+            data[i] = lD[li]
             i += 1
-        elseif row_asof(lI, i, rI, j)  # all equal except last col left>=right
+        elseif row_asof(lI, li, rI, rj)  # all equal except last col left>=right
             j += 1
-            while j <= rr && row_asof(lI, i, rI, j)
+            while j <= rr && row_asof(lI, li, rI, rP[j])
                 j += 1
             end
             j -= 1
-            @inbounds data[i] = rD[j]
+            data[i] = rD[rP[j]]
             i += 1
         else
             j += 1
         end
     end
-    data[i:ll] = lD[i:ll]
+    if lD !== data
+        data[i:ll] = lD[i:ll]
+    end
 
-    IndexedTable(copy(lI), data, presorted=true)
+    if !isa(lP, Base.OneTo)
+        permute!(lI, lP)
+    end
+
+    IndexedTable(lI, data, presorted=true)
 end
 
 # merge - union join
