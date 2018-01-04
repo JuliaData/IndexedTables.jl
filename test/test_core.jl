@@ -828,6 +828,16 @@ end
                         NDSparse([1, 1], [2, 3], Columns(maxv=[4, 5], minv=[1, 0]))
 end
 
+@testset "colwise" begin
+    a = table([1,3,5], [2,2,2], names = [:x, :y])
+    @test ApplyColwise(mean, std)(a) ==
+        @NT(x_mean = 3.0, y_mean = 2.0, x_std = 2.0, y_std = 0.0)
+    @test ApplyColwise(mean, std)(collect(a)) == ApplyColwise(mean, std)(a)
+    @test ApplyColwise(mean, std)([1,2,3]) == @NT(mean = 2.0, std = 1.0)
+    @test ApplyColwise((mean, std), (:m, :s))(a) ==
+        @NT(x_m = 3.0, y_m = 2.0, x_s = 2.0, y_s = 0.0)
+end
+
 @testset "select" begin
     a = table([12,21,32], [52,41,34], [11,53,150], pkey=[1,2])
     b = table([12,23,32], [52,43,34], [56,13,10], pkey=[1,2])

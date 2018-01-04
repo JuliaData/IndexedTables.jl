@@ -1,4 +1,4 @@
-export dropna, selectkeys, selectvalues
+export dropna, selectkeys, selectvalues, Not, Keys
 
 """
 `select(t::Table, which::Selection)`
@@ -142,6 +142,22 @@ end
 
 function selectvalues(x::NDSparse, which; kwargs...)
     ndsparse(keys(x), rows(values(x), which); kwargs...)
+end
+
+struct Not{T}
+    names::T
+end
+
+Not(args...) = Not(args)
+
+for f in [:(Base.select), :columns, :rows, :excludecols]
+    @eval $f(t::AbstractIndexedTable, not::Not) = $f(t, excludecols(t, not.names))
+end
+
+struct Keys; end
+
+for f in [:(Base.select), :columns, :rows, :excludecols]
+    @eval $f(t::AbstractIndexedTable, keys::Keys) = $f(t, pkeynames(t))
 end
 
 """

@@ -1,5 +1,5 @@
 using OnlineStats
-export groupreduce, groupby, aggregate, aggregate_vec
+export groupreduce, groupby, aggregate, aggregate_vec, ApplyColwise
 
 """
 `reduce(f, t::Table; select::Selection)`
@@ -392,6 +392,42 @@ function groupby(f, t::Dataset, by=pkeynames(t); select=valuenames(t), flatten=f
     t isa NextTable && flatten ?
         IndexedTables.flatten(t, length(columns(t))) : t
 end
+
+"""
+A callable type to apply functions columnswise to a table. Returns a `NamedTuple`.
+
+# Examples
+
+```jldoctest colwise
+julia> t = table([1, 2, 3], [1, 1, 1], names = [:x, :y]);
+
+julia> ApplyColwise(mean, std)(t)
+(x_mean = 2.0, y_mean = 1.0, x_std = 1.0, y_std = 0.0)
+```
+"""
+struct ApplyColwise{N, T<:Tuple}
+    functions::T
+    names::NTuple{N, Symbol}
+end
+
+ApplyColwise(args...) = ApplyColwise(args)
+ApplyColwise(t::Tuple) = ApplyColwise(t, map(Symbol,t))
+
+function (ac::ApplyColwise)(t)
+    func = init_func(ac, t)
+    fs, input, S = init_inputs(func, t, reduced_type, true)
+    _apply(fs, fs isa Tup ? columns(input) : input)
+end
+
+(ac::ApplyColwise)(t::Columns) = (ac::ApplyColwise)(table(t, copy = false, presorted = true))
+(ac::ApplyColwise)(t::AbstractVector{<:Tup}) =
+    (ac::ApplyColwise)(convert(Columns, t))
+
+init_func(ac::ApplyColwise, t::AbstractVector) =
+    Tuple(Symbol(n) => f for (f, n) in zip(ac.functions, ac.names))
+
+init_func(ac::ApplyColwise, t::AbstractIndexedTable) =
+    Tuple(Symbol(s, :_, n) => s => f for s in colnames(t), (f, n) in zip(ac.functions, ac.names))
 
 Base.@deprecate aggregate(f, t;
                           by=pkeynames(t),
