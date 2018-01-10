@@ -406,6 +406,7 @@ ApplyColwise(f) = ApplyColwise(f, Symbol[])
 ApplyColwise(t::Tuple) = ApplyColwise(t, [map(Symbol,t)...])
 ApplyColwise(t::NamedTuple) = ApplyColwise(Tuple(values(t)), keys(t))
 
+init_func(f, t) = f
 init_func(ac::ApplyColwise{<:Tuple}, t::AbstractVector) =
     Tuple(Symbol(n) => f for (f, n) in zip(ac.functions, ac.names))
 init_func(ac::ApplyColwise{<:Tuple}, t::Columns) =
