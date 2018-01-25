@@ -575,5 +575,5 @@ end
 
 reducedim_vec(f, x::NDSparse, dims::Symbol) = reducedim_vec(f, x, [dims])
 
-OnlineStats.Series(x::Dataset, stat; select=valuenames(x)) =
+OnlineStats.Series(x::Dataset, stat::OnlineStats.OnlineStat...; select=valuenames(x)) =
     reduce(stat, x, select=select)
