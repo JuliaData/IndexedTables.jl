@@ -937,8 +937,7 @@ end
 nicename(f) = Symbol(f)
 nicename(o::OnlineStat) = Symbol(typeof(o).name.name)
 function nicename(s::OnlineStats.AbstractSeries)
-    Symbol(join(map(x -> x.name.name,
-                    typeof(s).parameters[2].parameters), :_))
+    Symbol(join(nicename.(stats(s)), :_))
 end
 
 function mapped_type(f, x, isvec)
