@@ -440,6 +440,7 @@ end
 
 const SpecialSelector = Union{Not, Join, Keys, Between, Function}
 
+lowerselection(t, s)                     = s
 lowerselection(t, s::Union{Int, Symbol}) = colindex(t, s)
 lowerselection(t, s::Tuple)              = map(x -> lowerselection(t, x), s)
 lowerselection(t, s::Join)               = Tuple(union((lowerselection(t, x) for x in s.cols)...))
