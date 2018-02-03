@@ -192,7 +192,7 @@ function similar(c::Columns{D,C}) where {D,C}
     Columns{D,typeof(cols)}(cols)
 end
 
-function similar(c::Columns{D,C}, n::Integer) where {D,C} 
+function similar(c::Columns{D,C}, n::Integer) where {D,C}
     cols = map(a->similar(a,n), c.columns)
     Columns{D,typeof(cols)}(cols)
 end
@@ -417,6 +417,37 @@ end
     ex
 end
 
+## Simplify column selection)
+
+struct Not{T}
+    cols::T
+end
+
+Not(args...) = Not(args)
+
+struct Join{T}
+    cols::T
+end
+
+Join(args...) = Join(args)
+
+struct Keys; end
+
+struct Between
+    first::Symbol
+    last::Symbol
+end
+
+const SpecialSelector = Union{Not, Join, Keys, Between, Function}
+
+lowerselection(t, s::Union{Int, Symbol}) = colindex(t, s)
+lowerselection(t, s::Tuple)              = map(x -> lowerselection(t, x), s)
+lowerselection(t, s::Join)               = Tuple(union((lowerselection(t, x) for x in s.cols)...))
+lowerselection(t, s::Not)                = excludecols(t, lowerselection(t, s.cols))
+lowerselection(t, s::Keys)               = lowerselection(t, IndexedTables.pkeynames(t))
+lowerselection(t, s::Between)            = Tuple(colindex(t, s.first):colindex(t, s.last))
+lowerselection(t, s::Function)           = colindex(t, Tuple(filter(s, colnames(t))))
+
 ### Iteration API
 
 # For `columns(t, names)` and `rows(t, ...)` to work, `t`
@@ -430,6 +461,11 @@ end
 Base.@pure function colindex(t, col)
     _colindex(colnames(t), col)
 end
+
+function colindex(t, col::SpecialSelector)
+    colindex(t, lowerselection(t, col))
+end
+
 function _colindex(fnames::AbstractArray, col, default=nothing)
     if isa(col, Int) && 1 <= col <= length(fnames)
         return col
@@ -462,8 +498,10 @@ column(t, a::AbstractArray) = a
 column(t, a::Pair{Symbol, <:AbstractArray}) = column(t, a[2])
 column(t, a::Pair{Symbol, <:Pair}) = rows(t, a[2]) # renaming a selection
 column(t, a::Pair{<:Any, <:Any}) = map(a[2], rows(t, a[1]))
+column(t, s::SpecialSelector) = rows(t, lowerselection(t, s))
 
-function columns(c, which::Tuple)
+function columns(c, sel::Union{Tuple, SpecialSelector})
+    which = lowerselection(c, sel)
     cnames = colnames(c, which)
     if all(x->isa(x, Symbol), cnames)
         tuplewrap = namedtuple(cnames...)
@@ -485,6 +523,8 @@ function colnames(c, cols::Union{Tuple, AbstractArray})
     map(x->colname(c, x), cols)
 end
 
+colnames(c, cols::SpecialSelector) = colnames(c, lowerselection(c, cols))
+
 function colname(c, col)
     if isa(col, Union{Int, Symbol})
         col == 0 && return 0
@@ -494,6 +534,8 @@ function colname(c, col)
         return col[1]
     elseif isa(col, Tuple)
         #ns = map(x->colname(c, x), col)
+        return 0
+    elseif isa(col, SpecialSelector)
         return 0
     elseif isa(col, AbstractVector)
         return 0

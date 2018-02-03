@@ -345,6 +345,10 @@ function Base.getindex(d::ColDict{<:AbstractIndexedTable}, key::Tuple)
     table(d.src, columns=columns(t, key), pkey=pkey)
 end
 
+function Base.getindex(d::ColDict{<:AbstractIndexedTable}, key::SpecialSelector)
+    getindex(d, lowerselection(d[], key))
+end
+
 function ColDict(t::AbstractIndexedTable; copy=nothing)
     ColDict(Base.copy(t.pkey), t,
             Base.copy(colnames(t)), Any[columns(t)...], copy)
@@ -584,7 +588,7 @@ function set_show_compact!(flag=true)
 end
 
 function showtable(io::IO, t; header=nothing, cnames=colnames(t), divider=nothing, cstyle=[], full=false, ellipsis=:middle, compact=show_compact_when_wide)
-    height, width = displaysize(io) 
+    height, width = displaysize(io)
     showrows = height-5 - (header !== nothing)
     n = length(t)
     header !== nothing && println(io, header)
