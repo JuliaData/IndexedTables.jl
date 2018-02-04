@@ -419,17 +419,17 @@ end
 
 ## Simplify column selection)
 
-struct Not{T}
-    cols::T
-end
-
-Not(args...) = Not(args)
-
 struct Join{T}
     cols::T
 end
 
 Join(args...) = Join(args)
+
+struct Not{T}
+    cols::T
+end
+
+Not(args...) = Not(Join(args))
 
 struct Keys; end
 
@@ -443,11 +443,15 @@ const SpecialSelector = Union{Not, Join, Keys, Between, Function}
 lowerselection(t, s)                     = s
 lowerselection(t, s::Union{Int, Symbol}) = colindex(t, s)
 lowerselection(t, s::Tuple)              = map(x -> lowerselection(t, x), s)
-lowerselection(t, s::Join)               = Tuple(union((lowerselection(t, x) for x in s.cols)...))
 lowerselection(t, s::Not)                = excludecols(t, lowerselection(t, s.cols))
 lowerselection(t, s::Keys)               = lowerselection(t, IndexedTables.pkeynames(t))
 lowerselection(t, s::Between)            = Tuple(colindex(t, s.first):colindex(t, s.last))
 lowerselection(t, s::Function)           = colindex(t, Tuple(filter(s, colnames(t))))
+
+function lowerselection(t, s::Join)
+    ls = (isa(i, Tuple) ? i : (i,) for i in lowerselection(t, s.cols))
+    ls |> Iterators.flatten |> union |> Tuple
+end
 
 ### Iteration API
 
