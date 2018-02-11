@@ -383,7 +383,7 @@ end
     @test vcat(Columns(x=PooledArray(["x"])), Columns(x=["y"])) == Columns(x=["x", "y"])
 
     @test summary(c) == "5-element Columns{Tuple{Int64,Int64}}"
-   
+
 end
 
 @testset "Getindex" begin
@@ -681,6 +681,34 @@ end
     @test selectkeys(a, 2, agg=+) == ndsparse([1,2], [14,16])
 end
 
+@testset "specialselector" begin
+    t = table([1, 2, 3], ["a", "b", "c"], [4, 5, 6], names = [:x, :y, :z], pkey = :x)
+    
+    @test select(t, Keys()) == select(t, (:x,))
+    @test select(t, (Keys(), :y)) == select(t, ((:x,), :y))
+    @test select(t, Not(Keys())) == select(t, Not(:x)) == select(t, (:y, :z))
+    @test select(t, Not(Keys(), :y)) == select(t, Not(:x, :y)) == select(t, (:z,))
+    @test select(t, Join(Keys(), :y)) == select(t, (:x, :y))
+    @test select(t, Between(:x, :z)) == select(t, (:x, :y, :z))
+    @test select(t, i -> i == :y) == select(t, (:y,))
+
+    @test rows(t, Keys()) == rows(t, (:x,))
+    @test rows(t, (Keys(), :y)) == rows(t, ((:x,), :y))
+    @test rows(t, Not(Keys())) == rows(t, Not(:x)) == rows(t, (:y, :z))
+    @test rows(t, Not(Keys(), :y)) == rows(t, Not(:x, :y)) == rows(t, (:z,))
+    @test rows(t, Join(Keys(), :y)) == rows(t, (:x, :y))
+    @test rows(t, Between(:x, :z)) == rows(t, (:x, :y, :z))
+    @test rows(t, i -> i == :y) == rows(t, (:y,))
+
+    @test columns(t, Keys()) == columns(t, (:x,))
+    @test columns(t, (Keys(), :y)) == columns(t, ((:x,), :y))
+    @test columns(t, Not(Keys())) == columns(t, Not(:x)) == columns(t, (:y, :z))
+    @test columns(t, Not(Keys(), :y)) == columns(t, Not(:x, :y)) == columns(t, (:z,))
+    @test columns(t, Join(Keys(), :y)) == columns(t, (:x, :y))
+    @test columns(t, Between(:x, :z)) == columns(t, (:x, :y, :z))
+    @test columns(t, i -> i == :y) == columns(t, (:y,))
+end
+
 @testset "dropna" begin
     t = table([0.1, 0.5, NA, 0.7], [2, NA, 4, 5], [NA, 6, NA, 7], names=[:t, :x, :y])
     @test dropna(t) == table([0.7], [5], [7], names=Symbol[:t, :x, :y])
@@ -767,7 +795,7 @@ end
     @test groupreduce(+, t, :x, select=:z) == table([1, 2], [6, 15], names=Symbol[:x, :+])
     @test groupreduce(((x, y)->if x isa Int
                         @NT y = x + y
-                    else 
+                    else
                         @NT y = x.y + y
                     end), t, :x, select=:z) == table([1, 2], [6, 15], names=Symbol[:x, :y])
     @test groupreduce(:y => (+), t, :x, select=:z) == table([1, 2], [6, 15], names=Symbol[:x, :y])
@@ -903,7 +931,7 @@ end
 
     nd[1:5,1:5] = 2
     @test nd == convert(NDSparse, spdiagm(fill(2, 5)))
-   
+
 end
 
 @testset "mapslices" begin

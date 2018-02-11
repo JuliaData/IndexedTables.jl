@@ -6,6 +6,8 @@ import Base:
 
 export Columns, colnames, ncols, ColDict, insertafter!, insertbefore!, @cols, setcol, pushcol, popcol, insertcol, insertcolafter, insertcolbefore, renamecol
 
+export Join, Not, Between, Keys
+
 """
 A type that stores an array of tuples as a tuple of arrays.
 
@@ -417,25 +419,147 @@ end
     ex
 end
 
-## Simplify column selection)
+## Special selectors to simplify column selector
 
+"""
+`Join(cols)`
+
+Select the union of the selections in `cols`.
+
+# Examples
+
+```jldoctest Join
+julia> t = table([1,1,2,2], [1,2,1,2], [1,2,3,4],
+                 names=[:a,:b,:c])
+Table with 4 rows, 3 columns:
+a  b  c
+───────
+1  1  1
+1  2  2
+2  1  3
+2  2  4
+
+julia> select(t, Join(:a, (:b, :c)))
+Table with 4 rows, 3 columns:
+a  b  c
+───────
+1  1  1
+1  2  2
+2  1  3
+2  2  4
+```
+"""
 struct Join{T}
     cols::T
 end
 
 Join(args...) = Join(args)
 
+"""
+`Not(cols)`
+
+Select the complementary of the selection in `cols`. `Not` can accept several arguments,
+in which case it returns the complementary of the union of the selections.
+
+# Examples
+
+```jldoctest Not
+julia> t = table([1,1,2,2], [1,2,1,2], [1,2,3,4],
+                        names=[:a,:b,:c], pkey = (:a, :b))
+Table with 4 rows, 3 columns:
+a  b  c
+───────
+1  1  1
+1  2  2
+2  1  3
+2  2  4
+
+julia> select(t, Keys())
+Table with 4 rows, 2 columns:
+b  c
+────
+1  1
+2  2
+1  3
+2  4
+
+julia> select(t, Not(:a, (:a, :b)))
+Table with 4 rows, 1 columns:
+c
+─
+1
+2
+3
+4
+```
+"""
 struct Not{T}
     cols::T
 end
 
 Not(args...) = Not(Join(args))
 
+"""
+`Keys()`
+
+Select the primary keys.
+
+# Examples
+
+```jldoctest Keys
+julia> t = table([1,1,2,2], [1,2,1,2], [1,2,3,4],
+                               names=[:a,:b,:c], pkey = (:a, :b))
+Table with 4 rows, 3 columns:
+a  b  c
+───────
+1  1  1
+1  2  2
+2  1  3
+2  2  4
+
+julia> select(t, Keys())
+Table with 4 rows, 2 columns:
+a  b
+────
+1  1
+1  2
+2  1
+2  2
+```
+"""
 struct Keys; end
 
-struct Between
-    first::Symbol
-    last::Symbol
+"""
+`Between(first, last)`
+
+Select the columns between `first` and `last`.
+
+# Examples
+
+```jldoctest Between
+julia> t = table([1,1,2,2], [1,2,1,2], [1,2,3,4], ["a", "b", "c", "d"],
+                                      names=[:a,:b,:c, :d])
+Table with 4 rows, 4 columns:
+a  b  c  d
+────────────
+1  1  1  "a"
+1  2  2  "b"
+2  1  3  "c"
+2  2  4  "d"
+
+julia> select(t, Between(:b, :d))
+Table with 4 rows, 3 columns:
+b  c  d
+─────────
+1  1  "a"
+2  2  "b"
+1  3  "c"
+2  4  "d"
+```
+"""
+struct Between{T1 <: Union{Int, Symbol}, T2 <: Union{Int, Symbol}}
+    first::T1
+    last::T2
 end
 
 const SpecialSelector = Union{Not, Join, Keys, Between, Function}
