@@ -90,7 +90,8 @@ x  xsquare  xcube
 """
 function unstack(t::D, by = pkeynames(t); variable = :variable, value = :value) where {D<:Dataset}
     tgrp = groupby((value => identity,), t, by, select = (variable, value))
-    cols = union(columns(t, variable))
+    S = eltype(colnames(t))
+    cols = S.(union(columns(t, variable)))
     T = eltype(columns(t, value))
     unstack(D, T isa Type{<:DataValue} ? eltype(T) : T, pkeys(tgrp), columns(tgrp, value), cols)
 end
