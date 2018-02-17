@@ -683,7 +683,7 @@ end
 
 @testset "specialselector" begin
     t = table([1, 2, 3], ["a", "b", "c"], [4, 5, 6], names = [:x, :y, :z], pkey = :x)
-    
+
     @test select(t, Keys()) == select(t, (:x,))
     @test select(t, (Keys(), :y)) == select(t, ((:x,), :y))
     @test select(t, Not(Keys())) == select(t, Not(:x)) == select(t, (:y, :z))
@@ -883,6 +883,12 @@ end
     @test unstack(longsparse; variable = :var, value = :val) == tsparse
     t1 = table([1, 1, 1, 2, 2], [:x, :x, :y, :x, :y], [1, 2, 3, 4, 5], names = [:x, :variable, :value])
     @test_throws Exception unstack(t1, :x)
+    long2 = table([1, 1, 2, 2, 3, 3, 4, 4],
+                  [2, 3, 2, 3, 2, 3, 2, 3],
+                  [1, 1, 4, 8, 9, 27, 16, 64];
+                  names = [:x, :var, :val], pkey = :x)
+    res = table(1:4, [1, 4, 9, 16], [1, 8, 27, 64], names = [:x, Symbol(2), Symbol(3)], pkey = :x)
+    @test unstack(long2; variable = :var, value = :val) == res
 end
 
 @testset "select" begin

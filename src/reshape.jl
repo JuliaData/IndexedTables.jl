@@ -41,13 +41,13 @@ function stack(t::D, by = pkeynames(t); select = isa(t, NDSparse) ? valuenames(t
     convert(collectiontype(D), Columns(bycols), Columns(labelcol, valuecol, names = [variable, value]))
 end
 
-function unstack(::Type{D}, ::Type{T}, key, val, cols) where {D <:Dataset, T}
+function unstack(::Type{D}, ::Type{T}, key, val, cols::AbstractVector{S}) where {D <:Dataset, T, S}
     dest_val = Columns((DataValues.DataValueArray{T}(length(val)) for i in cols)...; names = cols)
     for (i, el) in enumerate(val)
         for j in el
             k, v = j
-            isnull(columns(dest_val, k)[i]) || error("Repeated values with same label are not allowed")
-            columns(dest_val, k)[i] = v
+            isnull(columns(dest_val, S(k))[i]) || error("Repeated values with same label are not allowed")
+            columns(dest_val, S(k))[i] = v
         end
     end
     convert(collectiontype(D), key, dest_val)
