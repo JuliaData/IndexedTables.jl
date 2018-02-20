@@ -6,7 +6,7 @@ import Base:
 
 export Columns, colnames, ncols, ColDict, insertafter!, insertbefore!, @cols, setcol, pushcol, popcol, insertcol, insertcolafter, insertcolbefore, renamecol
 
-export Join, Not, Between, Keys
+export All, Not, Between, Keys
 
 """
 A type that stores an array of tuples as a tuple of arrays.
@@ -422,15 +422,24 @@ end
 ## Special selectors to simplify column selector
 
 """
-`Join(cols)`
+`All(cols)`
 
-Select the union of the selections in `cols`.
+Select the union of the selections in `cols`. If `cols == ()`, select all columns.
 
 # Examples
 
-```jldoctest Join
-julia> t = table([1,1,2,2], [1,2,1,2], [1,2,3,4],
-                 names=[:a,:b,:c])
+```jldoctest All
+julia> t = table([1,1,2,2], [1,2,1,2], [1,2,3,4], [0, 0, 0, 0],
+                        names=[:a,:b,:c,:d])
+Table with 4 rows, 4 columns:
+a  b  c  d
+──────────
+1  1  1  0
+1  2  2  0
+2  1  3  0
+2  2  4  0
+
+julia> select(t, All(:a, (:b, :c)))
 Table with 4 rows, 3 columns:
 a  b  c
 ───────
@@ -439,21 +448,21 @@ a  b  c
 2  1  3
 2  2  4
 
-julia> select(t, Join(:a, (:b, :c)))
-Table with 4 rows, 3 columns:
-a  b  c
-───────
-1  1  1
-1  2  2
-2  1  3
-2  2  4
+julia> select(t, All())
+Table with 4 rows, 4 columns:
+a  b  c  d
+──────────
+1  1  1  0
+1  2  2  0
+2  1  3  0
+2  2  4  0
 ```
 """
-struct Join{T}
+struct All{T}
     cols::T
 end
 
-Join(args...) = Join(args)
+All(args...) = All(args)
 
 """
 `Not(cols)`
@@ -497,7 +506,7 @@ struct Not{T}
     cols::T
 end
 
-Not(args...) = Not(Join(args))
+Not(args...) = Not(All(args))
 
 """
 `Keys()`
@@ -562,7 +571,7 @@ struct Between{T1 <: Union{Int, Symbol}, T2 <: Union{Int, Symbol}}
     last::T2
 end
 
-const SpecialSelector = Union{Not, Join, Keys, Between, Function}
+const SpecialSelector = Union{Not, All, Keys, Between, Function}
 
 lowerselection(t, s)                     = s
 lowerselection(t, s::Union{Int, Symbol}) = colindex(t, s)
@@ -572,7 +581,8 @@ lowerselection(t, s::Keys)               = lowerselection(t, IndexedTables.pkeyn
 lowerselection(t, s::Between)            = Tuple(colindex(t, s.first):colindex(t, s.last))
 lowerselection(t, s::Function)           = colindex(t, Tuple(filter(s, colnames(t))))
 
-function lowerselection(t, s::Join)
+function lowerselection(t, s::All)
+    s.cols == () && return lowerselection(t, valuenames(t))
     ls = (isa(i, Tuple) ? i : (i,) for i in lowerselection(t, s.cols))
     ls |> Iterators.flatten |> union |> Tuple
 end

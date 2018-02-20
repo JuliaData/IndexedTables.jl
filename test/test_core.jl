@@ -688,7 +688,8 @@ end
     @test select(t, (Keys(), :y)) == select(t, ((:x,), :y))
     @test select(t, Not(Keys())) == select(t, Not(:x)) == select(t, (:y, :z))
     @test select(t, Not(Keys(), :y)) == select(t, Not(:x, :y)) == select(t, (:z,))
-    @test select(t, Join(Keys(), :y)) == select(t, (:x, :y))
+    @test select(t, All(Keys(), :y)) == select(t, (:x, :y))
+    @test select(t, All()) == t
     @test select(t, Between(:x, :z)) == select(t, (:x, :y, :z))
     @test select(t, i -> i == :y) == select(t, (:y,))
 
@@ -696,7 +697,8 @@ end
     @test rows(t, (Keys(), :y)) == rows(t, ((:x,), :y))
     @test rows(t, Not(Keys())) == rows(t, Not(:x)) == rows(t, (:y, :z))
     @test rows(t, Not(Keys(), :y)) == rows(t, Not(:x, :y)) == rows(t, (:z,))
-    @test rows(t, Join(Keys(), :y)) == rows(t, (:x, :y))
+    @test rows(t, All(Keys(), :y)) == rows(t, (:x, :y))
+    @test rows(t, All()) == rows(t)
     @test rows(t, Between(:x, :z)) == rows(t, (:x, :y, :z))
     @test rows(t, i -> i == :y) == rows(t, (:y,))
 
@@ -704,7 +706,8 @@ end
     @test columns(t, (Keys(), :y)) == columns(t, ((:x,), :y))
     @test columns(t, Not(Keys())) == columns(t, Not(:x)) == columns(t, (:y, :z))
     @test columns(t, Not(Keys(), :y)) == columns(t, Not(:x, :y)) == columns(t, (:z,))
-    @test columns(t, Join(Keys(), :y)) == columns(t, (:x, :y))
+    @test columns(t, All(Keys(), :y)) == columns(t, (:x, :y))
+    @test columns(t, All()) == columns(t)
     @test columns(t, Between(:x, :z)) == columns(t, (:x, :y, :z))
     @test columns(t, i -> i == :y) == columns(t, (:y,))
 end
