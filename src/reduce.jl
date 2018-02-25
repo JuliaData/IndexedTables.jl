@@ -402,10 +402,11 @@ function groupby(f, t::Dataset, by=pkeynames(t);
         by = (by,)
     end
 
+    key = by == () ? fill((), length(t)) : rows(t, by)
     # we want to try and keep the column names
     if typeof(t)<:NextTable &&
         !isa(f, Tup) &&
-        !(reduced_type(f, data, true, usekey ? rows(t, by) : nothing) <: Tup)
+        !(reduced_type(f, data, true, usekey ? key : nothing) <: Tup)
         # Name the result after the function
         return groupby((f,), t, by, select=select, flatten=flatten, usekey = usekey)
     end
@@ -413,8 +414,6 @@ function groupby(f, t::Dataset, by=pkeynames(t);
     fs, input, S = init_inputs(f, data, reduced_type, true)
 
     by == () && return usekey ? _apply_with_key(fs, (), input, identity) : _apply_with_key(fs, input, identity)
-
-    key  = rows(t, by)
 
     perm = sortpermby(t, by)
     # Note: we're not using S here, we'll let _groupby figure it out
