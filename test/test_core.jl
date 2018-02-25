@@ -840,6 +840,8 @@ end
     @test groupby((:s => func1, ), t, :x, usekey = true) == table([1, 2], [4, 5], names = [:x, :s], pkey = :x)
     func2 = (key, dd) -> key.x - length(dd)
     @test groupby((:s => func1, :d => func2), t, :x, usekey = true) == table([1, 2], [4, 5], [-2, -1], names = [:x, :s, :d], pkey = :x)
+    s(key, dd) = func1(key, dd)
+    @test groupby(s, t, :x, usekey = true) == groupby((:s => func1, ), t, :x, usekey = true)
 
     @test groupby(maximum,
                   NDSparse([1, 1, 1, 1, 1, 1],
