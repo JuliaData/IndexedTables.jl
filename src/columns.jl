@@ -1101,8 +1101,10 @@ using OnlineStats
 
 # Initialize type of output, functions to apply, input and output vectors
 
-function reduced_type(f, x, isvec)
-    if isvec
+function reduced_type(f, x, isvec, key = nothing)
+    if key !== nothing
+        _promote_op(f, eltype(key), typeof(x))
+    elseif isvec
         _promote_op(f, typeof(x))
     else
         _promote_op((a,b)->_apply(f, init_first(f, a), b),

@@ -398,16 +398,16 @@ function groupby(f, t::Dataset, by=pkeynames(t);
 
     data = rows(t, select)
     f = init_func(f, data)
+    if !(by isa Tuple)
+        by = (by,)
+    end
 
     # we want to try and keep the column names
     if typeof(t)<:NextTable &&
         !isa(f, Tup) &&
-        !(reduced_type(f, data, true) <: Tup)
+        !(reduced_type(f, data, true, usekey ? rows(t, by) : nothing) <: Tup)
         # Name the result after the function
-        return groupby((f,), t, by, select=select, flatten=flatten)
-    end
-    if !(by isa Tuple)
-        by = (by,)
+        return groupby((f,), t, by, select=select, flatten=flatten, usekey = usekey)
     end
 
     fs, input, S = init_inputs(f, data, reduced_type, true)
