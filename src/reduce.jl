@@ -233,6 +233,7 @@ function groupreduce(f, t::Dataset, by=pkeynames(t);
         # Name the result after the function
         return groupreduce((f,), t, by, select=select)
     end
+    by = lowerselection(t, by)
     if !isa(by, Tuple)
         by=(by,)
     end
@@ -398,6 +399,7 @@ function groupby(f, t::Dataset, by=pkeynames(t);
 
     data = rows(t, select)
     f = init_func(f, data)
+    by = lowerselection(t, by)
     if !(by isa Tuple)
         by = (by,)
     end

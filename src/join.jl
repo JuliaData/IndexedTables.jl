@@ -407,7 +407,8 @@ function Base.join(f, left::Dataset, right::Dataset;
     if !(how in [:inner, :left, :outer, :anti])
         error("Invalid how: supported join types are :inner, :left, :outer, and :anti")
     end
-
+    lkey = lowerselection(left, lkey)
+    rkey = lowerselection(right, rkey)
     lperm = sortpermby(left, lkey; cache=cache)
     rperm = sortpermby(right, rkey; cache=cache)
     if !isa(lkey, Tuple)
@@ -418,6 +419,8 @@ function Base.join(f, left::Dataset, right::Dataset;
         rkey = (rkey,)
     end
 
+    lselect = lowerselection(left, lselect)
+    rselect = lowerselection(right, rselect)
     if f === concat_tup
         if !isa(lselect, Tuple)
             lselect = (lselect,)
@@ -559,7 +562,7 @@ a  b  groups
 
 # Outer join
 
-Outer (aka Union) join looks up rows from `right` where keys match that in `left`, and also rows from `left` where keys match those in `left`, if there are no matches on either side, a tuple of NA values is used. The output is guarranteed to contain 
+Outer (aka Union) join looks up rows from `right` where keys match that in `left`, and also rows from `left` where keys match those in `left`, if there are no matches on either side, a tuple of NA values is used. The output is guarranteed to contain
 
 ```jldoctest groupjoin
 

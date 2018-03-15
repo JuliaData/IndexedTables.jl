@@ -181,11 +181,17 @@ julia> pkeynames(t)
 function reindex end
 
 function reindex(T::Type, t, by, select; kwargs...)
+    if isa(by, SpecialSelector)
+        return reindex(T, t, lowerselection(t, by), select; kwargs...)
+    end
     if !isa(by, Tuple)
         return reindex(T, t, (by,), select; kwargs...)
     end
     if T <: NextTable && !isa(select, Tuple)
         return reindex(T, t, by, (select,); kwargs...)
+    end
+    if T <: NextTable && isa(select, SpecialSelector)
+        return reindex(T, t, by, lowerselection(t, select); kwargs...)
     end
     perm = sortpermby(t, by)
     if isa(perm, Base.OneTo)

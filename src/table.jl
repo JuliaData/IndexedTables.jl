@@ -541,6 +541,9 @@ julia> excludecols([1,2,3], (1,))
 ```
 """
 function excludecols(t, cols)
+    if cols isa SpecialSelector
+        return excludecols(t, lowerselection(t, cols))
+    end
     if !isa(cols, Tuple)
         return excludecols(t, (cols,))
     end
