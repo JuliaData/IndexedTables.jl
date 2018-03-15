@@ -311,6 +311,7 @@ end
     @test pkeys(a) == Columns((["a", "b"],))
     t = table([2, 1], [1, 3], [4, 5], names=[:x, :y, :z], pkey=(1, 2))
     @test excludecols(t, (:x,)) == (2, 3)
+    @test excludecols(t, Not(2, 3)) == (2, 3)
     @test excludecols(t, (2,)) == (1, 3)
     @test excludecols(t, pkeynames(t)) == (3,)
     @test excludecols([1, 2, 3], (1,)) == ()
@@ -442,6 +443,7 @@ end
 @testset "reindex" begin
     t = table([2, 1], [1, 3], [4, 5], names=[:x, :y, :z], pkey=(1, 2))
     @test reindex(t, (:y, :z)) == table([1, 3], [4, 5], [2, 1], names=Symbol[:y, :z, :x])
+    @test reindex(t, Not(:x)) == reindex(t, (:y, :z))
     @test pkeynames(t) == (:x, :y)
     @test reindex(t, (:w => [4, 5], :z)) == table([4, 5], [5, 4], [1, 2], [3, 1], names=Symbol[:w, :z, :x, :y])
     @test pkeynames(t) == (:x, :y)
@@ -583,6 +585,7 @@ end
     a = table([1],[2], names=[:x,:y])
     b = table([1],[3], names=[:a,:b])
     @test join(a, b, lkey=:x,rkey=:a) == table([1],[2],[3], names=[:x,:y,:b]) # issue JuliaDB.jl#105
+    @test join(a, b, lkey=Not(:y), rkey = Not(:b)) == join(a, b, lkey=:x,rkey=:a)
     @test join(l, r, how=:anti) == table([2, 2], [1, 2], [3, 4], names=Symbol[:a, :b, :c])
     l1 = table([1, 2, 2, 3], [1, 2, 3, 4], names=[:x, :y])
     r1 = table([2, 2, 3, 3], [5, 6, 7, 8], names=[:x, :z])
@@ -816,6 +819,7 @@ end
     @test groupreduce(+, t, :x, select=:z) == table([1, 2], [6, 15], names=Symbol[:x, :+])
     @test groupreduce(+, t, (:x, :y), select=:z) == table([1, 1, 2, 2], [1, 2, 1, 2], [3, 3, 11, 4], names=Symbol[:x, :y, :+])
     @test groupreduce((+, min, max), t, (:x, :y), select=:z) == table([1, 1, 2, 2], [1, 2, 1, 2], [3, 3, 11, 4], [1, 3, 5, 4], [2, 3, 6, 4], names=Symbol[:x, :y, :+, :min, :max])
+    @test groupreduce((+, min, max), t, All(:x, :y), select=:z) == groupreduce((+, min, max), t, (:x, :y), select=:z)
     @test groupreduce(@NT(zsum = (+), zmin = min, zmax = max), t, (:x, :y), select=:z) == table([1, 1, 2, 2], [1, 2, 1, 2], [3, 3, 11, 4], [1, 3, 5, 4], [2, 3, 6, 4], names=Symbol[:x, :y, :zsum, :zmin, :zmax])
     @test groupreduce(@NT(xsum = :z => +, negysum = (:y => -) => +), t, :x) == table([1, 2], [6, 15], [-4, -4], names=Symbol[:x, :xsum, :negysum])
     t = NDSparse([1, 1, 1, 1, 2, 2],
@@ -830,6 +834,7 @@ end
 
     a = table(x, pkey=[1,2], presorted=true)
     @test groupby(maximum, a, select=3) == table(Columns(a=[1, 1], b=[2, 3], maximum=[4, 5]))
+    @test groupby(identity, a, Keys()) == groupby(identity, a)
 
     @test groupby((maximum, minimum), a, select=3) ==
                 table(Columns(a=[1, 1], b=[2, 3],
