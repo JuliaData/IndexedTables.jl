@@ -444,6 +444,7 @@ end
     t = table([2, 1], [1, 3], [4, 5], names=[:x, :y, :z], pkey=(1, 2))
     @test reindex(t, (:y, :z)) == table([1, 3], [4, 5], [2, 1], names=Symbol[:y, :z, :x])
     @test reindex(t, Not(:x)) == reindex(t, (:y, :z))
+    @test reindex(t, Not(:x), r"x") == reindex(t, (:y, :z), (:x,))
     @test pkeynames(t) == (:x, :y)
     @test reindex(t, (:w => [4, 5], :z)) == table([4, 5], [5, 4], [1, 2], [3, 1], names=Symbol[:w, :z, :x, :y])
     @test pkeynames(t) == (:x, :y)

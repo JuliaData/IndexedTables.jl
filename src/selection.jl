@@ -187,11 +187,8 @@ function reindex(T::Type, t, by, select; kwargs...)
     if !isa(by, Tuple)
         return reindex(T, t, (by,), select; kwargs...)
     end
-    if T <: NextTable && !isa(select, Tuple)
+    if T <: NextTable && !isa(select, Tuple) && !isa(select, SpecialSelector)
         return reindex(T, t, by, (select,); kwargs...)
-    end
-    if T <: NextTable && isa(select, SpecialSelector)
-        return reindex(T, t, by, lowerselection(t, select); kwargs...)
     end
     perm = sortpermby(t, by)
     if isa(perm, Base.OneTo)
