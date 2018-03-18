@@ -15,7 +15,7 @@ function collect_to_columns!(dest::Columns{T, U}, itr, offs, st) where {T, U}
     while !done(itr, st)
         el, st = next(itr, st)
         if fieldwise_isa(el, T)
-            @inbounds dest[i] = el::T
+            @inbounds dest[i] = el
             i += 1
         else
             S = typeof(el)
