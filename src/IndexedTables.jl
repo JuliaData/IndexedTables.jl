@@ -10,7 +10,7 @@ import Base:
     permutedims, reducedim, serialize, deserialize, sort, sort!
 
 export NDSparse, flush!, aggregate!, aggregate_vec, where, pairs, convertdim, columns, column, rows,
-    itable, update!, aggregate, reducedim_vec, dimlabels
+    itable, update!, aggregate, reducedim_vec, dimlabels, collectcolumns
 
 const Tup = Union{Tuple,NamedTuple}
 const DimName = Union{Int,Symbol}
@@ -19,6 +19,7 @@ include("utils.jl")
 include("columns.jl")
 include("table.jl")
 include("ndsparse.jl")
+include("collect.jl")
 
 #=
 # Poor man's traits
