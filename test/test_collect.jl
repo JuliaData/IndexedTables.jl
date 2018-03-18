@@ -6,7 +6,7 @@
     itr = [@NT(a = 1, b = 2), @NT(a = 1, b = 2), @NT(a = 1, b = 12)]
     st = start(itr)
     el, st = next(itr, st)
-    dest = IndexedTables.arrayof(eltype(el), 3)
+    dest = similar(IndexedTables.arrayof(typeof(el)), 3)
     dest[1] = el
     @inferred IndexedTables.collect_to_columns!(dest, itr, 2, st)
 
