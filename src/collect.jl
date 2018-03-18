@@ -19,19 +19,20 @@ function collect_to_columns!(dest::Columns{T, U}, itr, offs, st) where {T, U}
             i += 1
         else
             S = typeof(el)
-            Rparams = map(typejoin, T.parameters, S.parameters)
-            R = get_tuple_type_from_params(el, Rparams)
-            new = similar(arrayof(R), length(itr))
-            @inbounds for l in 1:i-1; new[l] = dest[l]; end
+            sp, tp = S.parameters, T.parameters
+            idx = find(!(s <: t) for (s, t) in zip(sp, tp))
+            new = dest
+            for l in idx
+                newcol = Array{typejoin(sp[l], tp[l])}(length(dest))
+                copy!(newcol, 1, column(dest, l), 1, i-1)
+                new = setcol(new, l, newcol)
+            end
             @inbounds new[i] = el
             return collect_to_columns!(new, itr, i+1, st)
         end
     end
     return dest
 end
-
-get_tuple_type_from_params(el::Tuple, params) = Tuple{params...}
-get_tuple_type_from_params(el::NamedTuple, params) = eval(:(NamedTuples.@NT($(keys(el)...)))){params...}
 
 @generated function fieldwise_isa(el::S, ::Type{T}) where {S, T}
     if all((s <: t) for (s, t) in zip(S.parameters, T.parameters))
