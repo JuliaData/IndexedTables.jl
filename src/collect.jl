@@ -73,7 +73,7 @@ function widencolumns(dest, i, el::S, ::Type{T}) where{S <: Tup, T}
     idx = find(!(s <: t) for (s, t) in zip(sp, tp))
     new = dest
     for l in idx
-        newcol = Array{typejoin(sp[l], tp[l])}(length(dest))
+        newcol = Array{promote_type(sp[l], tp[l])}(length(dest))
         copy!(newcol, 1, column(dest, l), 1, i-1)
         new = setcol(new, l, newcol)
     end
@@ -81,7 +81,7 @@ function widencolumns(dest, i, el::S, ::Type{T}) where{S <: Tup, T}
 end
 
 function widencolumns(dest, i, el::S, ::Type{T}) where{S, T}
-    new = Array{typejoin(S, T)}(length(dest))
+    new = Array{promote_type(S, T)}(length(dest))
     copy!(new, 1, dest, 1, i-1)
     new
 end

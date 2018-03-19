@@ -11,13 +11,16 @@
     @inferred IndexedTables.collect_to_columns!(dest, itr, 2, st)
 
     v = [@NT(a = 1, b = 2), @NT(a = 1.2, b = 3)]
-    @test collect_columns(v) == Columns(@NT(a = Real[1, 1.2], b = Int[2, 3]))
+    @test collect_columns(v) == Columns(@NT(a = [1, 1.2], b = Int[2, 3]))
+    @test typeof(collect_columns(v)) == typeof(Columns(@NT(a = [1, 1.2], b = Int[2, 3])))
 
     v = [@NT(a = 1, b = 2), @NT(a = 1.2, b = "3")]
-    @test collect_columns(v) == Columns(@NT(a = Real[1, 1.2], b = Any[2, "3"]))
+    @test collect_columns(v) == Columns(@NT(a = [1, 1.2], b = Any[2, "3"]))
+    @test typeof(collect_columns(v)) == typeof(Columns(@NT(a = [1, 1.2], b = Any[2, "3"])))
 
     v = [@NT(a = 1, b = 2), @NT(a = 1.2, b = 2), @NT(a = 1, b = "3")]
-    @test collect_columns(v) == Columns(@NT(a = Real[1, 1.2, 1], b = Any[2, 2, "3"]))
+    @test collect_columns(v) == Columns(@NT(a = [1, 1.2, 1], b = Any[2, 2, "3"]))
+    @test typeof(collect_columns(v)) == typeof(Columns(@NT(a = [1, 1.2, 1], b = Any[2, 2, "3"])))
 
     # length unknown
     itr = Iterators.filter(isodd, 1:8)
@@ -33,19 +36,21 @@ end
     @inferred collect_columns(v)
 
     v = [(1, 2), (1.2, 3)]
-    @test collect_columns(v) == Columns((Real[1, 1.2], Int[2, 3]))
+    @test collect_columns(v) == Columns(([1, 1.2], Int[2, 3]))
 
     v = [(1, 2), (1.2, "3")]
-    @test collect_columns(v) == Columns((Real[1, 1.2], Any[2, "3"]))
+    @test collect_columns(v) == Columns(([1, 1.2], Any[2, "3"]))
+    @test typeof(collect_columns(v)) == typeof(Columns(([1, 1.2], Any[2, "3"])))
 
     v = [(1, 2), (1.2, 2), (1, "3")]
-    @test collect_columns(v) == Columns((Real[1, 1.2, 1], Any[2, 2, "3"]))
+    @test collect_columns(v) == Columns(([1, 1.2, 1], Any[2, 2, "3"]))
     # length unknown
     itr = Iterators.filter(isodd, 1:8)
     tuple_itr = ((i+1, i-1) for i in itr)
     @test collect_columns(tuple_itr) == Columns(([2, 4, 6, 8], [0, 2, 4, 6]))
     tuple_itr_real = (i == 1 ? (1.2, i-1) : (i+1, i-1) for i in itr)
-    @test collect_columns(tuple_itr_real) == Columns((Real[1.2, 4, 6, 8], [0, 2, 4, 6]))
+    @test collect_columns(tuple_itr_real) == Columns(([1.2, 4, 6, 8], [0, 2, 4, 6]))
+    @test typeof(collect_columns(tuple_itr_real)) == typeof(Columns(([1.2, 4, 6, 8], [0, 2, 4, 6])))
 end
 
 @testset "collectscalars" begin
@@ -60,4 +65,5 @@ end
     @test collect_columns(itr) == collect(itr)
     real_itr = (i == 1 ? 1.5 : i for i in itr)
     @test collect_columns(real_itr) == collect(real_itr)
+    @test eltype(collect_columns(real_itr)) == Float64
 end
