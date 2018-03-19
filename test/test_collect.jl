@@ -18,6 +18,13 @@
 
     v = [@NT(a = 1, b = 2), @NT(a = 1.2, b = 2), @NT(a = 1, b = "3")]
     @test collectcolumns(v) == Columns(@NT(a = Real[1, 1.2, 1], b = Any[2, 2, "3"]))
+
+    # length unknown
+    itr = Iterators.filter(isodd, 1:8)
+    tuple_itr = (@NT(a = i+1, b = i-1) for i in itr)
+    @test collectcolumns(tuple_itr) == Columns(@NT(a = [2, 4, 6, 8], b = [0, 2, 4, 6]))
+    tuple_itr_real = (i == 1 ? @NT(a = 1.2, b =i-1) : @NT(a = i+1, b = i-1) for i in itr)
+    @test collectcolumns(tuple_itr_real) == Columns(@NT(a = Real[1.2, 4, 6, 8], b = [0, 2, 4, 6]))
 end
 
 @testset "collecttuples" begin
@@ -33,6 +40,12 @@ end
 
     v = [(1, 2), (1.2, 2), (1, "3")]
     @test collectcolumns(v) == Columns((Real[1, 1.2, 1], Any[2, 2, "3"]))
+    # length unknown
+    itr = Iterators.filter(isodd, 1:8)
+    tuple_itr = ((i+1, i-1) for i in itr)
+    @test collectcolumns(tuple_itr) == Columns(([2, 4, 6, 8], [0, 2, 4, 6]))
+    tuple_itr_real = (i == 1 ? (1.2, i-1) : (i+1, i-1) for i in itr)
+    @test collectcolumns(tuple_itr_real) == Columns((Real[1.2, 4, 6, 8], [0, 2, 4, 6]))
 end
 
 @testset "collectscalars" begin
@@ -42,4 +55,9 @@ end
 
     v = (i == 1 ? 1.2 : i for i in 1:3)
     @test collectcolumns(v) == collect(v)
+
+    itr = Iterators.filter(isodd, 1:100)
+    @test collectcolumns(itr) == collect(itr)
+    real_itr = (i == 1 ? 1.5 : i for i in itr)
+    @test collectcolumns(real_itr) == collect(real_itr)
 end

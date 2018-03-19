@@ -26,6 +26,32 @@ function collect_to_columns!(dest::AbstractArray{T}, itr, offs, st) where {T}
     return dest
 end
 
+function collectcolumns(itr, ::Base.SizeUnknown)
+    st = start(itr)
+    el, st = next(itr, st)
+    dest = similar(arrayof(typeof(el)), 1)
+    dest[1] = el
+    grow_to_columns!(dest, itr, 2, st)
+end
+
+function grow_to_columns!(dest::AbstractArray{T}, itr, offs, st) where {T}
+    # collect to dest array, checking the type of each result. if a result does not
+    # match, widen the result type and re-dispatch.
+    i = offs
+    while !done(itr, st)
+        el, st = next(itr, st)
+        if fieldwise_isa(el, T)
+            push!(dest, el)
+            i += 1
+        else
+            new = widencolumns(dest, i, el, T)
+            push!(new, el)
+            return grow_to_columns!(new, itr, i+1, st)
+        end
+    end
+    return dest
+end
+
 @generated function fieldwise_isa(el::S, ::Type{T}) where {S<:Tup, T}
     if all((s <: t) for (s, t) in zip(S.parameters, T.parameters))
         return :(true)
