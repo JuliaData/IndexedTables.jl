@@ -10,7 +10,7 @@ import Base:
     permutedims, reducedim, serialize, deserialize, sort, sort!
 
 export NDSparse, flush!, aggregate!, aggregate_vec, where, pairs, convertdim, columns, column, rows,
-    itable, update!, aggregate, reducedim_vec, dimlabels, collectcolumns
+    itable, update!, aggregate, reducedim_vec, dimlabels, collect_columns
 
 const Tup = Union{Tuple,NamedTuple}
 const DimName = Union{Int,Symbol}

@@ -1,6 +1,6 @@
-collectcolumns(itr) = collectcolumns(itr, Base.iteratorsize(itr))
+collect_columns(itr) = collect_columns(itr, Base.iteratorsize(itr))
 
-function collectcolumns(itr, ::Union{Base.HasShape, Base.HasLength})
+function collect_columns(itr, ::Union{Base.HasShape, Base.HasLength})
     st = start(itr)
     el, st = next(itr, st)
     dest = similar(arrayof(typeof(el)), length(itr))
@@ -26,7 +26,7 @@ function collect_to_columns!(dest::AbstractArray{T}, itr, offs, st) where {T}
     return dest
 end
 
-function collectcolumns(itr, ::Base.SizeUnknown)
+function collect_columns(itr, ::Base.SizeUnknown)
     st = start(itr)
     el, st = next(itr, st)
     dest = similar(arrayof(typeof(el)), 1)
