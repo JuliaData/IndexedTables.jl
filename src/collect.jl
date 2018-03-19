@@ -1,3 +1,29 @@
+"""
+`collect_columns(itr)`
+
+Collect an iterable as a `Columns` object if it iterates `Tuples` or `NamedTuples`, as a normal
+`Array` otherwise.
+
+## Example
+
+```jldoctest collect
+julia> s = [(1,2), (3,4)];
+
+julia> collect_columns(s)
+2-element Columns{Tuple{Int64,Int64}}:
+ (1, 2)
+ (3, 4)
+
+ julia> s = Iterators.filter(isodd, 1:8);
+
+ julia> collect_columns(s)
+ 4-element Array{Int64,1}:
+  1
+  3
+  5
+  7
+```
+"""
 collect_columns(itr) = collect_columns(itr, Base.iteratorsize(itr))
 
 function collect_columns(itr, ::Union{Base.HasShape, Base.HasLength})
