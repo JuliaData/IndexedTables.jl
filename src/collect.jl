@@ -8,7 +8,7 @@ function collectcolumns(itr, ::Union{Base.HasShape, Base.HasLength})
     collect_to_columns!(dest, itr, 2, st)
 end
 
-function collect_to_columns!(dest::Columns{T, U}, itr, offs, st) where {T, U}
+function collect_to_columns!(dest::AbstractArray{T}, itr, offs, st) where {T}
     # collect to dest array, checking the type of each result. if a result does not
     # match, widen the result type and re-dispatch.
     i = offs
@@ -18,15 +18,7 @@ function collect_to_columns!(dest::Columns{T, U}, itr, offs, st) where {T, U}
             @inbounds dest[i] = el
             i += 1
         else
-            S = typeof(el)
-            sp, tp = S.parameters, T.parameters
-            idx = find(!(s <: t) for (s, t) in zip(sp, tp))
-            new = dest
-            for l in idx
-                newcol = Array{typejoin(sp[l], tp[l])}(length(dest))
-                copy!(newcol, 1, column(dest, l), 1, i-1)
-                new = setcol(new, l, newcol)
-            end
+            new = widencolumns(dest, i, el, T)
             @inbounds new[i] = el
             return collect_to_columns!(new, itr, i+1, st)
         end
@@ -34,10 +26,36 @@ function collect_to_columns!(dest::Columns{T, U}, itr, offs, st) where {T, U}
     return dest
 end
 
-@generated function fieldwise_isa(el::S, ::Type{T}) where {S, T}
+@generated function fieldwise_isa(el::S, ::Type{T}) where {S<:Tup, T}
     if all((s <: t) for (s, t) in zip(S.parameters, T.parameters))
         return :(true)
     else
         return :(false)
     end
+end
+
+@generated function fieldwise_isa(el::S, ::Type{T}) where {S, T}
+    if S <: T
+        return :(true)
+    else
+        return :(false)
+    end
+end
+
+function widencolumns(dest, i, el::S, ::Type{T}) where{S <: Tup, T}
+    sp, tp = S.parameters, T.parameters
+    idx = find(!(s <: t) for (s, t) in zip(sp, tp))
+    new = dest
+    for l in idx
+        newcol = Array{typejoin(sp[l], tp[l])}(length(dest))
+        copy!(newcol, 1, column(dest, l), 1, i-1)
+        new = setcol(new, l, newcol)
+    end
+    new
+end
+
+function widencolumns(dest, i, el::S, ::Type{T}) where{S, T}
+    new = Array{typejoin(S, T)}(length(dest))
+    copy!(new, 1, dest, 1, i-1)
+    new
 end

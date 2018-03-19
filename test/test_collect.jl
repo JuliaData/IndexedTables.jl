@@ -34,3 +34,12 @@ end
     v = [(1, 2), (1.2, 2), (1, "3")]
     @test collectcolumns(v) == Columns((Real[1, 1.2, 1], Any[2, 2, "3"]))
 end
+
+@testset "collectscalars" begin
+    v = (i for i in 1:3)
+    @test collectcolumns(v) == [1,2,3]
+    @inferred collectcolumns(v)
+
+    v = (i == 1 ? 1.2 : i for i in 1:3)
+    @test collectcolumns(v) == collect(v)
+end
