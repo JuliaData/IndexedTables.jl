@@ -4,7 +4,7 @@
 Collect an iterable as a `Columns` object if it iterates `Tuples` or `NamedTuples`, as a normal
 `Array` otherwise.
 
-## Example
+## Examples
 
 ```jldoctest collect
 julia> s = [(1,2), (3,4)];
