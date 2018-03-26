@@ -8,6 +8,8 @@ eltypes(::Type{Tuple{}}) = Tuple{}
 eltypes{T<:Tuple}(::Type{T}) =
     tuple_type_cons(eltype(tuple_type_head(T)), eltypes(tuple_type_tail(T)))
 eltypes{T<:NamedTuple}(::Type{T}) = map_params(eltype, T)
+eltypes(::Type{T}) where T <: Pair = map_params(eltypes, T)
+eltypes(::Type{T}) where T<:AbstractArray{S, N} where {S, N} = S
 Base.@pure astuple{T<:NamedTuple}(::Type{T}) = Tuple{T.parameters...}
 astuple{T<:Tuple}(::Type{T}) = T
 
@@ -37,6 +39,9 @@ end
 @generated function foreach(f, n::NamedTuple)
     Expr(:block, [ Expr(:call, :f, Expr(:., :n, Expr(:quote, fieldname(n,f)))) for f = 1:nfields(n) ]...)
 end
+
+@inline foreach(f, a::Pair) = (f(a.first); f(a.second))
+@inline foreach(f, a::Pair, b::Pair) = (f(a.first, b.first); f(a.second, b.second))
 
 @inline foreach(f, a::Tuple, b::Tuple) = _foreach(f, a[1], b[1], tail(a), tail(b))
 @inline _foreach(f, x, y, ra, rb) = (f(x, y); _foreach(f, ra[1], rb[1], tail(ra), tail(rb)))
@@ -240,6 +245,8 @@ Base.@pure function arrayof(S)
         Columns{T,namedtuple(fieldnames(T)...){map(arrayof, T.parameters)...}}
     elseif T<:DataValue
         DataValueArray{T.parameters[1],1}
+    elseif T<:Pair
+        Columns{T, Pair{map(arrayof, T.parameters)...}}
     else
         Vector{T}
     end
@@ -300,6 +307,9 @@ Base.@pure function _promote_op{S,T}(f, ::Type{S}, ::Type{T})
     strip_unionall(t)
 end
 
+map_pair(f, p::Pair) = f(p.first) => f(p.second)
+map_pair(f, arg) = map(f, arg)
+
 # The following is not inferable, this is OK because the only place we use
 # this doesn't need it.
 
@@ -311,6 +321,7 @@ _map_params(f, T::Type{Tuple{}},S::Type{Tuple{}}) = ()
 
 map_params(f, ::Type{T}, ::Type{S}) where {T,S} = f(T,S)
 map_params(f, ::Type{T}) where {T} = map_params((x,y)->f(x), T, T)
+map_params(f, ::Type{T}) where T <: Pair{S1, S2} where {S1, S2} = Pair{f(S1), f(S2)}
 @inline _tuple_type_head{T<:Tuple}(::Type{T}) = Base.tuple_type_head(T)
 @inline _tuple_type_tail{T<:Tuple}(::Type{T}) = Base.tuple_type_tail(T)
 

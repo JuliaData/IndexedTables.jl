@@ -99,6 +99,9 @@ end
     end
 end
 
+fieldwise_isa(el::Pair{<:Tup, <:Any}, ::Type{Pair{T1, T2}}) where {T1, T2}  =
+    fieldwise_isa(el.first, T1) && fieldwise_isa(el.second, T2)
+
 function widencolumns(dest, i, el::S, ::Type{T}) where{S <: Tup, T<:Tup}
     if fieldnames(S) != fieldnames(T) || T == Tuple || T == NamedTuple
         R = (S <: Tuple) && (T <: Tuple) ? Tuple :  (S <: NamedTuple) && (T <: NamedTuple) ? NamedTuple : Any
@@ -121,4 +124,10 @@ function widencolumns(dest, i, el::S, ::Type{T}) where{S, T}
     new = Array{promote_type(S, T)}(length(dest))
     copy!(new, 1, dest, 1, i-1)
     new
+end
+
+function widencolumns(dest::Columns{<:Pair}, i, el::Pair, ::Type{Columns{Pair{T1, T2}}}) where{T1, T2}
+    dest1 = fieldwise_isa(el.first, T1) ? dest.columns.first : widencolumns(dest.columns.first, i, el.first, T1)
+    dest2 = fieldwise_isa(el.second, T2) ? dest.columns.second : widencolumns(dest.columns.second, i, el.second, T1)
+    Columns(dest1 => dest2)
 end
