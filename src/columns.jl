@@ -1118,7 +1118,7 @@ renamecol(t, name, newname) = @cols rename!(t, name, newname)
 
 using OnlineStats
 
-@inline _apply(f::OnlineStats.OnlineStat, g, x) = (fit!(g, x); g)
+@inline _apply(f::OnlineStat, g, x) = (fit!(g, x); g)
 @inline _apply(f::Tup, y::Tup, x::Tup) = map(_apply, f, y, x)
 @inline _apply(f, y, x) = f(y, x)
 @inline _apply(f::Tup, x::Tup) = map(_apply, f, x)
@@ -1147,7 +1147,6 @@ end
 
 nicename(f) = Symbol(f)
 nicename(o::OnlineStat) = Symbol(typeof(o).name.name)
-
 
 function mapped_type(f, x, isvec)
     _promote_op(f, eltype(x))

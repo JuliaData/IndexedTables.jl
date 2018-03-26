@@ -44,11 +44,8 @@ If `f` is an OnlineStat object from the [OnlineStats](https://github.com/joshday
 ```jldoctest reduce
 julia> using OnlineStats
 
-julia> reduce(Mean(), t, select=:t)
-▦ Series{0,Tuple{Mean},EqualWeight}
-┣━━ EqualWeight(nobs = 3)
-┗━━━┓
-    ┗━━ Mean(0.45)
+julia> reduce(Mean(), t, select =:t)
+Mean: n=3 | value=0.45
 ```
 
 # Reducing with multiple functions
