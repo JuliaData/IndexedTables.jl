@@ -1176,7 +1176,9 @@ function init_funcs(f::Tup, isvec)
 
     ns = map(x->x[1], funcmap)
     ss = map(x->x[2], funcmap)
-    fs = map(f, map(x->x[3], funcmap))
+    fs = map(map(x->x[3], funcmap)) do f 
+        f
+    end
 
     namedtuple(ns...)(fs...), ss
 end
