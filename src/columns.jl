@@ -188,7 +188,7 @@ julia> ncols(ndsparse(d, [7,8,9]))
 """
 function ncols end
 ncols(c::Columns) = nfields(typeof(c.columns))
-ncols(c::Columns{<:Pair, <:Pair}) = ncols(c.columns.first) + ncols(c.columns.second)
+ncols(c::Columns{<:Pair, <:Pair}) = ncols(c.columns.first) => ncols(c.columns.second)
 ncols(c::AbstractArray) = 1
 
 size(c::Columns) = (length(c),)
@@ -196,7 +196,7 @@ Base.IndexStyle(::Type{<:Columns}) = IndexLinear()
 summary(c::Columns{D}) where {D<:Tuple} = "$(length(c))-element Columns{$D}"
 
 empty!(c::Columns) = (foreach(empty!, c.columns); c)
-empty!(c::Columns{<:Pair, <:Pair}) = (foreach(empty!, c.columns.first); foreach(empty!, c.columns.second); c)
+empty!(c::Columns{<:Pair, <:Pair}) = (foreach(empty!, c.columns.first.columns); foreach(empty!, c.columns.second.columns); c)
 
 function similar(c::Columns{D,C}) where {D,C}
     cols = map_pair(similar, c.columns)
@@ -309,7 +309,7 @@ function permute!(c::Columns, p::AbstractVector)
     end
     return c
 end
-permute!(c::Columns{<:Pair}, p) = (permute!(c.columns.first, p); permute!(c.columns.second, p); c)
+permute!(c::Columns{<:Pair}, p::AbstractVector) = (permute!(c.columns.first, p); permute!(c.columns.second, p); c)
 sort!(c::Columns) = permute!(c, sortperm(c))
 sort(c::Columns) = c[sortperm(c)]
 

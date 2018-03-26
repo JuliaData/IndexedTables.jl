@@ -67,3 +67,21 @@ end
     @test collect_columns(real_itr) == collect(real_itr)
     @test eltype(collect_columns(real_itr)) == Float64
 end
+
+@testset "collectpairs" begin
+    v = (i=>i+1 for i in 1:3)
+    @test collect_columns(v) == Columns([1,2,3]=>[2,3,4])
+    @test eltype(collect_columns(v)) == Pair{Int, Int}
+
+    v = (i == 1 ? (1.2 => i+1) : (i => i+1) for i in 1:3)
+    @test collect_columns(v) == Columns([1.2,2,3]=>[2,3,4])
+    @test eltype(collect_columns(v)) == Pair{Float64, Int}
+
+    v = (@NT(a=i) => @NT(b="a$i") for i in 1:3)
+    @test collect_columns(v) == Columns(Columns(@NT(a = [1,2,3]))=>Columns(@NT(b = ["a1","a2","a3"])))
+    @test eltype(collect_columns(v)) == Pair{NamedTuples._NT_a{Int64}, NamedTuples._NT_b{String}}
+
+    v = (i == 1 ? @NT(a="1") => @NT(b="a$i") : @NT(a=i) => @NT(b="a$i") for i in 1:3)
+    @test collect_columns(v) == Columns(Columns(@NT(a = ["1",2,3]))=>Columns(@NT(b = ["a1","a2","a3"])))
+    @test eltype(collect_columns(v)) == Pair{NamedTuples._NT_a{Any}, NamedTuples._NT_b{String}}
+end
