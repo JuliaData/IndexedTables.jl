@@ -199,12 +199,12 @@ empty!(c::Columns) = (foreach(empty!, c.columns); c)
 empty!(c::Columns{<:Pair, <:Pair}) = (foreach(empty!, c.columns.first.columns); foreach(empty!, c.columns.second.columns); c)
 
 function similar(c::Columns{D,C}) where {D,C}
-    cols = map_pair(similar, c.columns)
+    cols = _map(similar, c.columns)
     Columns{D,typeof(cols)}(cols)
 end
 
 function similar(c::Columns{D,C}, n::Integer) where {D,C}
-    cols = map_pair(a->similar(a,n), c.columns)
+    cols = _map(a->similar(a,n), c.columns)
     Columns{D,typeof(cols)}(cols)
 end
 
@@ -229,9 +229,9 @@ getindex(c::Columns{D}, i::Integer) where {D<:Tuple} = ith_all(i, c.columns)
 getindex(c::Columns{D}, i::Integer) where {D<:NamedTuple} = D(ith_all(i, c.columns)...)
 getindex(c::Columns{D}, i::Integer) where {D<:Pair} = getindex(c.columns.first, i) => getindex(c.columns.second, i)
 
-getindex(c::Columns, p::AbstractVector) = Columns(map_pair(c->c[p], c.columns))
+getindex(c::Columns, p::AbstractVector) = Columns(_map(c->c[p], c.columns))
 
-view(c::Columns, I) = Columns(map_pair(a->view(a, I), c.columns))
+view(c::Columns, I) = Columns(_map(a->view(a, I), c.columns))
 
 @inline setindex!(I::Columns, r::Union{Tup, Pair}, i::Integer) = (foreach((c,v)->(c[i]=v), I.columns, r); I)
 
