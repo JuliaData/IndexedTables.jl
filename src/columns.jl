@@ -325,6 +325,12 @@ function Base.vcat(c::Columns, cs::Columns...)
     Columns(map(vcat, map(x->x.columns, (c,cs...))...))
 end
 
+function Base.vcat(c::Columns{<:Pair}, cs::Columns{<:Pair}...)
+    Columns(vcat(c.columns.first, (x.columns.first for x in cs)...) =>
+            vcat(c.columns.second, (x.columns.second for x in cs)...))
+end
+
+
 abstract type SerializedColumns end
 
 function serialize(s::AbstractSerializer, c::Columns)

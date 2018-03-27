@@ -32,8 +32,10 @@ let c = Columns(Columns(@NT(a=[1,2,3])) => Columns(@NT(b=["a","b","c"])))
     d = deepcopy(c)
     push!(d, @NT(a=4) => @NT(b="d"))
     @test d == Columns(Columns(@NT(a=[1,2,3,4])) => Columns(@NT(b=["a","b","c","d"])))
+    e = vcat(d, d)
     append!(d, d)
     @test d == Columns(Columns(@NT(a=[1,2,3,4,1,2,3,4])) => Columns(@NT(b=["a","b","c","d","a","b","c","d"])))
+    @test d == e
     empty!(d)
     @test d == c[Int64[]]
     @test c != Columns(@NT(a=[1,2,3], b=["a","b","c"]))
