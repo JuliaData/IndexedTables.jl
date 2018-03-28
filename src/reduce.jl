@@ -1,4 +1,4 @@
-using OnlineStats
+using OnlineStatsBase
 export groupreduce, groupby, aggregate, aggregate_vec, summarize
 
 """

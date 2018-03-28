@@ -1116,7 +1116,7 @@ renamecol(t, name, newname) = @cols rename!(t, name, newname)
 
 ## Utilities for mapping and reduction with many functions / OnlineStats
 
-using OnlineStats
+using OnlineStatsBase
 
 @inline _apply(f::OnlineStat, g, x) = (fit!(g, x); g)
 @inline _apply(f::Tup, y::Tup, x::Tup) = map(_apply, f, y, x)
