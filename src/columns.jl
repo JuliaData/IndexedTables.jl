@@ -261,6 +261,13 @@ end
 ==(x::Columns, y::Columns{<:Pair}) = false
 ==(x::Columns{<:Pair}, y::Columns{<:Pair}) = (x.columns.first == y.columns.first) && (x.columns.second == y.columns.second)
 
+function _strip_pair(c::Columns{<:Pair})
+    f, s = map(columns, c.columns)
+    (f isa AbstractVector) && (f = (f,))
+    (s isa AbstractVector) && (s = (s,))
+    Columns(f..., s...)
+end
+
 sortproxy(x::PooledArray) = x.refs
 sortproxy(x::AbstractArray) = x
 
@@ -275,10 +282,10 @@ function sortperm(c::Columns)
     return p
 end
 
-sortperm(c::Columns{<:Pair}) = sortperm(c.columns.first)
+sortperm(c::Columns{<:Pair}) = sortperm(_strip_pair(c))
 
 issorted(c::Columns) = issorted(1:length(c), lt=(x,y)->rowless(c, x, y))
-issorted(c::Columns{<:Pair}) = issorted(c.columns.first)
+issorted(c::Columns{<:Pair}) = issorted(_strip_pair(c))
 
 # assuming x[p] is sorted, sort by remaining columns where x[p] is constant
 function refine_perm!(p, cols, c, x, y, lo, hi)

@@ -46,6 +46,11 @@ let c = Columns(Columns(@NT(a=[1,2,3])) => Columns(@NT(b=["a","b","c"])))
     @test sortperm(c) == [1,2,3]
     permute!(c, [2,3, 1])
     @test c == Columns(Columns(@NT(a=[2,3,1])) => Columns(@NT(b=["b","c","a"])))
+    f = Columns(Columns([1, 1, 2, 2]) => ["b", "a", "c", "d"])
+    @test IndexedTables._strip_pair(f) == Columns([1, 1, 2, 2], ["b", "a", "c", "d"])
+    @test sortperm(f) == [2, 1, 3, 4]
+    @test sort(f) == Columns(Columns([1, 1, 2, 2]) => ["a", "b", "c", "d"])
+    @test !issorted(f)
 end
 
 srand(123)
