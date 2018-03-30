@@ -45,10 +45,7 @@ If `f` is an OnlineStat object from the [OnlineStats](https://github.com/joshday
 julia> using OnlineStats
 
 julia> reduce(Mean(), t, select=:t)
-▦ Series{0,Tuple{Mean},EqualWeight}
-┣━━ EqualWeight(nobs = 3)
-┗━━━┓
-    ┗━━ Mean(0.45)
+Mean: n=3 | value=0.45
 ```
 
 # Reducing with multiple functions
@@ -80,25 +77,13 @@ You can also compute many OnlineStats by passing tuple or named tuple of OnlineS
 
 ```jldoctest reduce
 julia> y = reduce((Mean(), Variance()), t, select=:t)
-(Mean = ▦ Series{0,Tuple{Mean},EqualWeight}
-┣━━ EqualWeight(nobs = 3)
-┗━━━┓
-    ┗━━ Mean(0.45), Variance = ▦ Series{0,Tuple{Variance},EqualWeight}
-┣━━ EqualWeight(nobs = 3)
-┗━━━┓
-    ┗━━ Variance(0.1075))
+(Mean = Mean: n=3 | value=0.45, Variance = Variance: n=3 | value=0.1075)
 
 julia> y.Mean
-▦ Series{0,Tuple{Mean},EqualWeight}
-┣━━ EqualWeight(nobs = 3)
-┗━━━┓
-    ┗━━ Mean(0.45)
+Mean: n=3 | value=0.45
 
 julia> y.Variance
-▦ Series{0,Tuple{Variance},EqualWeight}
-┣━━ EqualWeight(nobs = 3)
-┗━━━┓
-    ┗━━ Variance(0.1075)
+Variance: n=3 | value=0.1075
 ```
 
 # Combining reduction and selection

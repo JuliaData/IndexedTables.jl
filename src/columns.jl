@@ -1149,14 +1149,14 @@ renamecol(t, name, newname) = @cols rename!(t, name, newname)
 
 using OnlineStats
 
-@inline _apply(f::OnlineStats.AbstractSeries, g, x) = (fit!(g, x); g)
+@inline _apply(f::OnlineStat, g, x) = (fit!(g, x); g)
 @inline _apply(f::Tup, y::Tup, x::Tup) = map(_apply, f, y, x)
 @inline _apply(f, y, x) = f(y, x)
 @inline _apply(f::Tup, x::Tup) = map(_apply, f, x)
 @inline _apply(f, x) = f(x)
 
 @inline init_first(f, x) = x
-@inline init_first(f::OnlineStats.AbstractSeries, x) = (g=copy(f); fit!(g, x); g)
+@inline init_first(f::OnlineStat, x) = (g=copy(f); fit!(g, x); g)
 @inline init_first(f::Tup, x::Tup) = map(init_first, f, x)
 
 # Initialize type of output, functions to apply, input and output vectors
@@ -1173,15 +1173,11 @@ function reduced_type(f, x, isvec, key = nothing)
 end
 
 function init_inputs(f, x, gettype, isvec) # normal functions
-    g = f isa OnlineStat ? Series(f) : f
-    g, x, gettype(g, x, isvec)
+    f, x, gettype(f, x, isvec)
 end
 
 nicename(f) = Symbol(f)
 nicename(o::OnlineStat) = Symbol(typeof(o).name.name)
-function nicename(s::OnlineStats.AbstractSeries)
-    Symbol(join(nicename.(stats(s)), :_))
-end
 
 function mapped_type(f, x, isvec)
     _promote_op(f, eltype(x))
@@ -1212,7 +1208,7 @@ function init_funcs(f::Tup, isvec)
     ns = map(x->x[1], funcmap)
     ss = map(x->x[2], funcmap)
     fs = map(map(x->x[3], funcmap)) do f
-        f isa OnlineStat ? Series(f) : f
+        f
     end
 
     namedtuple(ns...)(fs...), ss
