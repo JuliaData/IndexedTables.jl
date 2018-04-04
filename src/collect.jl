@@ -36,15 +36,14 @@ julia> collect_columns(s)
   7
 ```
 """
-collect_columns(itr; flatten = false) =
-    collect_columns(itr, flatten ? Base.SizeUnknown() : Base.iteratorsize(itr); flatten = flatten)
+collect_columns(itr) = collect_columns(itr, Base.iteratorsize(itr))
 
 function collect_empty_columns(itr::T) where {T}
     S = Core.Inference.return_type(first, Tuple{T})
     similar(arrayof(S), 0)
 end
 
-function collect_columns(itr, ::Union{Base.HasShape, Base.HasLength}; flatten = false)
+function collect_columns(itr, ::Union{Base.HasShape, Base.HasLength})
     st = start(itr)
     done(itr, st) && return collect_empty_columns(itr)
     el, st = next(itr, st)
@@ -71,16 +70,10 @@ function collect_to_columns!(dest::AbstractArray{T}, itr, offs, st = start(itr))
     return dest
 end
 
-function collect_columns(itr, ::Base.SizeUnknown; flatten = false)
+function collect_columns(itr, ::Base.SizeUnknown)
     st = start(itr)
     done(itr, st) && return collect_empty_columns(itr)
     el, st = next(itr, st)
-    if flatten
-        # Only flatten if elements are iterable or of the form key => iterable
-        if (el isa Pair) && isiterable(el.second) || !(el isa Pair) && isiterable(el)
-            return collect_columns_flattened(itr, el, st)
-        end
-    end
     dest = similar(arrayof(typeof(el)), 1)
     dest[1] = el
     grow_to_columns!(dest, itr, st)
