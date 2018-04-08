@@ -137,3 +137,13 @@ end
     @test !IndexedTables._is_subtype(DataValue{Int}, DataValue{String})
     @test !IndexedTables._is_subtype(Int, String)
 end
+
+@testset "collectflattened" begin
+    t = [(:a => [1, 2]), (:b => [1, 3])]
+    @test collect_columns_flattened(t) == Columns([:a, :a, :b, :b] => [1, 2, 1, 3])
+    t = ([@NT(a = 1), @NT(a = 2)], [@NT(a = 1.1), @NT(a = 2.2)])
+    @test collect_columns_flattened(t) == Columns(a = [1, 2, 1.1, 2.2])
+    @test eltype(collect_columns_flattened(t)) == typeof(@NT(a=1.1))
+    t = [(:a => table(1:2, ["a", "b"])), (:b => table(3:4, ["c", "d"]))]
+    @test table(collect_columns_flattened(t)) == table([:a, :a, :b, :b], 1:4, ["a", "b", "c", "d"], pkey = 1)
+end
