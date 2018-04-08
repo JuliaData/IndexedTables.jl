@@ -632,6 +632,14 @@ end
 
 const SpecialSelector = Union{Not, All, Keys, Between, Function, Regex}
 
+hascolumns(t, s) = true
+hascolumns(t, s::Symbol) = s in colnames(t)
+hascolumns(t, s::Int) = s in 1:length(columns(t))
+hascolumns(t, s::Tuple) = all(hascolumns(t, x) for x in s)
+hascolumns(t, s::Not) = hascolumns(t, s.cols)
+hascolumns(t, s::Between) = hascolumns(t, s.first) && hascolumns(t, s.last)
+hascolumns(t, s::All) = all(hascolumns(t, x) for x in s.cols)
+
 lowerselection(t, s)                     = s
 lowerselection(t, s::Union{Int, Symbol}) = colindex(t, s)
 lowerselection(t, s::Tuple)              = map(x -> lowerselection(t, x), s)
