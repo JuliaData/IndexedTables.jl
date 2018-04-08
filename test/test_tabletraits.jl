@@ -36,6 +36,11 @@ it3 = NDSparse(source_array, datacols=[:b, :c])
 @test it3[2] == @NT(b=2., c="B")
 @test it3[3] == @NT(b=3., c="C")
 
+it4 = NDSparse([(1=>"A"), (2=>"B")])
+@test length(it4) == 2
+@test it4[1] == "A"
+@test it4[2] == "B"
+
 source_nt = table([1,2,3],[1.,2.,3.],["A","B","C"], names=[:a,:b,:c])
 
 target_array_nt = collect(getiterator(source_nt))

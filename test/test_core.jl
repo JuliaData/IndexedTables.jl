@@ -3,7 +3,7 @@ using IndexedTables
 using PooledArrays
 using NamedTuples
 using DataValues
-import IndexedTables: update!, pkeynames, pkeys, excludecols, sortpermby, primaryperm, best_perm_estimate
+import IndexedTables: update!, pkeynames, pkeys, excludecols, sortpermby, primaryperm, best_perm_estimate, hascolumns
 
 let c = Columns([1,1,1,2,2], [1,2,4,3,5]),
     d = Columns([1,1,2,2,2], [1,3,1,4,5]),
@@ -770,6 +770,22 @@ end
     @test columns(t, Between(:x, :z)) == columns(t, (:x, :y, :z))
     @test columns(t, i -> i == :y) == columns(t, (:y,))
     @test columns(t, r"x|z") == columns(t, (:x, :z))
+
+    @test hascolumns(t, 1)
+    @test !hascolumns(t, 10)
+    @test hascolumns(t, :x)
+    @test !hascolumns(t, :xx)
+    @test !hascolumns(t, (:xx, :y))
+    @test hascolumns(t, Keys())
+    @test hascolumns(t, (Keys(), :y))
+    @test hascolumns(t, Not(Keys()))
+    @test !hascolumns(t, Not(Keys(), :xx))
+    @test hascolumns(t, All(Keys(), :y))
+    @test hascolumns(t, All())
+    @test hascolumns(t, Between(:x, :z))
+    @test !hascolumns(t, Between(:x, :xx))
+    @test hascolumns(t, i -> i == :y)
+    @test hascolumns(t, r"x|z")
 end
 
 @testset "dropna" begin
