@@ -1,3 +1,5 @@
+using IndexedTables: collect_columns_flattened
+
 @testset "collectnamedtuples" begin
     v = [@NT(a = 1, b = 2), @NT(a = 1, b = 3)]
     @test collect_columns(v) == Columns(@NT(a = Int[1, 1], b = Int[2, 3]))
