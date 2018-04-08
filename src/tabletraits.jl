@@ -21,16 +21,14 @@ end
 function ndsparse(x; idxcols=nothing, datacols=nothing, copy=false, kwargs...)
     if isiterable(x)
         source_data = collect_columns(getiterator(x))
-        source_colnames = colnames(source_data)
+        source_data isa Columns{<:Pair} && return ndsparse(source_data; copy=false, kwargs...)
 
-        source_colnames isa Pair && return ndsparse(source_data; copy=false, kwargs...)
-
-        n = length(source_colnames)
         # For backward compatibility
         idxcols isa AbstractArray && (idxcols = Tuple(idxcols))
         datacols isa AbstractArray && (datacols = Tuple(datacols))
 
         if idxcols==nothing
+            n = ncols(source_data)
             idxcols = (datacols==nothing) ? Between(1, n-1) : Not(datacols)
         end
         if datacols==nothing
