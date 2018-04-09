@@ -1001,7 +1001,7 @@ false
 
 ```
 """
-setcol(t, col, x) = @cols setindex!(t, x, col)
+setcol(t, col::Union{Int, Symbol}, x) = @cols setindex!(t, x, col)
 
 """
 `pushcol(t, name, x)`
@@ -1027,7 +1027,7 @@ t     x  y  z
 
 ```
 """
-pushcol(t, name, x) = @cols push!(t, name, x)
+pushcol(t, name::Union{Int, Symbol}, x) = @cols push!(t, name, x)
 
 """
 `popcol(t, col)`
@@ -1050,8 +1050,10 @@ t     y
 0.05  4
 ```
 """
-popcol(t, name) = @cols pop!(t, name)
+popcol(t, name::Union{Int, Symbol}) = @cols pop!(t, name)
 
+popcol(t, args) = foldl(popcol, t, args)
+popcol(t, args::Vararg{Union{Int, Symbol}}) = popcol(t, args)
 """
 `insertcol(t, position::Integer, name, x)`
 
@@ -1143,7 +1145,15 @@ time  x
 0.05  1
 ```
 """
-renamecol(t, name, newname) = @cols rename!(t, name, newname)
+renamecol(t, name::Union{Int, Symbol}, newname) = @cols rename!(t, name, newname)
+
+for s in [:pushcol, :renamecol, :setcol]
+    @eval begin
+        $s(t, p::Pair) = $s(t, p.first, p.second)
+        $s(t, args) = foldl($s, t, args)
+        $s(t, args::Vararg{Pair}) = $s(t, args)
+    end
+end
 
 ## Utilities for mapping and reduction with many functions / OnlineStats
 
