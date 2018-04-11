@@ -4,7 +4,7 @@ import Base:
     linearindexing, push!, size, sort, sort!, permute!, issorted, sortperm,
     summary, resize!, vcat, serialize, deserialize, append!, copy!, view
 
-export Columns, colnames, ncols, ColDict, insertafter!, insertbefore!, @cols, setcol, pushcol, popcol, insertcol, insertcolafter, insertcolbefore, renamecol
+export Columns, colnames, ncols, ColDict, insertafter!, insertbefore!, @cols, setcol, pushcol, popcol, insertcol, insertcolafter, insertcolbefore, renamecol, transformcol
 export map_rows
 export All, Not, Between, Keys
 
@@ -1029,6 +1029,11 @@ t     x  y  z
 """
 pushcol(t, name::Union{Int, Symbol}, x) = @cols push!(t, name, x)
 
+function transformcol(t, name::Union{Int, Symbol}, x)
+    i = _colindex(colnames(t), name, 0)
+    i == 0 ? pushcol(t, name, x) : setcol(t, i, x)
+end
+
 """
 `popcol(t, col)`
 
@@ -1147,7 +1152,7 @@ time  x
 """
 renamecol(t, name::Union{Int, Symbol}, newname) = @cols rename!(t, name, newname)
 
-for s in [:pushcol, :renamecol, :setcol]
+for s in [:pushcol, :renamecol, :setcol, :transformcol]
     @eval begin
         $s(t, p::Pair) = $s(t, p.first, p.second)
         $s(t, args) = foldl($s, t, args)
