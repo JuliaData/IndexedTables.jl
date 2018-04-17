@@ -120,7 +120,7 @@ end
 
 # sortperm with counting sort
 
-sortperm_fast(x) = sortperm(sortproxy(x))
+sortperm_fast(x) = sortperm(x)
 
 function sortperm_fast(v::Vector{T}) where T<:Integer
     n = length(v)
@@ -158,6 +158,11 @@ end
 
 # sort the values in v[i0:i1] in place, by array `by`
 function sort_sub_by!(v, i0, i1, by, order, temp)
+    empty!(temp)
+    sort!(v, i0, i1, MergeSort, order, temp)
+end
+
+function sort_sub_by!(v, i0, i1, by::PooledArray, order, temp)
     empty!(temp)
     sort!(v, i0, i1, MergeSort, order, temp)
 end

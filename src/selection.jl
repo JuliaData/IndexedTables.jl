@@ -451,8 +451,9 @@ n    t    │
 """
 function Base.filter(fn, t::Dataset; select=valuenames(t))
     x = rows(t, select)
-    indxs = collect(Iterators.filter(i->fn(x[i]), eachindex(x)))
-    subtable(t, indxs)
+    indxs = map(i->fn(x[i]), eachindex(x))
+    y = subtable(t, eachindex(x)[indxs])
+    y
 end
 
 function Base.filter(pred::Tuple, t::Dataset; select=nothing)
