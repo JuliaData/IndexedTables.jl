@@ -847,7 +847,7 @@ function Base.setindex!(d::ColDict, x, key::Union{Symbol, Int})
     end
 end
 
-setcol!(d::ColDict, key::Union{Symbol, Int}, x) = setindex!(d, x, key)
+set!(d::ColDict, key::Union{Symbol, Int}, x) = setindex!(d, x, key)
 
 function Base.haskey(d::ColDict, key)
     _colindex(d.names, key, 0) != 0
@@ -883,7 +883,7 @@ function insertbefore!(d::ColDict, i, key, col)
     insert!(d, k, key, col)
 end
 
-function Base.pop!(d::ColDict, key::Union{Symbol, Int}=length(s.names))
+function Base.pop!(d::ColDict, key::Union{Symbol, Int}=length(d.names))
     k = _colindex(d.names, key, 0)
     local col
     if k == 0
@@ -920,7 +920,7 @@ function Base.push!(d::ColDict, key::Union{Symbol, Int}, x)
     push!(d.columns, rows(d.src, x))
 end
 
-for (s, typ) in zip([:(Base.pop!), :(Base.push!), :(rename!), :(setcol!)], [:(Union{Symbol, Int}), :Pair, :Pair, :Pair])
+for (s, typ) in zip([:(Base.pop!), :(Base.push!), :(rename!), :(set!)], [:(Union{Symbol, Int}), :Pair, :Pair, :Pair])
     if s != :(Base.pop!)
         @eval $s(t::ColDict, x::Pair) = $s(t, x.first, x.second)
     end
@@ -1017,7 +1017,7 @@ false
 
 ```
 """
-setcol(t, args...) = @cols setcol!(t, args...)
+setcol(t, args...) = @cols set!(t, args...)
 
 """
 `pushcol(t, name, x)`
