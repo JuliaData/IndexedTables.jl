@@ -920,8 +920,11 @@ function Base.push!(d::ColDict, key::Union{Symbol, Int}, x)
     push!(d.columns, rows(d.src, x))
 end
 
-for (s, typ) in zip([:(Base.pop!), :(Base.push!), :(rename!), :(set!)], [:(Union{Symbol, Int}), :Pair, :Pair, :Pair])
-    if s != :(Base.pop!)
+for s in [:(Base.pop!), :(Base.push!), :(rename!), :(set!)]
+    if s == :(Base.pop!)
+        typ = :(Union{Symbol, Int})
+    else
+        typ = :Pair
         @eval $s(t::ColDict, x::Pair) = $s(t, x.first, x.second)
     end
     @eval begin
@@ -1016,6 +1019,24 @@ julia> t == t2
 false
 
 ```
+
+If `col` is not an existing column, `setcol` will add it:
+
+```jldoctest setcol
+julia> t = table([1,2], [2,3], names = [:a,:b])
+Table with 2 rows, 2 columns:
+a  b
+────
+1  2
+2  3
+
+julia> setcol(t, :c, [1,2])
+Table with 2 rows, 3 columns:
+a  b  c
+───────
+1  2  1
+2  3  2
+```
 """
 setcol(t, args...) = @cols set!(t, args...)
 
@@ -1023,6 +1044,10 @@ setcol(t, args...) = @cols set!(t, args...)
 `pushcol(t, name, x)`
 
 Push a column `x` to the end of the table. `name` is the name for the new column. Returns a new table.
+
+`pushcol(t, map::Pair...)`
+
+Push many columns at a time.
 
 # Example:
 
@@ -1049,6 +1074,10 @@ pushcol(t, args...) = @cols push!(t, args...)
 `popcol(t, col)`
 
 Remove the column `col` from the table. Returns a new table.
+
+`popcol(t, cols...)`
+
+Remove many columns at a time.
 
 ```jldoctest
 julia> t = table([0.01, 0.05], [2,1], [3,4], names=[:t, :x, :y], pkey=:t)
@@ -1142,6 +1171,10 @@ insertcolbefore(t, before, name, x) = @cols insertbefore!(t, before, name, x)
 `renamecol(t, col, newname)`
 
 Set `newname` as the new name for column `col` in `t`. Returns a new table.
+
+`renamecol(t, map::Pair...)`
+
+Rename many columns at a time.
 
 ```jldoctest
 julia> t = table([0.01, 0.05], [2,1], names=[:t, :x])
