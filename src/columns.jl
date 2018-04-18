@@ -4,7 +4,7 @@ import Base:
     linearindexing, push!, size, sort, sort!, permute!, issorted, sortperm,
     summary, resize!, vcat, serialize, deserialize, append!, copy!, view
 
-export Columns, colnames, ncols, ColDict, insertafter!, insertbefore!, @cols, setcol, pushcol, popcol, insertcol, insertcolafter, insertcolbefore, renamecol, transformcol
+export Columns, colnames, ncols, ColDict, insertafter!, insertbefore!, @cols, setcol, pushcol, popcol, insertcol, insertcolafter, insertcolbefore, renamecol
 export map_rows
 export All, Not, Between, Keys
 
@@ -847,6 +847,8 @@ function Base.setindex!(d::ColDict, x, key::Union{Symbol, Int})
     end
 end
 
+setcol!(d::ColDict, key::Union{Symbol, Int}, x) = setindex!(d, x, key)
+
 function Base.haskey(d::ColDict, key)
     _colindex(d.names, key, 0) != 0
 end
@@ -881,7 +883,7 @@ function insertbefore!(d::ColDict, i, key, col)
     insert!(d, k, key, col)
 end
 
-function Base.pop!(d::ColDict, key=length(s.names))
+function Base.pop!(d::ColDict, key::Union{Symbol, Int}=length(s.names))
     k = _colindex(d.names, key, 0)
     local col
     if k == 0
@@ -905,7 +907,7 @@ function Base.pop!(d::ColDict, key=length(s.names))
     col
 end
 
-function rename!(d::ColDict, col, newname)
+function rename!(d::ColDict, col::Union{Symbol, Int}, newname)
     k = _colindex(d.names, col, 0)
     if k == 0
         error("$col not found. Cannot rename it.")
@@ -913,9 +915,23 @@ function rename!(d::ColDict, col, newname)
     d.names[k] = newname
 end
 
-function Base.push!(d::ColDict, key, x)
+function Base.push!(d::ColDict, key::Union{Symbol, Int}, x)
     push!(d.names, key)
     push!(d.columns, rows(d.src, x))
+end
+
+for (s, typ) in zip([:(Base.pop!), :(Base.push!), :(rename!), :(setcol!)], [:(Union{Symbol, Int}), :Pair, :Pair, :Pair])
+    if s != :(Base.pop!)
+        @eval $s(t::ColDict, x::Pair) = $s(t, x.first, x.second)
+    end
+    @eval begin
+        function $s(t::ColDict, args)
+            for i in args
+                $s(t, i)
+            end
+        end
+        $s(t::ColDict, args::Vararg{$typ}) = $s(t, args)
+    end
 end
 
 function _cols(expr)
@@ -1001,7 +1017,7 @@ false
 
 ```
 """
-setcol(t, col::Union{Int, Symbol}, x) = @cols setindex!(t, x, col)
+setcol(t, args...) = @cols setcol!(t, args...)
 
 """
 `pushcol(t, name, x)`
@@ -1027,12 +1043,7 @@ t     x  y  z
 
 ```
 """
-pushcol(t, name::Union{Int, Symbol}, x) = @cols push!(t, name, x)
-
-function transformcol(t, name::Union{Int, Symbol}, x)
-    i = _colindex(colnames(t), name, 0)
-    i == 0 ? pushcol(t, name, x) : setcol(t, i, x)
-end
+pushcol(t, args...) = @cols push!(t, args...)
 
 """
 `popcol(t, col)`
@@ -1055,10 +1066,8 @@ t     y
 0.05  4
 ```
 """
-popcol(t, name::Union{Int, Symbol}) = @cols pop!(t, name)
+popcol(t, args...) = @cols pop!(t, args...)
 
-popcol(t, args) = foldl(popcol, t, args)
-popcol(t, args::Vararg{Union{Int, Symbol}}) = popcol(t, args)
 """
 `insertcol(t, position::Integer, name, x)`
 
@@ -1150,15 +1159,7 @@ time  x
 0.05  1
 ```
 """
-renamecol(t, name::Union{Int, Symbol}, newname) = @cols rename!(t, name, newname)
-
-for s in [:pushcol, :renamecol, :setcol, :transformcol]
-    @eval begin
-        $s(t, p::Pair) = $s(t, p.first, p.second)
-        $s(t, args) = foldl($s, t, args)
-        $s(t, args::Vararg{Pair}) = $s(t, args)
-    end
-end
+renamecol(t, args...) = @cols rename!(t, args...)
 
 ## Utilities for mapping and reduction with many functions / OnlineStats
 
