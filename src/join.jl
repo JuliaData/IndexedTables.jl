@@ -171,9 +171,8 @@ function _join!{typ, grp, keepkeys}(::Val{typ}, ::Val{grp}, ::Val{keepkeys}, f, 
     lnull_idx, rnull_idx
 end
 
-nullrow(t::Type{<:Tuple}) = tuple(map(x->x(), [t.parameters...])...)
-nullrow(t::Type{<:NamedTuple}) = t(map(x->x(), [t.parameters...])...)
-nullrow(t::Type{<:DataValue}) = t()
+nullrow(T::Type{<:Tup}) = T(map(x->x(), [T.parameters...]))
+nullrow(T::Type{<:DataValue}) = T()
 
 function init_join_output(typ, grp, f, ldata, rdata, left, keepkeys, lkey, rkey, init_group, accumulate)
     lnull = nothing

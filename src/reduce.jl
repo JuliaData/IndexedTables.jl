@@ -123,7 +123,7 @@ end
 
 addname(v, name) = v
 addname(v::Tup, name::Type{<:NamedTuple}) = v
-addname(v, name::Type{<:NamedTuple}) = name(v)
+addname(v, name::Type{<:NamedTuple}) = name(tuple(v))
 
 struct GroupReduce{F, S, T, P, N}
     f::F

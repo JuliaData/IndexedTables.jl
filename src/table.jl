@@ -252,7 +252,7 @@ table(c::Columns{<:Pair}; kwargs...) = convert(NextTable, c.columns.first, c.col
 
 function table(cols::AbstractArray...; names=nothing, kwargs...)
     if isa(names, AbstractArray) && all(x->isa(x, Symbol), names)
-        cs = namedtuple(names...)(cols...)
+        cs = namedtuple(names...)(cols)
     else
         cs = cols
     end
