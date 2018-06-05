@@ -414,7 +414,7 @@ end
     aa = map(tuple, columns(a)...)
     @test isa(convert(Columns, aa), Columns)
     @test convert(Columns, aa) == a
-    bb = map(@NT(x,y), columns(a)...)
+    bb = map(@NT(x,y) ∘ tuple, columns(a)...)
     @test isa(convert(Columns, bb), Columns)
     @test convert(Columns, bb) == Columns(x=column(a,1), y=column(a, 2))
 

@@ -303,8 +303,7 @@ function empty!(t::NDSparse)
     return t
 end
 
-_convert(::Type{<:Tuple}, tup::Tuple) = tup
-_convert{T<:NamedTuple}(::Type{T}, tup::Tuple) = T(tup...)
+_convert(T::Type{<:Tup}, tup::Tuple) = T(tup)
 convertkey(t::NDSparse{V,K,I}, tup::Tuple) where {V,K,I} = _convert(eltype(I), tup)
 
 ndims(t::NDSparse) = length(t.index.columns)

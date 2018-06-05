@@ -40,7 +40,7 @@ function Columns(cols::AbstractVector...; names::Union{Vector,Tuple{Vararg{Any}}
     else
         dt = eval(:(@NT($(names...)))){map(eltype, cols)...}
         ct = eval(:(@NT($(names...)))){map(typeof, cols)...}
-        Columns{dt,ct}(ct(cols...))
+        Columns{dt,ct}(ct(cols))
     end
 end
 
@@ -213,7 +213,7 @@ end
 
 function Base.similar{T<:Columns}(::Type{T}, n::Int)::T
     T_cols = T.parameters[2]
-    f = T_cols <: Tuple ? tuple : T_cols
+    f = (T_cols <: Tuple || T_cols <: NamedTuple) ? T_cols ∘ tuple : T_cols
     T(f(map(t->similar(t, n), T.parameters[2].parameters)...))
 end
 
@@ -229,7 +229,7 @@ end
 
 
 getindex(c::Columns{D}, i::Integer) where {D<:Tuple} = ith_all(i, c.columns)
-getindex(c::Columns{D}, i::Integer) where {D<:NamedTuple} = D(ith_all(i, c.columns)...)
+getindex(c::Columns{D}, i::Integer) where {D<:NamedTuple} = D(ith_all(i, c.columns))
 getindex(c::Columns{D}, i::Integer) where {D<:Pair} = getindex(c.columns.first, i) => getindex(c.columns.second, i)
 
 getindex(c::Columns, p::AbstractVector) = Columns(_map(c->c[p], c.columns))
@@ -724,9 +724,9 @@ function columns(c, sel::Union{Tuple, SpecialSelector})
     if all(x->isa(x, Symbol), cnames)
         tuplewrap = namedtuple(cnames...)
     else
-        tuplewrap = tuple
+        tuplewrap = Tuple
     end
-    tuplewrap((rows(c, w) for w in which)...)
+    tuplewrap((rows(c, w) for w in which))
 end
 
 """
@@ -1276,7 +1276,7 @@ function init_funcs(f::Tup, isvec)
         f
     end
 
-    namedtuple(ns...)(fs...), ss
+    namedtuple(ns...)(fs), ss
 end
 
 function init_inputs(f::Tup, input, gettype, isvec)
@@ -1293,7 +1293,7 @@ function init_inputs(f::Tup, input, gettype, isvec)
     NT = namedtuple(ns...)
 
     # functions, input, output_eltype
-    NT(fs...), rows(NT(xs...)), NT{output_eltypes...}
+    NT(fs), rows(NT(xs)), NT{output_eltypes...}
 end
 
 ### utils
