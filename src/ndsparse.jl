@@ -304,15 +304,15 @@ function empty!(t::NDSparse)
 end
 
 _convert(::Type{<:Tuple}, tup::Tuple) = tup
-_convert{T<:NamedTuple}(::Type{T}, tup::Tuple) = T(tup...)
+_convert(::Type{T}, tup::Tuple) where {T<:NamedTuple} = T(tup...)
 convertkey(t::NDSparse{V,K,I}, tup::Tuple) where {V,K,I} = _convert(eltype(I), tup)
 
 ndims(t::NDSparse) = length(t.index.columns)
 length(t::NDSparse) = (flush!(t);length(t.index))
-eltype{T,D,C,V}(::Type{NDSparse{T,D,C,V}}) = T
-Base.keytype{T,D,C,V}(::Type{NDSparse{T,D,C,V}}) = D
+eltype(::Type{NDSparse{T,D,C,V}}) where {T,D,C,V} = T
+Base.keytype(::Type{NDSparse{T,D,C,V}}) where {T,D,C,V} = D
 Base.keytype(x::NDSparse) = keytype(typeof(x))
-dimlabels{T,D,C,V}(::Type{NDSparse{T,D,C,V}}) = fieldnames(eltype(C))
+dimlabels(::Type{NDSparse{T,D,C,V}}) where {T,D,C,V} = fieldnames(eltype(C))
 
 # Generic ndsparse constructor that also works with distributed
 # arrays in JuliaDB
@@ -517,7 +517,7 @@ function column(x::NDSparse, which::Integer)
     end
 end
 
-function convert{T}(::Type{NDSparse}, a::AbstractArray{T})
+function convert(::Type{NDSparse}, a::AbstractArray{T}) where T
     n = length(a)
     nd = ndims(a)
     a = permutedims(a, [nd:-1:1;])

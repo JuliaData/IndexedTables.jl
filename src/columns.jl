@@ -160,7 +160,7 @@ columns(c::Columns) = c.columns
 
 # Array-like API
 
-eltype{D,C}(::Type{Columns{D,C}}) = D
+eltype(::Type{Columns{D,C}}) where {D,C} = D
 function length(c::Columns)
     isempty(c.columns) ? 0 : length(c.columns[1])
 end
@@ -217,7 +217,7 @@ function Base.similar{T<:Columns}(::Type{T}, n::Int)::T
     T(f(map(t->similar(t, n), T.parameters[2].parameters)...))
 end
 
-function convert{N}(::Type{Columns}, x::AbstractArray{<:NTuple{N,Any}})
+function convert(::Type{Columns}, x::AbstractArray{<:NTuple{N,Any}}) where N
     eltypes = (eltype(x).parameters...)
     copy!(Columns(map(t->Vector{t}(length(x)), eltypes)), x)
 end
@@ -397,7 +397,7 @@ copyrow!(I::AbstractArray, i, src::AbstractArray, j) = (@inbounds I[i] = src[j])
 pushrow!(to::Columns, from::Columns, i) = foreach((a,b)->push!(a, b[i]), to.columns, from.columns)
 pushrow!(to::AbstractArray, from::AbstractArray, i) = push!(to, from[i])
 
-@generated function rowless{D,C}(c::Columns{D,C}, i, j)
+@generated function rowless(c::Columns{D,C}, i, j) where {D,C}
     N = length(C.parameters)
     ex = :(cmpelts(getfield(c.columns,$N), i, j) < 0)
     for n in N-1:-1:1
@@ -410,7 +410,7 @@ pushrow!(to::AbstractArray, from::AbstractArray, i) = push!(to, from[i])
     ex
 end
 
-@generated function roweq{D,C}(c::Columns{D,C}, i, j)
+@generated function roweq(c::Columns{D,C}, i, j) where {D,C}
     N = length(C.parameters)
     ex = :(cmpelts(getfield(c.columns,1), i, j) == 0)
     for n in 2:N
@@ -423,7 +423,7 @@ end
 
 # uses number of columns from `d`, assuming `c` has more or equal
 # dimensions, for broadcast joins.
-@generated function rowcmp{D}(c::Columns, i, d::Columns{D}, j)
+@generated function rowcmp(c::Columns, i, d::Columns{D}, j) where D
     N = length(D.parameters)
     ex = :(cmp(getfield(c.columns,$N)[i], getfield(d.columns,$N)[j]))
     for n in N-1:-1:1
@@ -444,7 +444,7 @@ end
 # all columns are equal except left >= right in last column.
 # Could be generalized to some number of trailing columns, but I don't
 # know whether that has applications.
-@generated function row_asof{D,C}(c::Columns{D,C}, i, d::Columns{D,C}, j)
+@generated function row_asof(c::Columns{D,C}, i, d::Columns{D,C}, j) where {D,C}
     N = length(C.parameters)
     if N == 1
         ex = :(!isless(getfield(c.columns,1)[i], getfield(d.columns,1)[j]))

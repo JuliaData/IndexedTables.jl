@@ -3,14 +3,14 @@ using DataValues
 export groupjoin
 
 # product-join on equal lkey and rkey starting at i, j
-function joinequalblock{typ, grp}(::Val{typ}, ::Val{grp}, f, I, data, lout, rout, lkey, rkey,
-                        ldata, rdata, lperm, rperm, init_group, accumulate, i,j)
+function joinequalblock(::Val{typ}, ::Val{grp}, f, I, data, lout, rout, lkey, rkey,
+              ldata, rdata, lperm, rperm, init_group, accumulate, i,j) where {typ, grp}
 end
 
 # copy without allocating struct
-@inline function _push!{part}(::Val{part}, f::typeof(concat_tup), data,
-                              lout, rout, ldata, rdata,
-                              lidx, ridx, lnull, rnull)
+@inline function _push!(::Val{part}, f::typeof(concat_tup), data,
+                        lout, rout, ldata, rdata,
+                        lidx, ridx, lnull, rnull) where part
     if part === :left
         pushrow!(lout, ldata, lidx)
         l = length(lout)
@@ -25,9 +25,9 @@ end
     end
 end
 
-@inline function _push!{part}(::Val{part}, f, data,
-                              lout, rout, ldata, rdata,
-                              lidx, ridx, lnull, rnull)
+@inline function _push!(::Val{part}, f, data,
+                        lout, rout, ldata, rdata,
+                        lidx, ridx, lnull, rnull) where part
     if part === :left
         push!(data, f(ldata[lidx], rnull))
     elseif part === :right
@@ -37,9 +37,9 @@ end
     end
 end
 
-@inline function _append!{part}(p::Val{part}, f, data,
-                              lout, rout, ldata, rdata,
-                              lidx, ridx, lnull, rnull)
+@inline function _append!(p::Val{part}, f, data,
+                        lout, rout, ldata, rdata,
+                        lidx, ridx, lnull, rnull) where part
     if part === :left
         for i in lidx
             _push!(p, f, data, lout, rout, ldata, rdata,
@@ -53,8 +53,8 @@ end
     end
 end
 
-function _join!{typ, grp, keepkeys}(::Val{typ}, ::Val{grp}, ::Val{keepkeys}, f, I, data, ks, lout, rout,
-                          lnull, rnull, lkey, rkey, ldata, rdata, lperm, rperm, init_group, accumulate)
+function _join!(::Val{typ}, ::Val{grp}, ::Val{keepkeys}, f, I, data, ks, lout, rout,
+      lnull, rnull, lkey, rkey, ldata, rdata, lperm, rperm, init_group, accumulate) where {typ, grp, keepkeys}
 
     ll, rr = length(lkey), length(rkey)
 

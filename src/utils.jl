@@ -12,13 +12,13 @@ end
 export @NT
 
 eltypes(::Type{Tuple{}}) = Tuple{}
-eltypes{T<:Tuple}(::Type{T}) =
+eltypes(::Type{T}) where {T<:Tuple} =
     tuple_type_cons(eltype(tuple_type_head(T)), eltypes(tuple_type_tail(T)))
-eltypes{T<:NamedTuple}(::Type{T}) = map_params(eltype, T)
+eltypes(::Type{T}) where {T<:NamedTuple} = map_params(eltype, T)
 eltypes(::Type{T}) where T <: Pair = map_params(eltypes, T)
 eltypes(::Type{T}) where T<:AbstractArray{S, N} where {S, N} = S
-Base.@pure astuple{T<:NamedTuple}(::Type{T}) = Tuple{T.parameters...}
-astuple{T<:Tuple}(::Type{T}) = T
+Base.@pure astuple(::Type{T}) where {T<:NamedTuple} = Tuple{T.parameters...}
+astuple(::Type{T}) where {T<:Tuple} = T
 
 # sizehint, making sure to return first argument
 _sizehint!(a::Array{T,1}, n::Integer) where {T} = (sizehint!(a, n); a)
@@ -70,7 +70,7 @@ end
 
 product(a) = a
 product(a, b) = Prod2(a, b)
-eltype{I1,I2}(::Type{Prod2{I1,I2}}) = Tuple{eltype(I1), eltype(I2)}
+eltype(::Type{Prod2{I1,I2}}) where {I1,I2} = Tuple{eltype(I1), eltype(I2)}
 length(p::AbstractProdIterator) = length(p.a)*length(p.b)
 
 function start(p::AbstractProdIterator)
@@ -104,7 +104,7 @@ struct Prod{I1, I2<:AbstractProdIterator} <: AbstractProdIterator
 end
 
 product(a, b, c...) = Prod(a, product(b, c...))
-eltype{I1,I2}(::Type{Prod{I1,I2}}) = tuple_type_cons(eltype(I1), eltype(I2))
+eltype(::Type{Prod{I1,I2}}) where {I1,I2} = tuple_type_cons(eltype(I1), eltype(I2))
 
 function next(p::Prod{I1,I2}, st) where {I1,I2}
     x = prod_next(p, st)
@@ -301,12 +301,12 @@ Base.@pure function strip_unionall(T)
     end
 end
 
-Base.@pure function _promote_op{S}(f, ::Type{S})
+Base.@pure function _promote_op(f, ::Type{S}) where S
     t = Core.Inference.return_type(f, Tuple{Base._default_type(S)})
     strip_unionall(t)
 end
 
-Base.@pure function _promote_op{S,T}(f, ::Type{S}, ::Type{T})
+Base.@pure function _promote_op(f, ::Type{S}, ::Type{T}) where {S,T}
     t = Core.Inference.return_type(f, Tuple{Base._default_type(S),
                                         Base._default_type(T)})
     strip_unionall(t)
@@ -328,11 +328,11 @@ _map_params(f, T::Type{Tuple{}},S::Type{Tuple{}}) = ()
 map_params(f, ::Type{T}, ::Type{S}) where {T,S} = f(T,S)
 map_params(f, ::Type{T}) where {T} = map_params((x,y)->f(x), T, T)
 map_params(f, ::Type{T}) where T <: Pair{S1, S2} where {S1, S2} = Pair{f(S1), f(S2)}
-@inline _tuple_type_head{T<:Tuple}(::Type{T}) = Base.tuple_type_head(T)
-@inline _tuple_type_tail{T<:Tuple}(::Type{T}) = Base.tuple_type_tail(T)
+@inline _tuple_type_head(::Type{T}) where {T<:Tuple} = Base.tuple_type_head(T)
+@inline _tuple_type_tail(::Type{T}) where {T<:Tuple} = Base.tuple_type_tail(T)
 
 #function map_params{N}(f, T::Type{T} where T<:Tuple{Vararg{Any,N}}, S::Type{S} where S<: Tuple{Vararg{Any,N}})
-Base.@pure function map_params{T<:Tuple,S<:Tuple}(f, ::Type{T}, ::Type{S})
+Base.@pure function map_params(f, ::Type{T}, ::Type{S}) where {T<:Tuple,S<:Tuple}
     if nfields(T) != nfields(S)
         MethodError(map_params, (typeof(f), T,S))
     end
@@ -341,11 +341,11 @@ end
 
 _tuple_type_head(T::Type{NT}) where {NT<: NamedTuple} = fieldtype(NT, 1)
 
-Base.@pure function _tuple_type_tail{NT<: NamedTuple}(T::Type{NT})
+Base.@pure function _tuple_type_tail(T::Type{NT}) where NT<: NamedTuple
     Tuple{Base.argtail(NT.parameters...)...}
 end
 
-Base.@pure @generated function map_params{T<:NamedTuple,S<:NamedTuple}(f, ::Type{T}, ::Type{S})
+Base.@pure @generated function map_params(f, ::Type{T}, ::Type{S}) where {T<:NamedTuple,S<:NamedTuple}
     if fieldnames(T) != fieldnames(S)
         MethodError(map_params, (T,S))
     end
@@ -368,8 +368,8 @@ Base.@pure function concat_tup_type(T::Type{<:Tuple}, S::Type{<:Tuple})
     Tuple{T.parameters..., S.parameters...}
 end
 
-Base.@pure function concat_tup_type{
-           T<:NamedTuple,S<:NamedTuple}(::Type{T}, ::Type{S})
+Base.@pure function concat_tup_type(::Type{T}, ::Type{S}) where {
+           T<:NamedTuple,S<:NamedTuple}
     nfields(T) == 0 && nfields(S) == 0 ?
         namedtuple() :
         namedtuple(fieldnames(T)...,

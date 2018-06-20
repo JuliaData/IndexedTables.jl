@@ -223,7 +223,7 @@ function table(::Val{:serial}, cols::Tup;
            similar(cs, 0))
 end
 
-function table{impl}(::Val{impl}, cols; kwargs...)
+function table(::Val{impl}, cols; kwargs...) where impl
     if impl == :distributed && isa(cols, Tup)
         error("""You requested to create a distributed table.
                  Distributed table is implemented by JuliaDB.
