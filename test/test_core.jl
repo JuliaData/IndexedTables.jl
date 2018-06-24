@@ -1042,6 +1042,17 @@ end
                   names = [:x, :var, :val], pkey = :x)
     res = table(1:4, [1, 4, 9, 16], [1, 8, 27, 64], names = [:x, Symbol(2), Symbol(3)], pkey = :x)
     @test unstack(long2; variable = :var, value = :val) == res
+
+    t = table([1, 4, 9, 16], ["val1", "val1", "val2", "val2"], names = [:x, :y])
+    res = table([1, 4,9, 16], [1,1,0,0], [0,0,1,1], names = [:x, :y_val1, :y_val2])
+    @test create_dummies(t, :y) == res
+    res = table([1,0,0,0], [0,1,0,0], [0,0,1,0], [0,0,0,1], [1,1,0,0], [0,0,1,1], 
+            names = [:x_1, :x_4, :x_9, :x_16, :y_val1, :y_val2])
+    @test create_dummies(t, (:x, :y)) == res
+    res = table([1,4,9,16], [1,1,0,0], names = [:x, :y_val1])
+    @test create_dummies(t, :y, categories = Dict(:y => ["val1"])) == res
+    res = table([1,4,9,16], [1,1,0,0], [0,0,0,0], names = [:x, :y_val1, :y_val3])
+    @test create_dummies(t, :y, categories = Dict(:y => ["val1", "val3"])) == res # val3 not in :y 
 end
 
 @testset "select" begin
