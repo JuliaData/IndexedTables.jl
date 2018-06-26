@@ -27,30 +27,30 @@ x  variable  value
 ```
 """
 function stack(t::D, by = pkeynames(t); select = isa(t, NDSparse) ? valuenames(t) : excludecols(t, by),
-    variable = :variable, value = :value) where {D<:Dataset}
+	variable = :variable, value = :value) where {D<:Dataset}
 
-    (by != pkeynames(t)) && return stack(reindex(t, by, select); variable = :variable, value = :value)
+	(by != pkeynames(t)) && return stack(reindex(t, by, select); variable = :variable, value = :value)
 
-    valuecols = columns(t, select)
-    valuecol = [valuecol[i] for i in 1:length(t) for valuecol in valuecols]
+	valuecols = columns(t, select)
+	valuecol = [valuecol[i] for i in 1:length(t) for valuecol in valuecols]
 
-    labels = fieldnames(valuecols)
-    labelcol = [label for i in 1:length(t) for label in labels]
+	labels = fieldnames(valuecols)
+	labelcol = [label for i in 1:length(t) for label in labels]
 
-    bycols = map(arg -> repeat(arg, inner = length(valuecols)), columns(t, by))
-    convert(collectiontype(D), Columns(bycols), Columns(labelcol, valuecol, names = [variable, value]))
+	bycols = map(arg -> repeat(arg, inner = length(valuecols)), columns(t, by))
+	convert(collectiontype(D), Columns(bycols), Columns(labelcol, valuecol, names = [variable, value]))
 end
 
 function unstack(::Type{D}, ::Type{T}, key, val, cols::AbstractVector{S}) where {D <:Dataset, T, S}
-    dest_val = Columns((DataValues.DataValueArray{T}(length(val)) for i in cols)...; names = cols)
-    for (i, el) in enumerate(val)
-        for j in el
-            k, v = j
-            isnull(columns(dest_val, S(k))[i]) || error("Repeated values with same label are not allowed")
-            columns(dest_val, S(k))[i] = v
-        end
-    end
-    convert(collectiontype(D), key, dest_val)
+	dest_val = Columns((DataValues.DataValueArray{T}(length(val)) for i in cols)...; names = cols)
+	for (i, el) in enumerate(val)
+		for j in el
+			k, v = j
+			isnull(columns(dest_val, S(k))[i]) || error("Repeated values with same label are not allowed")
+			columns(dest_val, S(k))[i] = v
+		end
+	end
+	convert(collectiontype(D), key, dest_val)
 end
 
 """
@@ -89,11 +89,11 @@ x  xsquare  xcube
 ```
 """
 function unstack(t::D, by = pkeynames(t); variable = :variable, value = :value) where {D<:Dataset}
-    tgrp = groupby((value => identity,), t, by, select = (variable, value))
-    S = eltype(colnames(t))
-    cols = S.(union(columns(t, variable)))
-    T = eltype(columns(t, value))
-    unstack(D, T isa Type{<:DataValue} ? eltype(T) : T, pkeys(tgrp), columns(tgrp, value), cols)
+	tgrp = groupby((value => identity,), t, by, select = (variable, value))
+	S = eltype(colnames(t))
+	cols = S.(union(columns(t, variable)))
+	T = eltype(columns(t, value))
+	unstack(D, T isa Type{<:DataValue} ? eltype(T) : T, pkeys(tgrp), columns(tgrp, value), cols)
 end
 
 """
@@ -129,25 +129,29 @@ x   y_val1
 9      0
 16     0
 ```
-"""
-function create_dummies(t, cols; categories=Dict())
-    arr = []
-    for i in cols
-        if haskey(categories, i)
-            uniq = categories[i]
-        else
-            uniq = collect(keys(reduce(CountMap(), t, select = i).value))
-        end
 
-        # arr = Array{Any}(length(uniq))
-        for j in uniq
-            push!(arr, Symbol("$(i)_$(j)") => i => f(j))
-        end
-    end
-    t = setcol(t, arr)
-    t = popcol(t, cols)
-    t
-end
+"""
 f(j) = x -> x == j ? Int8(1) : Int8(0)
+function create_dummies(t, cols; categories=Dict())
+	# t = table()
+	# v = [:first, :second]
+	for i in cols
+		if haskey(categories, i)
+			uniq = categories[i]
+		else
+			uniq = collect(keys(reduce(CountMap(), t, select = i).value))
+		end
+
+		arr = Array{Any}(length(uniq))
+		for (ind, j) in enumerate(uniq)
+			arr[ind] = Symbol("$(i)_$(j)") => i => f(j)
+		end
+
+		t = setcol(t, arr)
+		t = popcol(t, i)
+	end
+	t
+end
 
 create_dummies(t, col::Symbol; categories = Dict()) = create_dummies(t, [col], categories = categories)
+
