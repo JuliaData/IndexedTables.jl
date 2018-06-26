@@ -131,27 +131,22 @@ x   y_val1
 ```
 
 """
-f(j) = x -> x == j ? Int8(1) : Int8(0)
 function create_dummies(t, cols; categories=Dict())
-	# t = table()
-	# v = [:first, :second]
-	for i in cols
-		if haskey(categories, i)
-			uniq = categories[i]
-		else
-			uniq = collect(keys(reduce(CountMap(), t, select = i).value))
-		end
+    arr = []
+    for i in cols
+        if haskey(categories, i)
+            uniq = categories[i]
+        else
+            uniq = collect(keys(reduce(CountMap(), t, select = i).value))
+        end
 
-		arr = Array{Any}(length(uniq))
-		for (ind, j) in enumerate(uniq)
-			arr[ind] = Symbol("$(i)_$(j)") => i => f(j)
-		end
-
-		t = setcol(t, arr)
-		t = popcol(t, i)
-	end
-	t
+        for j in uniq
+            push!(arr, Symbol("$(i)_$(j)") => i => f(j))
+        end
+    end
+    t = setcol(t, arr)
+    t = popcol(t, cols)
+    t
 end
-
 create_dummies(t, col::Symbol; categories = Dict()) = create_dummies(t, [col], categories = categories)
-
+f(j) = x -> x == j ? Int8(1) : Int8(0)
