@@ -42,11 +42,11 @@ function stack(t::D, by = pkeynames(t); select = isa(t, NDSparse) ? valuenames(t
 end
 
 function unstack(::Type{D}, ::Type{T}, key, val, cols::AbstractVector{S}) where {D <:Dataset, T, S}
-    dest_val = Columns((DataValues.DataValueArray{T}(length(val)) for i in cols)...; names = cols)
+    dest_val = Columns((Array{Union{T, Missing}}(length(val)) for i in cols)...; names = cols)
     for (i, el) in enumerate(val)
         for j in el
             k, v = j
-            isnull(columns(dest_val, S(k))[i]) || error("Repeated values with same label are not allowed")
+            ismissing(columns(dest_val, S(k))[i]) || error("Repeated values with same label are not allowed")
             columns(dest_val, S(k))[i] = v
         end
     end
@@ -93,5 +93,5 @@ function unstack(t::D, by = pkeynames(t); variable = :variable, value = :value) 
     S = eltype(colnames(t))
     cols = S.(union(columns(t, variable)))
     T = eltype(columns(t, value))
-    unstack(D, T isa Type{<:DataValue} ? eltype(T) : T, pkeys(tgrp), columns(tgrp, value), cols)
+    unstack(D, Missing <: T ? nonmissing(T) : T, pkeys(tgrp), columns(tgrp, value), cols)
 end

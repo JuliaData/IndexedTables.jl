@@ -1,13 +1,7 @@
-import DataValues: DataValue
-
 _is_subtype(::Type{S}, ::Type{T}) where {S, T} = promote_type(S, T) == T
 
 Base.@pure function dataarrayof(T)
-    if T<:DataValue
-        DataValueArray{T.parameters[1],1}
-    else
-        Vector{T}
-    end
+    Vector{T}
 end
 
 """
@@ -39,7 +33,7 @@ julia> collect_columns(s)
 collect_columns(itr) = collect_columns(itr, Base.iteratorsize(itr))
 
 function collect_empty_columns(itr::T) where {T}
-    S = Core.Inference.return_type(first, Tuple{T})
+    S = Core.Compiler.return_type(first, Tuple{T})
     similar(arrayof(S), 0)
 end
 
@@ -147,7 +141,7 @@ fieldwise_isa(el::S, ::Type{Tuple}) where {S<:Tup} = _is_subtype(S, Tuple)
 fieldwise_isa(el::S, ::Type{NamedTuple}) where {S<:Tup} = _is_subtype(S, NamedTuple)
 
 @generated function fieldwise_isa(el::S, ::Type{T}) where {S<:Tup, T<:Tup}
-    if (fieldnames(S) == fieldnames(T)) && all(_is_subtype(s, t) for (s, t) in zip(S.parameters, T.parameters))
+    if (fieldnames(S) == fieldnames(T)) && all(_is_subtype(s, t) for (s, t) in zip(fieldtypes(S), fieldtypes(T)))
         return :(true)
     else
         return :(false)
@@ -171,8 +165,8 @@ function widencolumns(dest, i, el::S, ::Type{T}) where{S <: Tup, T<:Tup}
         new = Array{R}(length(dest))
         copy!(new, 1, dest, 1, i-1)
     else
-        sp, tp = S.parameters, T.parameters
-        idx = find(!(s <: t) for (s, t) in zip(sp, tp))
+        sp, tp = fieldtypes(S), fieldtypes(T)
+        idx = findall(collect(!(s <: t) for (s, t) in zip(sp, tp)))
         new = dest
         for l in idx
             newcol = dataarrayof(promote_type(sp[l], tp[l]))(length(dest))

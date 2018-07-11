@@ -1,9 +1,6 @@
 using IndexedTables
-using NamedTuples
 using OnlineStats
-using DataValues
-import DataValues: NA
-using Base.Test
+using Test
 using WeakRefStrings
 
 @testset "IndexedTables" begin

@@ -39,7 +39,7 @@ function mapslices(f, x::NDSparse, dims; name = nothing)
 
     if isa(y, NDSparse)
         # this means we need to concatenate outputs into a big NDSparse
-        ns = vcat(dimlabels(x)[iterdims], dimlabels(y))
+        ns = vcat(collect(dimlabels(x)[iterdims]), collect(dimlabels(y)))
         if !all(x->isa(x, Symbol), ns)
             ns = nothing
         else
@@ -128,8 +128,8 @@ function _mapslices_itable!(f, output, x, iter, iterdims, start)
     D = output.data
     initdims = length(iterdims)
 
-    I1 = Columns(I.columns[1:initdims]) # filled from existing table
-    I2 = Columns(I.columns[initdims+1:end]) # filled from output tables
+    I1 = Columns(getsubfields(I.columns, 1:initdims)) # filled from existing table
+    I2 = Columns(getsubfields(I.columns, initdims+1:nfields(I.columns))) # filled from output tables
 
     for i = start:length(iter)
         if i != 1 && roweq(iter, i-1, i) # We've already visited this slice
@@ -156,9 +156,17 @@ end
 function _flatten!(others, vecvec, out_others, out_vecvec)
     for i in 1:length(others)
         vec = vecvec[i]
-        for x in vec
-            push!(out_vecvec, x)
-            pushrow!(out_others, others, i)
+        try
+            for x in vec
+                push!(out_vecvec, x)
+                pushrow!(out_others, others, i)
+            end
+        catch err
+            # FIXME: this is slow!
+            if err isa MethodError && err.f === iterate
+                push!(out_vecvec, vec)
+                pushrow!(out_others, others, i)
+            end
         end
     end
 end
@@ -221,7 +229,7 @@ function flatten(t::NextTable, col=length(columns(t)); pkey=nothing)
     newcols = isa(cs, Tup) ? Any[cs...] : Any[cs]
     ns = colnames(out_vecvec)
     i = colindex(t, col)
-    cns = convert(Array{Any}, colnames(t))
+    cns = convert(Array{Any}, collect(colnames(t)))
     if length(ns) == 1 && !(ns[1] isa Symbol)
         ns = [colname(t, col)]
     end

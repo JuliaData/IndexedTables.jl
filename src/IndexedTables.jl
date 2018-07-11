@@ -2,7 +2,7 @@ __precompile__()
 module IndexedTables
 
 using Compat
-using NamedTuples, PooledArrays
+using PooledArrays
 
 import Base:
     show, eltype, length, getindex, setindex!, ndims, map, convert, keys, values,
@@ -58,6 +58,6 @@ include("join.jl")
 include("reshape.jl")
 
 # TableTraits.jl integration
-include("tabletraits.jl")
+#include("tabletraits.jl")
 
 end # module

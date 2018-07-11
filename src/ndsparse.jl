@@ -228,7 +228,7 @@ Base.@pure function colnames(t::NDSparse)
     if all(x->isa(x, Integer), dnames)
         dnames = map(x->x+ncols(t.index), dnames)
     end
-    vcat(colnames(t.index), dnames)
+    (colnames(t.index)..., dnames...,)
 end
 
 columns(nd::NDSparse) = concat_tup(columns(nd.index), columns(nd.data))
@@ -295,6 +295,11 @@ function (==)(a::NDSparse, b::NDSparse)
     return a.index == b.index && a.data == b.data
 end
 
+function Base.isequal(a::NDSparse, b::NDSparse)
+    flush!(a); flush!(b)
+    return isequal(keys(a), keys(b)) && isequal(values(a), values(b))
+end
+
 function empty!(t::NDSparse)
     empty!(t.index)
     empty!(t.data)
@@ -304,7 +309,7 @@ function empty!(t::NDSparse)
 end
 
 _convert(::Type{<:Tuple}, tup::Tuple) = tup
-_convert(::Type{T}, tup::Tuple) where {T<:NamedTuple} = T(tup...)
+_convert(::Type{T}, tup::Tuple) where {T<:NamedTuple} = T(tup)
 convertkey(t::NDSparse{V,K,I}, tup::Tuple) where {V,K,I} = _convert(eltype(I), tup)
 
 ndims(t::NDSparse) = length(t.index.columns)
@@ -401,12 +406,14 @@ function showmeta(io, t::NDSparse, cnames)
     nkeys = length(columns(values(t)))
 
     print(io,"    ")
-    with_output_format(:underline, println, io, "Dimensions")
+    #with_output_format(:underline, println, io, "Dimensions")
+    println(io, "Dimensions")
     metat = Columns(([1:nidx;], [Text(get(cnames, i, "<noname>")) for i in 1:nidx],
                      eltype.([columns(keys(t))...])))
     showtable(io, metat, cnames=["#", "colname", "type"], cstyle=fill(:bold, nc), full=true)
     print(io,"\n    ")
-    with_output_format(:underline, println, io, "Values")
+    #with_output_format(:underline, println, io, "Values")
+    println(io, "Values")
     if isa(values(t), Columns)
         metat = Columns(([nidx+1:nkeys+nidx;], [Text(get(cnames, i, "<noname>")) for i in nidx+1:nkeys+nidx],
                          eltype.(Any[columns(values(t))...])))

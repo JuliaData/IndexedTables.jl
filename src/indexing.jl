@@ -64,7 +64,7 @@ function _getindex(t::NDSparse, idxs)
     out = convert(Vector{Int32}, range_estimate(I, idxs))
     filter!(i->row_in(cs, i, idxs), out)
     keepdims = filter(i->eltype(columns(t.index)[i]) != typeof(idxs[i]), 1:length(idxs))
-    NDSparse(Columns(map(x->x[out], I.columns[keepdims])), t.data[out], presorted=true)
+    NDSparse(Columns(map(x->x[out], getsubfields(I.columns, keepdims))), t.data[out], presorted=true)
 end
 
 # iterators over indices - lazy getindex

@@ -1,5 +1,3 @@
-using DataValues
-
 export groupjoin
 
 # product-join on equal lkey and rkey starting at i, j
@@ -106,7 +104,7 @@ function _join!(::Val{typ}, ::Val{grp}, ::Val{keepkeys}, f, I, data, ks, lout, r
                             # optimized push! method for concat_tup
                             _push!(Val{:both}(), f, data,
                                    lout, rout, ldata, rdata,
-                                   lperm[x], rperm[y], NA, NA)
+                                   lperm[x], rperm[y], missing, missing)
                         end
                     end
                 else
@@ -171,9 +169,9 @@ function _join!(::Val{typ}, ::Val{grp}, ::Val{keepkeys}, f, I, data, ks, lout, r
     lnull_idx, rnull_idx
 end
 
-nullrow(t::Type{<:Tuple}) = tuple(map(x->x(), [t.parameters...])...)
-nullrow(t::Type{<:NamedTuple}) = t(map(x->x(), [t.parameters...])...)
-nullrow(t::Type{<:DataValue}) = t()
+nullrow(t::Type{<:Tuple}) = Tuple(map(x->missing, fieldtypes(t)))
+nullrow(t::Type{<:NamedTuple}) = t(Tuple(map(x->missing, fieldtypes(t))))
+nullrow(t) = missing
 
 function init_join_output(typ, grp, f, ldata, rdata, left, keepkeys, lkey, rkey, init_group, accumulate)
     lnull = nothing
@@ -185,7 +183,7 @@ function init_join_output(typ, grp, f, ldata, rdata, left, keepkeys, lkey, rkey,
 
         left_type = eltype(ldata)
         if !isa(typ, Union{Val{:left}, Val{:inner}, Val{:anti}})
-            null_left_type = map_params(x->DataValue{x}, eltype(ldata))
+            null_left_type = map_params(x->Union{Missing, x}, eltype(ldata))
             lnull = nullrow(null_left_type)
         else
             null_left_type = left_type
@@ -193,7 +191,7 @@ function init_join_output(typ, grp, f, ldata, rdata, left, keepkeys, lkey, rkey,
 
         right_type = eltype(rdata)
         if !isa(typ, Val{:inner})
-            null_right_type = map_params(x->DataValue{x}, eltype(rdata))
+            null_right_type = map_params(x->Union{Missing, x}, eltype(rdata))
             rnull = nullrow(null_right_type)
         else
             null_right_type = right_type
@@ -286,7 +284,7 @@ a  b  c  d
 
 # Left join
 
-Left join looks up rows from `right` where keys match that in `left`. If there are no such rows in `right`, an NA value is used for every selected field from right.
+Left join looks up rows from `right` where keys match that in `left`. If there are no such rows in `right`, a missing value is used for every selected field from right.
 
 ```jldoctest join
 julia> join(l,r, how=:left)
@@ -295,13 +293,13 @@ a  b  c  d
 ────────────
 1  1  1  2
 1  2  2  3
-2  1  3  #NA
-2  2  4  #NA
+2  1  3  missing
+2  2  4  missing
 ```
 
 # Outer join
 
-Outer (aka Union) join looks up rows from `right` where keys match that in `left`, and also rows from `left` where keys match those in `left`, if there are no matches on either side, a tuple of NA values is used. The output is guarranteed to contain the union of all keys from both tables.
+Outer (aka Union) join looks up rows from `right` where keys match that in `left`, and also rows from `left` where keys match those in `left`, if there are no matches on either side, a tuple of missing values is used. The output is guarranteed to contain the union of all keys from both tables.
 
 ```jldoctest join
 julia> join(l,r, how=:outer)
@@ -452,43 +450,41 @@ function Base.join(f, left::Dataset, right::Dataset;
                                   rperm, init_group, accumulate)
 
     if !isempty(lnull_idx) && lout !== nothing
-        lnulls = zeros(Bool, length(lout))
-        lnulls[lnull_idx] = true
         lout = if lout isa Columns
             Columns(map(lout.columns) do col
-                        if col isa DataValueArray
-                            col.isnull[lnull_idx] = true
-                        else
-                            DataValueArray(col, lnulls)
+                        if !(Missing <: eltype(col))
+                            arrayT = Array{Union{Missing, eltype(col)}}
+                            col = convert(arrayT, col)
                         end
+                        col[lnull_idx] = missing
+                        col
                     end)
         else
-            if lout isa DataValueArray
-                lout.isnull[lnull_idx] = true
-            else
-                DataValueArray(lout, lnulls)
+            if !(Missing <: eltype(lout))
+                arrayT = Array{Union{Missing, eltype(lout)}}
+                lout = convert(arrayT, lout)
             end
+            lout[lnull_idx] = missing
         end
         data = concat_cols(lout, rout)
     end
 
     if !isempty(rnull_idx) && rout !== nothing
-        rnulls = zeros(Bool, length(rout))
-        rnulls[rnull_idx] = true
         rout = if rout isa Columns
             Columns(map(rout.columns) do col
-                        if col isa DataValueArray
-                            col.isnull[rnull_idx] = true
-                        else
-                            DataValueArray(col, rnulls)
+                        if !(Missing <: eltype(col))
+                            arrayT = Array{Union{Missing, eltype(col)}}
+                            col = convert(arrayT, col)
                         end
+                        col[rnull_idx] = missing
+                        col
                     end)
         else
-            if rout isa DataValueArray
-                rout.isnull[rnull_idx] = true
-            else
-                DataValueArray(rout, rnulls)
+            if !(Missing <: eltype(rout))
+                arrayT = Array{Union{Missing, eltype(rout)}}
+                rout = convert(arrayT, rout)
             end
+            rout[rnull_idx] = missing
         end
         data = concat_cols(lout, rout)
     end
@@ -769,7 +765,7 @@ function _merge!(K, data, x::NDSparse, y::NDSparse, agg)
             else
                 copyrow!(K, k, I, i)
                 data[k] = x.data[i]
-                if isa(agg, Void)
+                if isa(agg, Nothing)
                     k += 1
                     copyrow!(K, k, I, i)
                     copyrow!(data, k, y.data, j) # repeat the data
@@ -869,10 +865,12 @@ function Base.merge(a::Dataset, b) end
 function Base.merge(a::NextTable, b::NextTable;
                     pkey = pkeynames(a) == pkeynames(b) ? a.pkey : [])
 
-    if colnames(a) !== colnames(b) && Set(colnames(a)) == Set(colnames(b))
-        b = ColDict(b, copy=false)[(colnames(a)...)]
-    else
-        throw(ArgumentError("the tables don't have the same column names. Use `select` first."))
+    if colnames(a) != colnames(b)
+        if Set(collect(colnames(a))) == Set(collect(colnames(b)))
+            b = ColDict(b, copy=false)[(colnames(a)...)]
+        else
+            throw(ArgumentError("the tables don't have the same column names. Use `select` first."))
+        end
     end
     table(map(opt_vcat, columns(a), columns(b)), pkey=pkey, copy=false)
 end
@@ -1038,7 +1036,7 @@ function _broadcast!(f::Function, A::NDSparse, B::NDSparse, C::NDSparse; dimmap=
     end
     common = filter(i->C_inds[i] > 0, 1:ndims(A))
     C_common = C_inds[common]
-    B_common_cols = Columns(B.index.columns[common])
+    B_common_cols = Columns(getsubfields(B.index.columns, common))
     B_perm = sortperm(B_common_cols)
     if C_common == C_dims
         idx, iperm = _bcast_loop!(f, values(A), B, C, B_common_cols, B_perm)

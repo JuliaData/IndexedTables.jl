@@ -96,9 +96,9 @@ end
     tuple_itr = (exp(i) for i in itr)
     @test collect_columns(tuple_itr) == Float64[]
 
-    t = collect_columns(@NT(a = i) for i in (1, DataValue{Int}(), 3))
-    @test columns(t, 1) isa DataValueArray
-    @test isequal(columns(t, 1), DataValueArray([1, DataValue{Int}(), 3]))
+    t = collect_columns(@NT(a = i) for i in (1, missing, 3))
+    @test Missing <: eltype(column(t, 1))
+    @test isequal(column(t, 1), [1, missing, 3])
 end
 
 @testset "collectpairs" begin
@@ -127,8 +127,8 @@ end
     @test collect_columns(v) == Columns(Columns(@NT(a = Int[]))=>Columns(@NT(b = String[])))
     @test eltype(collect_columns(v)) == Pair{NamedTuples._NT_a{Int}, NamedTuples._NT_b{String}}
 
-    t = table(@NT(b=1) => @NT(a = i) for i in (2, DataValue{Int}(), 3))
-    @test t == table(@NT(b = [1,1,1], a = [2, DataValue{Int}(), 3]), pkey = :b)
+    t = table(@NT(b=1) => @NT(a = i) for i in (2, missing, 3))
+    @test t == table(@NT(b = [1,1,1], a = [2, missing, 3]), pkey = :b)
 end
 
 @testset "issubtype" begin

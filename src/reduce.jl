@@ -123,7 +123,7 @@ end
 
 addname(v, name) = v
 addname(v::Tup, name::Type{<:NamedTuple}) = v
-addname(v, name::Type{<:NamedTuple}) = name(v)
+addname(v, name::Type{<:NamedTuple}) = name((v,))
 
 struct GroupReduce{F, S, T, P, N}
     f::F
@@ -431,23 +431,28 @@ end
 
 struct ApplyColwise{T}
     functions::T
-    names::Vector{Symbol}
+    names
     stack::Bool
     variable::Symbol
 end
 
-ApplyColwise(f; stack = false, variable = :variable) = ApplyColwise(f, [Symbol(f)], stack, variable)
-ApplyColwise(t::Tuple; stack = false, variable = :variable) = ApplyColwise(t, [map(Symbol,t)...], stack, variable)
+ApplyColwise(f; stack = false, variable = :variable) = ApplyColwise(f, [nicename(f)], stack, variable)
+ApplyColwise(t::Tuple; stack = false, variable = :variable) = ApplyColwise(t, [map(nicename,t)...], stack, variable)
 ApplyColwise(t::NamedTuple; stack = false, variable = :variable) = ApplyColwise(Tuple(values(t)), keys(t), stack, variable)
 
 init_func(f, t) = f
 init_func(ac::ApplyColwise{<:Tuple}, t::AbstractVector) =
     Tuple(Symbol(n) => f for (f, n) in zip(ac.functions, ac.names))
-init_func(ac::ApplyColwise{<:Tuple}, t::Columns) =
-    ac.stack ? dd -> Columns(colnames(t), ([f(x) for x in columns(dd)] for f in ac.functions)...; names = vcat(ac.variable, ac.names)) :
+function init_func(ac::ApplyColwise{<:Tuple}, t::Columns)
+    if ac.stack
+        dd -> Columns(collect(colnames(t)), ([f(x) for x in columns(dd)] for f in ac.functions)...; names = vcat(ac.variable, ac.names))
+    else
         Tuple(Symbol(s, :_, n) => s => f for s in colnames(t), (f, n) in zip(ac.functions, ac.names))
+    end
+end
+
 init_func(ac::ApplyColwise, t::Columns) =
-    ac.stack ? dd -> Columns(colnames(t), [ac.functions(x) for x in columns(dd)]; names = vcat(ac.variable, ac.names)) :
+    ac.stack ? dd -> Columns(collect(colnames(t)), [ac.functions(x) for x in columns(dd)]; names = vcat(ac.variable, ac.names)) :
         Tuple(s => s => ac.functions for s in colnames(t))
 init_func(ac::ApplyColwise, t::AbstractVector) = ac.functions
 
