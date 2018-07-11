@@ -11,8 +11,6 @@ end
 function _array_factory(t,rows)
     if isa(t, TypeVar)
         return Array{Any}(rows)
-    elseif t <: DataValue
-        return DataValueArray{eltype(t)}(rows)
     else
         return Array{t}(rows)
     end

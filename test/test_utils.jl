@@ -54,14 +54,14 @@ let
     g = x -> (x,bar(x))
     @test _promote_op(g, Int) == Tuple{Int, Any}
 
-    h = x -> rand(Bool) ? @NT(x=1) : @NT(y=2)
-    @test _promote_op(h, Int) == NamedTuple
+    h = x -> rand(Bool) ? (x=1,) : (y=2,)
+    @test _promote_op(h, Int) <: NamedTuple
 
     #101
     s = (1,)
     @test _promote_op(i -> Tuple(getfield(i, j) for j in s), Tuple{Int}) == Any
 
     # 97
-    x = ndsparse(@NT(t=[0.01, 0.05]), @NT(x=[1,2], y=[3,4]))
-    @test map(p->@NT(r = sum(p)), x).data == Columns([4,6], names=[:r])
+    x = ndsparse((t=[0.01, 0.05],), (x=[1,2], y=[3,4],))
+    @test map(p->(r = sum(p),), x).data == Columns([4,6], names=[:r])
 end
