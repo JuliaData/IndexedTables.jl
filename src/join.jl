@@ -623,7 +623,7 @@ for (fn, how) in [:naturaljoin =>     (:inner, false, concat_tup),
         $fn($f, left, right; kwargs...)
     end
 end
-export naturaljoin, innerjoin, leftjoin, asofjoin, leftjoin!, groupjoin
+export innerjoin, asofjoin, groupjoin
 
 ## Joins
 
