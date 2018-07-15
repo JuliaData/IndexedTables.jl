@@ -211,7 +211,7 @@ function similar(c::Columns{D,C}, n::Integer) where {D,C}
     Columns{D,typeof(cols)}(cols)
 end
 
-function Base.similar{T<:Columns}(::Type{T}, n::Int)::T
+function Base.similar(::Type{T}, n::Int)::T where T<:Columns
     T_cols = T.parameters[2]
     f = T_cols <: Tuple ? tuple : T_cols
     T(f(map(t->similar(t, n), T.parameters[2].parameters)...))
