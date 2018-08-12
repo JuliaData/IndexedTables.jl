@@ -50,7 +50,7 @@ end
 @inline foreach(f, a::Pair, b::Pair) = (f(a.first, b.first); f(a.second, b.second))
 
 fieldindex(x, i::Integer) = i
-fieldindex(x::NamedTuple, s::Symbol) = findfirst(x->x===s, fieldnames(x))
+fieldindex(x::NamedTuple, s::Symbol) = findfirst(x->x===s, fieldnames(typeof(x)))
 
 astuple(t::Tuple) = t
 

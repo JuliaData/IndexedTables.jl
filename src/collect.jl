@@ -30,28 +30,30 @@ julia> collect_columns(s)
   7
 ```
 """
-collect_columns(itr) = collect_columns(itr, Base.iteratorsize(itr))
+collect_columns(itr) = collect_columns(itr, Base.IteratorSize(itr))
 
 function collect_empty_columns(itr::T) where {T}
     S = Core.Compiler.return_type(first, Tuple{T})
     similar(arrayof(S), 0)
 end
 
-function collect_columns(itr::ANY, ::Union{Base.HasShape, Base.HasLength})
-    st = start(itr)
-    done(itr, st) && return collect_empty_columns(itr)
-    el, st = next(itr, st)
+function collect_columns(@nospecialize(itr), ::Union{Base.HasShape, Base.HasLength})
+    st = iterate(itr)
+    st === nothing && return collect_empty_columns(itr)
+    el, i = st
     dest = similar(arrayof(typeof(el)), length(itr))
     dest[1] = el
-    collect_to_columns!(dest, itr, 2, st)
+    collect_to_columns!(dest, itr, 2, i)
 end
 
-function collect_to_columns!(dest::AbstractArray{T}, itr, offs, st = start(itr)) where {T}
+function collect_to_columns!(dest::AbstractArray{T}, itr, offs, st) where {T}
     # collect to dest array, checking the type of each result. if a result does not
     # match, widen the result type and re-dispatch.
     i = offs
-    while !done(itr, st)
-        el, st = next(itr, st)
+    while true
+        elem = iterate(itr, st)
+        elem === nothing && break
+        el, st = elem
         if fieldwise_isa(el, T)
             @inbounds dest[i] = el
             i += 1
@@ -65,32 +67,36 @@ function collect_to_columns!(dest::AbstractArray{T}, itr, offs, st = start(itr))
 end
 
 function collect_columns(itr, ::Base.SizeUnknown)
-    st = start(itr)
-    done(itr, st) && return collect_empty_columns(itr)
-    el, st = next(itr, st)
+    elem = iterate(itr)
+    elem === nothing && return collect_empty_columns(itr)
+    el, st = elem
     dest = similar(arrayof(typeof(el)), 1)
     dest[1] = el
     grow_to_columns!(dest, itr, st)
 end
 
 function collect_columns_flattened(itr)
-    st = start(itr)
-    el, st = next(itr, st)
+    elem = iterate(itr)
+    @assert elem !== nothing
+    el, st = elem
     collect_columns_flattened(itr, el, st)
 end
 
 function collect_columns_flattened(itr, el, st)
     while isempty(el)
-        done(itr, st) && return collect_empty_columns(el)
-        el, st = next(itr, st)
+        elem = iterate(itr, st)
+        elem === nothing && return collect_empty_columns(el)
+        el, st = elem
     end
     dest = collect_columns(el)
     collect_columns_flattened!(dest, itr, el, st)
 end
 
 function collect_columns_flattened!(dest, itr, el, st)
-    while !done(itr, st)
-        el, st = next(itr, st)
+    while true
+        elem = iterate(itr, st)
+        elem === nothing && break
+        el, st = elem
         dest = grow_to_columns!(dest, el)
     end
     return dest
@@ -98,8 +104,9 @@ end
 
 function collect_columns_flattened(itr, el::Pair, st)
     while isempty(el.second)
-        done(itr, st) && return collect_empty_columns(el.first => i for i in el.second)
-        el, st = next(itr, st)
+        elem = iterate(itr, st)
+        elem === nothing && return collect_empty_columns(el.first => i for i in el.second)
+        el, st = elem
     end
     dest_data = collect_columns(el.second)
     dest_key = collect_columns(el.first for i in dest_data)
@@ -108,8 +115,10 @@ end
 
 function collect_columns_flattened!(dest::Columns{<:Pair}, itr, el::Pair, st)
     dest_key, dest_data = dest.columns
-    while !done(itr, st)
-        el, st = next(itr, st)
+    while true
+        elem = iterate(itr, st)
+        elem === nothing && break
+        el, st = elem
         n = length(dest_data)
         dest_data = grow_to_columns!(dest_data, el.second)
         dest_key = grow_to_columns!(dest_key, el.first for i in (n+1):length(dest_data))
@@ -117,19 +126,21 @@ function collect_columns_flattened!(dest::Columns{<:Pair}, itr, el::Pair, st)
     return Columns(dest_key => dest_data)
 end
 
-function grow_to_columns!(dest::AbstractArray{T}, itr, st = start(itr)) where {T}
+function grow_to_columns!(dest::AbstractArray{T}, itr, elem = iterate(itr)) where {T}
     # collect to dest array, checking the type of each result. if a result does not
     # match, widen the result type and re-dispatch.
     i = length(dest)+1
-    while !done(itr, st)
-        el, st = next(itr, st)
+    @show itr
+    while elem !== nothing
+        @show typeof(elem)
+        el, st = elem
         if fieldwise_isa(el, T)
             push!(dest, el)
             i += 1
         else
             new = widencolumns(dest, i, el, T)
             push!(new, el)
-            return grow_to_columns!(new, itr, st)
+            return grow_to_columns!(new, itr, iterate(elem, st))
         end
     end
     return dest
@@ -162,15 +173,15 @@ fieldwise_isa(el::Pair, ::Type{Pair{T1, T2}}) where {T1, T2}  =
 function widencolumns(dest, i, el::S, ::Type{T}) where{S <: Tup, T<:Tup}
     if fieldnames(S) != fieldnames(T) || T == Tuple || T == NamedTuple
         R = (S <: Tuple) && (T <: Tuple) ? Tuple :  (S <: NamedTuple) && (T <: NamedTuple) ? NamedTuple : Any
-        new = Array{R}(length(dest))
-        copy!(new, 1, dest, 1, i-1)
+        new = Array{R}(undef, length(dest))
+        copyto!(new, 1, dest, 1, i-1)
     else
         sp, tp = fieldtypes(S), fieldtypes(T)
         idx = findall(collect(!(s <: t) for (s, t) in zip(sp, tp)))
         new = dest
         for l in idx
             newcol = dataarrayof(promote_type(sp[l], tp[l]))(length(dest))
-            copy!(newcol, 1, column(dest, l), 1, i-1)
+            copyto!(newcol, 1, column(dest, l), 1, i-1)
             new = setcol(new, l, newcol)
         end
     end
@@ -179,7 +190,7 @@ end
 
 function widencolumns(dest, i, el::S, ::Type{T}) where{S, T}
     new = dataarrayof(promote_type(S, T))(length(dest))
-    copy!(new, 1, dest, 1, i-1)
+    copyto!(new, 1, dest, 1, i-1)
     new
 end
 

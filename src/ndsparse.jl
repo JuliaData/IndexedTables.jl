@@ -1,4 +1,5 @@
 export AbstractNDSparse, NDSparse, ndsparse
+using SparseArrays
 
 abstract type AbstractNDSparse end
 
@@ -438,7 +439,7 @@ function deserialize(s::AbstractSerializer, ::Type{SerializedNDSparse})
     NDSparse(I, d, presorted=true)
 end
 
-@noinline convert(::Type{NDSparse}, ks::ANY, vs::ANY; kwargs...) = ndsparse(ks, vs; kwargs...)
+@noinline convert(::Type{NDSparse}, @nospecialize(ks), @nospecialize(vs); kwargs...) = ndsparse(ks, vs; kwargs...)
 @noinline convert(T::Type{NDSparse}, c::Columns{<:Pair}; kwargs...) = convert(T, c.columns.first, c.columns.second; kwargs...)
 
 # map and convert
@@ -531,7 +532,7 @@ function convert(::Type{NDSparse}, a::AbstractArray{T}) where T
     data = reshape(a, (n,))
     idxs = [ Vector{Int}(n) for i = 1:nd ]
     i = 1
-    for I in CartesianRange(size(a))
+    for I in CartesianIndices(size(a))
         for j = 1:nd
             idxs[j][i] = I[j]
         end

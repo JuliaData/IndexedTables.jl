@@ -1,6 +1,8 @@
-using Base.Test
+using Test
+using Random
 using IndexedTables
 using PooledArrays
+using SparseArrays
 using WeakRefStrings
 import IndexedTables: update!, pkeynames, pkeys, excludecols, sortpermby, primaryperm, best_perm_estimate, hascolumns
 
@@ -53,7 +55,7 @@ import IndexedTables: update!, pkeynames, pkeys, excludecols, sortpermby, primar
     @test !issorted(f)
 #end
 
-srand(123)
+Random.seed!(123)
 A = NDSparse(rand(1:3,10), rand('A':'F',10), map(UInt8,rand(1:3,10)), collect(1:10), randn(10))
 B = NDSparse(map(UInt8,rand(1:3,10)), rand('A':'F',10), rand(1:3,10), randn(10))
 C = NDSparse(map(UInt8,rand(1:3,10)), rand(1:3,10), rand(1:3,10), randn(10))
@@ -179,7 +181,7 @@ end
 
 let a = rand(5,5,5)
     for dims in ([2,3], [1], [2])
-        r = squeeze(reducedim(+, a, dims), (dims...,))
+        r = squeeze(reducedim(+, a, dims), dims=(dims...,))
         asnd = convert(NDSparse,a)
         b = reducedim(+, asnd, dims)
         bv = reducedim_vec(sum, asnd, dims)
@@ -462,7 +464,7 @@ end
     @test issorted(rows(t, (:x,:y)))
     @test sortpermby(t, (:y, :z), cache=true) == [2,1,5,4,3]
     @test t.perms[1].perm == [2,1,5,4,3]
-    perms = [primaryperm(t), t.perms;]
+    perms = [primaryperm(t); t.perms]
 
     @test sortpermby(t, (:y, :x)) == [2,1,3,5,4]
     @test length(t.perms) == 1

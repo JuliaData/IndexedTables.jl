@@ -1,4 +1,3 @@
-__precompile__()
 module IndexedTables
 
 using Compat
@@ -7,7 +6,10 @@ using PooledArrays
 import Base:
     show, eltype, length, getindex, setindex!, ndims, map, convert, keys, values,
     ==, broadcast, empty!, copy, similar, sum, merge, merge!, mapslices,
-    permutedims, reducedim, serialize, deserialize, sort, sort!
+    permutedims, reducedim, sort, sort!
+
+using Serialization
+import Serialization:  serialize, deserialize
 
 export NDSparse, flush!, aggregate!, aggregate_vec, where, pairs, convertdim, columns, column, rows,
     itable, update!, aggregate, reducedim_vec, dimlabels, collect_columns

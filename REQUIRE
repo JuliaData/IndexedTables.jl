@@ -1,6 +1,5 @@
 julia 0.7-
 Compat 0.19
-NamedTuples 2.1.0
 OnlineStats 0.17
 PooledArrays 0.2.0
 WeakRefStrings 0.4.4

@@ -1,4 +1,6 @@
 using OnlineStats
+using Statistics
+
 export groupreduce, groupby, aggregate, aggregate_vec, summarize, ApplyColwise
 
 """
@@ -137,11 +139,10 @@ struct GroupReduce{F, S, T, P, N}
         new{F, S, T, P, N}(f, key, data, perm, name, length(key))
 end
 
-Base.iteratorsize(::Type{<:GroupReduce}) = Base.SizeUnknown()
+Base.IteratorSize(::Type{<:GroupReduce}) = Base.SizeUnknown()
 
-Base.start(iter::GroupReduce) = 1
-
-function Base.next(iter::GroupReduce, i1)
+function Base.iterate(iter::GroupReduce, i1=1)
+    i1 > iter.n && return nothing
     f, key, data, perm, n, name = iter.f, iter.key, iter.data, iter.perm, iter.n, iter.name
     val = init_first(f, data[perm[i1]])
     i = i1+1
@@ -151,8 +152,6 @@ function Base.next(iter::GroupReduce, i1)
     end
     (key[perm[i1]] => addname(val, name)), i
 end
-
-Base.done(iter::GroupReduce, state) = state > iter.n
 
 """
 `groupreduce(f, t[, by::Selection]; select::Selection)`
@@ -274,11 +273,10 @@ struct GroupBy
         new(f, key, data, perm, usekey, name, length(key))
 end
 
-Base.iteratorsize(::Type{<:GroupBy}) = Base.SizeUnknown()
+Base.IteratorSize(::Type{<:GroupBy}) = Base.SizeUnknown()
 
-Base.start(::GroupBy) = 1
-
-function Base.next(iter::GroupBy, i1)
+function Base.iterate(iter::GroupBy, i1=1)
+    i1 > iter.n && return nothing
     f, key, data, perm, usekey, n, name = iter.f, iter.key, iter.data, iter.perm, iter.usekey, iter.n, iter.name
     i = i1+1
     while i <= n && roweq(key, perm[i], perm[i1])
@@ -289,8 +287,6 @@ function Base.next(iter::GroupBy, i1)
                    _apply_with_key(f, data, process_data)
     (key[perm[i1]] => addname(val, name)), i
 end
-
-Base.done(iter, state) = state > iter.n
 
 collectiontype(::Type{<:NDSparse}) = NDSparse
 collectiontype(::Type{<:NextTable}) = NextTable
@@ -605,7 +601,7 @@ function reducedim(f, x::NDSparse, dims)
     if isempty(keep)
         throw(ArgumentError("to remove all dimensions, use `reduce(f, A)`"))
     end
-    groupreduce(f, x, (keep...))
+    groupreduce(f, x, (keep...,))
 end
 
 reducedim(f, x::NDSparse, dims::Symbol) = reducedim(f, x, [dims])

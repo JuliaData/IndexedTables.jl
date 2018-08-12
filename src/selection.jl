@@ -282,7 +282,7 @@ function _nonna(t::Union{Columns, NextTable}, by=(colnames(t)...))
         x = rows(t, c)
         filt_by_col!(!ismissing, x, indxs)
         if Missing <: eltype(x)
-            y = Array{nonmissing(eltype(x))}(length(x))
+            y = Array{nonmissing(eltype(x))}(undef, length(x))
             y[indxs] = x[indxs]
             x = y
         end

@@ -1,8 +1,8 @@
 using Compat
 
 import Base:
-    linearindexing, push!, size, sort, sort!, permute!, issorted, sortperm,
-    summary, resize!, vcat, append!, copy!, view
+    push!, size, sort, sort!, permute!, issorted, sortperm,
+    summary, resize!, vcat, append!, copyto!, view
 
 export Columns, colnames, ncols, ColDict, insertafter!, insertbefore!, @cols, setcol, pushcol, popcol, insertcol, insertcolafter, insertcolbefore, renamecol
 export map_rows
@@ -228,13 +228,13 @@ function Base.similar(::Type{T}, n::Int)::T where {T<:Columns}
 end
 
 function convert(::Type{Columns}, x::AbstractArray{<:NTuple{N,Any}}) where N
-    eltypes = (eltype(x).parameters...)
-    copy!(Columns(map(t->Vector{t}(length(x)), eltypes)), x)
+    eltypes = (eltype(x).parameters...,)
+    copyto!(Columns(map(t->Vector{t}(length(x)), eltypes)), x)
 end
 
 function convert(::Type{Columns}, x::AbstractArray{<:NamedTuple{names, typs}}) where {names,typs}
     eltypes = typs.parameters
-    copy!(Columns(map(t->Vector{t}(length(x)), eltypes)..., names=fieldnames(eltype(x))), x)
+    copyto!(Columns(map(t->Vector{t}(length(x)), eltypes)..., names=fieldnames(eltype(x))), x)
 end
 
 
@@ -252,7 +252,7 @@ view(c::Columns, I) = Columns(_map(a->view(a, I), c.columns))
 
 append!(I::Columns, J::Columns) = (foreach(append!, I.columns, J.columns); I)
 
-copy!(I::Columns, J::Columns) = (foreach(copy!, I.columns, J.columns); I)
+copyto!(I::Columns, J::Columns) = (foreach(copyto!, I.columns, J.columns); I)
 
 resize!(I::Columns, n::Int) = (foreach(c->resize!(c,n), I.columns); I)
 
@@ -332,7 +332,7 @@ function permute!(c::Columns, p::AbstractVector)
         if isa(v, PooledArrays.PooledArray) || isa(v, StringArray{String})
             permute!(v, p)
         else
-            copy!(v, v[p])
+            copyto!(v, v[p])
         end
     end
     return c
@@ -342,7 +342,7 @@ sort!(c::Columns) = permute!(c, sortperm(c))
 sort(c::Columns) = c[sortperm(c)]
 
 function Base.vcat(c::Columns, cs::Columns...)
-    fns = map(fieldnames, (map(x->x.columns, (c, cs...))))
+    fns = map(fieldnames∘typeof, (map(x->x.columns, (c, cs...,))))
     f1 = fns[1]
     for f2 in fns[2:end]
         if f1 != f2
@@ -365,7 +365,7 @@ function serialize(s::AbstractSerializer, c::Columns)
     Base.Serializer.serialize_type(s, SerializedColumns)
     serialize(s, eltype(c) <: NamedTuple)
     serialize(s, isa(c.columns, NamedTuple))
-    serialize(s, fieldnames(c.columns))
+    serialize(s, fieldnames(typeof(c.columns)))
     for col in c.columns
         serialize(s, col)
     end
@@ -1266,7 +1266,7 @@ init_funcs(f, isvec) = init_funcs((f,), isvec)
 
 function init_funcs(f::Tup, isvec)
     if isa(f, NamedTuple)
-        return init_funcs((map(Pair, fieldnames(f), f)...), isvec)
+        return init_funcs((map(Pair, fieldnames(typeof(f)), f)...,), isvec)
     end
 
     funcmap = map(f) do g
@@ -1295,7 +1295,7 @@ end
 
 function init_inputs(f::Tup, input, gettype, isvec)
     if isa(f, NamedTuple)
-        return init_inputs((map(Pair, fieldnames(f), f)...), input, gettype, isvec)
+        return init_inputs((map(Pair, fieldnames(typeof(f)), f)...,), input, gettype, isvec)
     end
     fs, selectors = init_funcs(f, isvec)
 
@@ -1303,7 +1303,7 @@ function init_inputs(f::Tup, input, gettype, isvec)
 
     output_eltypes = map((f,x) -> gettype(f, x, isvec), fs, xs)
 
-    ns = fieldnames(fs)
+    ns = fieldnames(typeof(fs))
     NT = namedtuple(ns...)
 
     # functions, input, output_eltype

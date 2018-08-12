@@ -867,7 +867,7 @@ function Base.merge(a::NextTable, b::NextTable;
 
     if colnames(a) != colnames(b)
         if Set(collect(colnames(a))) == Set(collect(colnames(b)))
-            b = ColDict(b, copy=false)[(colnames(a)...)]
+            b = ColDict(b, copy=false)[(colnames(a)...,)]
         else
             throw(ArgumentError("the tables don't have the same column names. Use `select` first."))
         end
@@ -921,9 +921,9 @@ function _merge!(dst::NDSparse, src::NDSparse, f)
         ln = length(new)
         # resize and copy data into dst
         resize!(dst.index, ln)
-        copy!(dst.index, new.index)
+        copyto!(dst.index, new.index)
         resize!(dst.data, ln)
-        copy!(dst.data, new.data)
+        copyto!(dst.data, new.data)
     end
     return dst
 end
@@ -932,7 +932,7 @@ end
 
 function find_corresponding(Ap, Bp)
     matches = zeros(Int, length(Ap))
-    J = IntSet(1:length(Bp))
+    J = BitSet(1:length(Bp))
     for i = 1:length(Ap)
         for j in J
             if Ap[i] == Bp[j]
@@ -948,8 +948,8 @@ end
 
 function match_indices(A::NDSparse, B::NDSparse)
     if isa(A.index.columns, NamedTuple) && isa(B.index.columns, NamedTuple)
-        Ap = fieldnames(A.index.columns)
-        Bp = fieldnames(B.index.columns)
+        Ap = colnames(A.index)
+        Bp = colnames(B.index)
     else
         Ap = typeof(A).parameters[2].parameters
         Bp = typeof(B).parameters[2].parameters
@@ -1043,7 +1043,7 @@ function _broadcast!(f::Function, A::NDSparse, B::NDSparse, C::NDSparse; dimmap=
         A = NDSparse(idx, values(A), copy=false, presorted=true)
         if !issorted(A.index)
             permute!(A.index, iperm)
-            copy!(A.data, A.data[iperm])
+            copyto!(A.data, A.data[iperm])
         end
     else
         # TODO

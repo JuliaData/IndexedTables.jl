@@ -42,7 +42,7 @@ function stack(t::D, by = pkeynames(t); select = isa(t, NDSparse) ? valuenames(t
 end
 
 function unstack(::Type{D}, ::Type{T}, key, val, cols::AbstractVector{S}) where {D <:Dataset, T, S}
-    dest_val = Columns((Array{Union{T, Missing}}(length(val)) for i in cols)...; names = cols)
+    dest_val = Columns((Array{Union{T, Missing}}(undef, length(val)) for i in cols)...; names = cols)
     for (i, el) in enumerate(val)
         for j in el
             k, v = j
