@@ -173,8 +173,9 @@ function ndsparse(::Val{:serial}, ks::Tup, vs::Union{Tup, AbstractVector};
    #                   intersect(colnames(I), colnames(d))))
    #    error("All column names, including index and data columns, must be distinct")
    #end
-    if nfields(eltype(d)) !== 0
-        length(I) == length(d) || error("index and data must have the same number of elements")
+    if fieldcount(eltype(d)) !== 0
+        length(I) == length(d) ||
+            error("index and data must have the same number of elements")
     end
 
     if !presorted && !issorted(I)
@@ -267,7 +268,7 @@ pkeynames(t::NDSparse) = (dimlabels(t)...)
 function valuenames(t::NDSparse)
     if isa(values(t), Columns)
         T = eltype(values(t))
-        ((ndims(t) + (1:nfields(eltype(values(t)))))...)
+        ((ndims(t) + (1:fieldcount(eltype(values(t)))))...)
     else
         ndims(t) + 1
     end
@@ -387,7 +388,7 @@ function show(io::IO, t::NDSparse{T,D}) where {T,D}
         eltypeheader = "$(eltype(t))"
     else
         cnames = colnames(t)
-        nf = nfields(eltype(t))
+        nf = fieldcount(eltype(t))
         if eltype(t) <: NamedTuple
             eltypeheader = "$(nf) field named tuples"
         else

@@ -129,7 +129,7 @@ function _mapslices_itable!(f, output, x, iter, iterdims, start)
     initdims = length(iterdims)
 
     I1 = Columns(getsubfields(I.columns, 1:initdims)) # filled from existing table
-    I2 = Columns(getsubfields(I.columns, initdims+1:nfields(I.columns))) # filled from output tables
+    I2 = Columns(getsubfields(I.columns, initdims+1:fieldcount(typeof(I.columns)))) # filled from output tables
 
     for i = start:length(iter)
         if i != 1 && roweq(iter, i-1, i) # We've already visited this slice

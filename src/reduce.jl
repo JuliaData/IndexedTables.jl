@@ -522,7 +522,7 @@ Base.@deprecate aggregate_vec(
     fs::AbstractVector, x;
     names=nothing,
     by=pkeynames(x),
-    with=valuenames(x)) groupby(names === nothing ? (fs...) : (map(=>, names, fs)...,), x; select=with)
+    with=valuenames(x)) groupby(names === nothing ? (fs...,) : (map(=>, names, fs)...,), x; select=with)
 
 Base.@deprecate aggregate_vec(t; funs...) groupby(namedtuple(first.(funs)...)(last.(funs)...), t)
 
@@ -617,7 +617,7 @@ function reducedim_vec(f, x::NDSparse, dims; with=valuenames(x))
     if isempty(keep)
         throw(ArgumentError("to remove all dimensions, use `reduce(f, A)`"))
     end
-    idxs, d = collect_columns(GroupBy(f, keys(x, (keep...)), rows(x, with), sortpermby(x, (keep...)))).columns
+    idxs, d = collect_columns(GroupBy(f, keys(x, (keep...,)), rows(x, with), sortpermby(x, (keep...,)))).columns
     NDSparse(idxs, d, presorted=true, copy=false)
 end
 

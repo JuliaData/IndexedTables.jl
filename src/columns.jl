@@ -197,7 +197,7 @@ julia> ncols(ndsparse(d, [7,8,9]))
 ```
 """
 function ncols end
-ncols(c::Columns) = nfields(typeof(c.columns))
+ncols(c::Columns) = fieldcount(typeof(c.columns))
 ncols(c::Columns{<:Pair, <:Pair}) = ncols(c.columns.first) => ncols(c.columns.second)
 ncols(c::AbstractArray) = 1
 
@@ -342,7 +342,7 @@ sort!(c::Columns) = permute!(c, sortperm(c))
 sort(c::Columns) = c[sortperm(c)]
 
 function Base.vcat(c::Columns, cs::Columns...)
-    fns = map(fieldnames∘typeof, (map(x->x.columns, (c, cs...,))))
+    fns = map(fieldnames∘typeof, (map(x->x.columns, (c, cs...))))
     f1 = fns[1]
     for f2 in fns[2:end]
         if f1 != f2
@@ -408,7 +408,7 @@ pushrow!(to::Columns, from::Columns, i) = foreach((a,b)->push!(a, b[i]), to.colu
 pushrow!(to::AbstractArray, from::AbstractArray, i) = push!(to, from[i])
 
 @generated function rowless(c::Columns{D,C}, i, j) where {D,C}
-    N = nfields(C)
+    N = fieldcount(C)
     ex = :(cmpelts(getfield(c.columns,$N), i, j) < 0)
     for n in N-1:-1:1
         ex = quote
@@ -421,7 +421,7 @@ pushrow!(to::AbstractArray, from::AbstractArray, i) = push!(to, from[i])
 end
 
 @generated function roweq(c::Columns{D,C}, i, j) where {D,C}
-    N = nfields(C)
+    N = fieldcount(C)
     ex = :(cmpelts(getfield(c.columns,1), i, j) == 0)
     for n in 2:N
         ex = :(($ex) && (cmpelts(getfield(c.columns,$n), i, j)==0))
@@ -434,7 +434,7 @@ end
 # uses number of columns from `d`, assuming `c` has more or equal
 # dimensions, for broadcast joins.
 @generated function rowcmp(c::Columns, i, d::Columns{D}, j) where D
-    N = nfields(D)
+    N = fieldcount(D)
     ex = :(cmp(getfield(c.columns,$N)[i], getfield(d.columns,$N)[j]))
     for n in N-1:-1:1
         ex = quote

@@ -622,7 +622,7 @@ function showtable(io::IO, t; header=nothing, cnames=colnames(t), divider=nothin
 
     reprs  = [ sprint(io->show(IOContext(io, :compact => true), columns(t)[j][i])) for i in rows, j in 1:nc ]
     strcnames = map(string, cnames)
-    widths  = [ max(strwidth(get(strcnames, c, "")), isempty(reprs) ? 0 : maximum(map(strwidth, reprs[:,c]))) for c in 1:nc ]
+    widths  = [ max(textwidth(get(strcnames, c, "")), isempty(reprs) ? 0 : maximum(map(textwidth, reprs[:,c]))) for c in 1:nc ]
     if compact && !isempty(widths) && sum(widths) + 2*nc > width
         return showmeta(io, t, cnames)
     end

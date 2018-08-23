@@ -72,7 +72,7 @@ function collect_columns(itr, ::Base.SizeUnknown)
     el, st = elem
     dest = similar(arrayof(typeof(el)), 1)
     dest[1] = el
-    grow_to_columns!(dest, itr, st)
+    grow_to_columns!(dest, itr, iterate(itr, st))
 end
 
 function collect_columns_flattened(itr)
@@ -130,17 +130,16 @@ function grow_to_columns!(dest::AbstractArray{T}, itr, elem = iterate(itr)) wher
     # collect to dest array, checking the type of each result. if a result does not
     # match, widen the result type and re-dispatch.
     i = length(dest)+1
-    @show itr
     while elem !== nothing
-        @show typeof(elem)
         el, st = elem
         if fieldwise_isa(el, T)
             push!(dest, el)
+            elem = iterate(itr, st)
             i += 1
         else
             new = widencolumns(dest, i, el, T)
             push!(new, el)
-            return grow_to_columns!(new, itr, iterate(elem, st))
+            return grow_to_columns!(new, itr, iterate(itr, st))
         end
     end
     return dest

@@ -55,7 +55,7 @@ end
 function _getindex(t::NDSparse, idxs)
     I = t.index
     cs = astuple(I.columns)
-    if nfields(idxs) !== nfields(I.columns)
+    if fieldcount(typeof(idxs)) !== fieldcount(typeof(I.columns))
         error("wrong number of indices")
     end
     for idx in idxs

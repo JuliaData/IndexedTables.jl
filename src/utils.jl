@@ -8,7 +8,7 @@ import WeakRefStrings: StringArray
 
 fastmap(f, xs...) = map(f, xs...)
 @generated function fastmap(f, xs::NTuple{N}...) where N
-    args = [:(xs[$j][i])  for j in 1:nfields(xs)]
+    args = [:(xs[$j][i])  for j in 1:fieldcount(typeof(xs))]
     :(Base.@ntuple $N i -> f($(args...)))
 end
 
@@ -32,18 +32,18 @@ right(x, y) = y
 # tuple and NamedTuple utilities
 
 @generated function ith_all(i, xs::Tuple)
-    :(Base.@ntuple $(nfields(xs)) j -> xs[j][i])
+    :(Base.@ntuple $(fieldcount(xs)) j -> xs[j][i])
 end
 
 @generated function ith_all(i, n::NamedTuple)
     Expr(:block,
          :(@Base._inline_meta),
-         Expr(:tuple, [ Expr(:ref, Expr(:., :n, Expr(:quote, fieldname(n,f))), :i) for f = 1:nfields(n) ]...))
+         Expr(:tuple, [ Expr(:ref, Expr(:., :n, Expr(:quote, fieldname(n,f))), :i) for f = 1:fieldcount(n) ]...))
 end
 
 @generated function foreach(f, x::Union{NamedTuple, Tuple}, xs::Union{NamedTuple, Tuple}...)
-    args = [:(getfield(getfield(xs, $j), i))  for j in 1:nfields(xs)]
-    :(Base.@nexprs $(nfields(x)) i -> f(getfield(x, i), $(args...)); nothing)
+    args = [:(getfield(getfield(xs, $j), i))  for j in 1:length(xs)]
+    :(Base.@nexprs $(fieldcount(x)) i -> f(getfield(x, i), $(args...)); nothing)
 end
 
 @inline foreach(f, a::Pair) = (f(a.first); f(a.second))
@@ -55,7 +55,7 @@ fieldindex(x::NamedTuple, s::Symbol) = findfirst(x->x===s, fieldnames(typeof(x))
 astuple(t::Tuple) = t
 
 @generated function astuple(n::NamedTuple)
-    Expr(:tuple, [ Expr(:., :n, Expr(:quote, fieldname(n,f))) for f = 1:nfields(n) ]...)
+    Expr(:tuple, [ Expr(:., :n, Expr(:quote, fieldname(n,f))) for f = 1:fieldcount(n) ]...)
 end
 
 # lexicographic order product iterator
@@ -242,7 +242,7 @@ Base.@pure function arrayof(S)
     elseif T<:Tuple
         Columns{T, Tuple{map(arrayof, fieldtypes(T))...}}
     elseif T<:NamedTuple
-        if nfields(T) == 0
+        if fieldcount(T) == 0
             Columns{NamedTuple{(), Tuple{}}, NamedTuple{(), Tuple{}}}
         else
             Columns{T,NamedTuple{fieldnames(T), Tuple{map(arrayof, fieldtypes(T))...}}}
@@ -333,7 +333,7 @@ map_params(f, ::Type{T}) where T <: Pair{S1, S2} where {S1, S2} = Pair{f(S1), f(
 
 #function map_params{N}(f, T::Type{T} where T<:Tuple{Vararg{Any,N}}, S::Type{S} where S<: Tuple{Vararg{Any,N}})
 Base.@pure function map_params(f, ::Type{T}, ::Type{S}) where {T<:Tuple,S<:Tuple}
-    if nfields(T) != nfields(S)
+    if fieldcount(T) != fieldcount(S)
         MethodError(map_params, (typeof(f), T,S))
     end
     Tuple{_map_params(f, T,S)...}
@@ -349,7 +349,7 @@ Base.@pure function map_params(f, ::Type{T}, ::Type{S}) where {T<:NamedTuple,S<:
     if fieldnames(T) != fieldnames(S)
         MethodError(map_params, (T,S))
     end
-    if nfields(T) == 0 && nfields(S) == 0
+    if fieldcount(T) == 0 && fieldcount(S) == 0
         return T
     end
 
@@ -373,7 +373,7 @@ end
 
 Base.@pure function concat_tup_type(::Type{T}, ::Type{S}) where {
            T<:NamedTuple,S<:NamedTuple}
-    nfields(T) == 0 && nfields(S) == 0 ?
+    fieldcount(T) == 0 && fieldcount(S) == 0 ?
         namedtuple() :
         namedtuple(fieldnames(T)...,
                    fieldnames(S)...){Tuple{fieldtypes(T)...,
