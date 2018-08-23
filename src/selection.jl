@@ -271,7 +271,7 @@ function map(f, t::Dataset; select=nothing, copy=false, kwargs...)
     isa(x, Columns) ? table(x; copy=false, kwargs...) : x
 end
 
-function _nonna(t::Union{Columns, NextTable}, by=(colnames(t)...))
+function _nonna(t::Union{Columns, NextTable}, by=(colnames(t)...,))
     indxs = [1:length(t);]
     if !isa(by, Tuple)
         by = (by,)
@@ -340,8 +340,8 @@ julia> typeof(column(dropna(t,:x), :x))
 Array{Int64,1}
 ```
 """
-function dropna(t::Dataset, by=(colnames(t)...))
-    subtable(_nonna(t, by)...)
+function dropna(t::Dataset, by=(colnames(t)...,))
+    subtable(_nonna(t, by)...,)
 end
 
 filt_by_col!(f, col, indxs) = filter!(i->f(col[i]), indxs)

@@ -198,7 +198,7 @@ function table(::Val{:serial}, cols::Tup;
     end
 
     if !presorted && !isempty(pkey)
-        pkeys = rows(cs, (pkey...))
+        pkeys = rows(cs, (pkey...,))
         if !issorted(pkeys)
             perm = sortperm(pkeys)
             if copy
@@ -372,7 +372,7 @@ function primaryperm(t::NextTable)
     Perm(t.pkey, Base.OneTo(length(t)))
 end
 
-permcache(t::NextTable) = [primaryperm(t), t.perms;]
+permcache(t::NextTable) = vcat(primaryperm(t), t.perms)
 cacheperm!(t::NextTable, p) = push!(t.perms, p)
 
 """
@@ -405,14 +405,14 @@ julia> pkeys(t)
 """
 function pkeynames(t::AbstractIndexedTable)
     if eltype(t) <: NamedTuple
-        (colnames(t)[t.pkey]...)
+        (colnames(t)[t.pkey]...,)
     else
-        (t.pkey...)
+        (t.pkey...,)
     end
 end
 
 # for a table, selecting the "value" means selecting all fields
-valuenames(t::AbstractIndexedTable) = (colnames(t)...)
+valuenames(t::AbstractIndexedTable) = (colnames(t)...,)
 
 """
     pkeys(itr::Table)
@@ -560,7 +560,7 @@ function excludecols(t, cols)
             mask[i] = false
         end
     end
-    ((1:length(ns))[mask]...)
+    ((1:length(ns))[mask]...,)
 end
 
 """
@@ -588,7 +588,7 @@ end
 convert(T::Type{NextTable}, c::Columns{<:Pair}; kwargs...) = convert(T, c.columns.first, c.columns.second; kwargs...)
 # showing
 
-import Base.Markdown.with_output_format
+# import Base.Markdown.with_output_format
 
 global show_compact_when_wide = true
 function set_show_compact!(flag=true)

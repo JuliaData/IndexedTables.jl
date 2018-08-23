@@ -261,14 +261,14 @@ julia> pkeynames(x)
 
 ```
 """
-pkeynames(t::NDSparse) = (dimlabels(t)...)
+pkeynames(t::NDSparse) = (dimlabels(t)...,)
 
 # For an NDSparse, valuenames is either a tuple of fieldnames or a
 # single name for scalar values
 function valuenames(t::NDSparse)
     if isa(values(t), Columns)
         T = eltype(values(t))
-        ((ndims(t) + (1:fieldcount(eltype(values(t)))))...)
+        ((ndims(t) + (1:fieldcount(eltype(values(t)))))...,)
     else
         ndims(t) + 1
     end
@@ -400,8 +400,6 @@ function show(io::IO, t::NDSparse{T,D}) where {T,D}
               cnames=cnames, divider=length(columns(keys(t))))
 end
 
-import Base: @md_str
-
 function showmeta(io, t::NDSparse, cnames)
     nc = length(columns(t))
     nidx = length(columns(keys(t)))
@@ -513,7 +511,7 @@ end
 
 # NDSparse uses lex order, Base arrays use colex order, so we need to
 # reorder the data. transpose and permutedims are used for this.
-convert(::Type{NDSparse}, m::SparseMatrixCSC) = NDSparse(findnz(m.')[[2,1,3]]..., presorted=true)
+convert(::Type{NDSparse}, m::SparseMatrixCSC) = NDSparse(findnz(transpose(m))[[2,1,3]]..., presorted=true)
 
 # special method to allow selection on
 # ndsparse with repeating names in keys and values
