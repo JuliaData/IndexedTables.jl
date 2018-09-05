@@ -698,7 +698,7 @@ function _colindex(fnames::Union{Tuple, AbstractArray}, col, default=nothing)
     if isa(col, Int) && 1 <= col <= length(fnames)
         return col
     elseif isa(col, Symbol)
-        idx = findfirst(fnames, col)
+        idx = something(findfirst(isequal(col), fnames), 0)
         idx > 0 && return idx
     elseif isa(col, Pair{<:Any, <:AbstractArray})
         return 0

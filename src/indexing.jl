@@ -154,10 +154,10 @@ function _setindex!(d::NDSparse{T,D}, rhs::AbstractArray, idxs) where {T,D}
     I = d.index
     data = d.data
     ll = length(I)
-    p = product(idxs...)
-    s = start(p)
-    done(p, s) && return d
-    R, s = next(p, s)
+    p = Iterators.product(idxs...)
+    elem = iterate(p)
+    elem === nothing && return d
+    R, s = elem
     i = j = 1
     L = I[i]
     while i <= ll
@@ -170,12 +170,14 @@ function _setindex!(d::NDSparse{T,D}, rhs::AbstractArray, idxs) where {T,D}
             i += 1
             L = I[i]
             j += 1
-            done(p, s) && break
-            R, s = next(p, s)
+            elem = iterate(p)
+            elem === nothing && break
+            R, s = elem
         else
             j += 1
-            done(p, s) && break
-            R, s = next(p, s)
+            elem = iterate(p)
+            elem === nothing && break
+            R, s = elem
         end
     end
     return d

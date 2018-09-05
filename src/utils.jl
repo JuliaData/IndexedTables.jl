@@ -58,60 +58,6 @@ astuple(t::Tuple) = t
     Expr(:tuple, [ Expr(:., :n, Expr(:quote, fieldname(n,f))) for f = 1:fieldcount(n) ]...)
 end
 
-# lexicographic order product iterator
-
-import Base: length, eltype, start, next, done
-
-abstract type AbstractProdIterator end
-
-struct Prod2{I1, I2} <: AbstractProdIterator
-    a::I1
-    b::I2
-end
-
-product(a) = a
-product(a, b) = Prod2(a, b)
-eltype(::Type{Prod2{I1,I2}}) where {I1,I2} = Tuple{eltype(I1), eltype(I2)}
-length(p::AbstractProdIterator) = length(p.a)*length(p.b)
-
-function start(p::AbstractProdIterator)
-    s1, s2 = start(p.a), start(p.b)
-    s1, s2, (done(p.a,s1) || done(p.b,s2))
-end
-
-function prod_next(p, st)
-    s1, s2 = st[1], st[2]
-    v2, s2 = next(p.b, s2)
-    doneflag = false
-    if done(p.b, s2)
-        v1, s1 = next(p.a, s1)
-        if !done(p.a, s1)
-            s2 = start(p.b)
-        else
-            doneflag = true
-        end
-    else
-        v1, _ = next(p.a, s1)
-    end
-    return (v1,v2), (s1,s2,doneflag)
-end
-
-next(p::Prod2, st) = prod_next(p, st)
-done(p::AbstractProdIterator, st) = st[3]
-
-struct Prod{I1, I2<:AbstractProdIterator} <: AbstractProdIterator
-    a::I1
-    b::I2
-end
-
-product(a, b, c...) = Prod(a, product(b, c...))
-eltype(::Type{Prod{I1,I2}}) where {I1,I2} = tuple_type_cons(eltype(I1), eltype(I2))
-
-function next(p::Prod{I1,I2}, st) where {I1,I2}
-    x = prod_next(p, st)
-    ((x[1][1],x[1][2]...), x[2])
-end
-
 # sortperm with counting sort
 
 sortperm_fast(x) = sortperm(x)

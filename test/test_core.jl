@@ -1052,10 +1052,10 @@ end
     C = rand(3,3)
     nA = convert(NDSparse, A)
     nB = convert(NDSparse, B)
-    nB.index.columns[1][:] += 3
+    nB.index.columns[1][:] .+= 3
     @test merge(nA,nB) == convert(NDSparse, vcat(A,B))
     nC = convert(NDSparse, C)
-    nC.index.columns[1][:] += 6
+    nC.index.columns[1][:] .+= 6
     @test merge(nA,nB,nC) == merge(nA,nC,nB) == convert(NDSparse, vcat(A,B,C))
     merge!(nA,nB)
     @test nA == convert(NDSparse, vcat(A,B))
@@ -1065,16 +1065,16 @@ end
     @test merge(t1, t2, agg=+) == NDSparse(Columns(a=[0,1,1,2,2,3], b=[1,1,2,1,2,2]), [1,1,4,6,4,4])
     @test merge(t1, t2, agg=nothing) == NDSparse(Columns(a=[0,1,1,1,2,2,2,3], b=[1,1,2,2,1,1,2,2]), [1,1,2,2,3,3,4,4])
 
-    S = spdiagm(1:5)
+    S = sparse(Diagonal(1:5))
     nd = convert(NDSparse, S)
-    @test sum(S) == sum(nd) == sum(convert(NDSparse, full(S)))
+    @test sum(S) == sum(nd) == sum(convert(NDSparse, Matrix(S)))
 
     @test sum(broadcast(+, 10, nd)) == (sum(nd) + 10*nnz(S))
     @test sum(broadcast(+, nd, 10)) == (sum(nd) + 10*nnz(S))
     @test sum(broadcast(+, nd, nd)) == 2*(sum(nd))
 
     nd[1:5,1:5] = 2
-    @test nd == convert(NDSparse, spdiagm(fill(2, 5)))
+    @test nd == convert(NDSparse, sparse(Diagonal(fill(2, 5))))
 
     a = [1,2,3]
     b = ["a","b","c"]

@@ -366,9 +366,8 @@ Returns an array of integers or symbols giving the labels for the dimensions of 
 """
 dimlabels(t::NDSparse) = dimlabels(typeof(t))
 
-start(a::NDSparse) = start(a.data)
-next(a::NDSparse, st) = next(a.data, st)
-done(a::NDSparse, st) = done(a.data, st)
+iterate(a::NDSparse) = iterate(a.data)
+iterate(a::NDSparse, st) = iterate(a.data, st)
 
 function permutedims(t::NDSparse, p::AbstractVector)
     if !(length(p) == ndims(t) && isperm(p))
@@ -511,7 +510,12 @@ end
 
 # NDSparse uses lex order, Base arrays use colex order, so we need to
 # reorder the data. transpose and permutedims are used for this.
-convert(::Type{NDSparse}, m::SparseMatrixCSC) = NDSparse(findnz(transpose(m))[[2,1,3]]..., presorted=true)
+function convert(::Type{NDSparse}, m::SparseMatrixCSC)
+    A = transpose(m)
+    nzidx = findall(!iszero, A)
+    I,J,V = getindex.(nzidx, 1), getindex.(nzidx, 2), A[nzidx]
+    NDSparse(J, I, V, presorted=true)
+end
 
 # special method to allow selection on
 # ndsparse with repeating names in keys and values

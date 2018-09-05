@@ -179,7 +179,7 @@ function widencolumns(dest, i, el::S, ::Type{T}) where{S <: Tup, T<:Tup}
         idx = findall(collect(!(s <: t) for (s, t) in zip(sp, tp)))
         new = dest
         for l in idx
-            newcol = dataarrayof(promote_type(sp[l], tp[l]))(length(dest))
+            newcol = dataarrayof(promote_type(sp[l], tp[l]))(undef, length(dest))
             copyto!(newcol, 1, column(dest, l), 1, i-1)
             new = setcol(new, l, newcol)
         end

@@ -150,7 +150,7 @@ function _join!(::Val{typ}, ::Val{grp}, ::Val{keepkeys}, f, I, data, ks, lout, r
                 # empty group
                 append!(data, map(x->init_group(), i:ll))
             else
-                append!(rnull_idx, (1:length(i:ll)) + length(data))
+                append!(rnull_idx, (1:length(i:ll)) .+ length(data))
                 _append!(Val{:left}(), f, data, lout, rout,
                        ldata, rdata, lperm[i:ll], 0, lnull, rnull)
             end
@@ -160,7 +160,7 @@ function _join!(::Val{typ}, ::Val{grp}, ::Val{keepkeys}, f, I, data, ks, lout, r
                 # empty group
                 append!(data, map(x->init_group(), j:rr))
             else
-                append!(lnull_idx, (1:length(j:rr)) + length(data))
+                append!(lnull_idx, (1:length(j:rr)) .+ length(data))
                 _append!(Val{:right}(), f, data, lout, rout,
                        ldata, rdata, 0, rperm[j:rr], lnull, rnull)
             end
@@ -456,7 +456,7 @@ function Base.join(f, left::Dataset, right::Dataset;
                             arrayT = Array{Union{Missing, eltype(col)}}
                             col = convert(arrayT, col)
                         end
-                        col[lnull_idx] = missing
+                        col[lnull_idx] .= missing
                         col
                     end)
         else
@@ -464,7 +464,7 @@ function Base.join(f, left::Dataset, right::Dataset;
                 arrayT = Array{Union{Missing, eltype(lout)}}
                 lout = convert(arrayT, lout)
             end
-            lout[lnull_idx] = missing
+            lout[lnull_idx] .= missing
         end
         data = concat_cols(lout, rout)
     end
@@ -476,7 +476,7 @@ function Base.join(f, left::Dataset, right::Dataset;
                             arrayT = Array{Union{Missing, eltype(col)}}
                             col = convert(arrayT, col)
                         end
-                        col[rnull_idx] = missing
+                        col[rnull_idx] .= missing
                         col
                     end)
         else
@@ -484,7 +484,7 @@ function Base.join(f, left::Dataset, right::Dataset;
                 arrayT = Array{Union{Missing, eltype(rout)}}
                 rout = convert(arrayT, rout)
             end
-            rout[rnull_idx] = missing
+            rout[rnull_idx] .= missing
         end
         data = concat_cols(lout, rout)
     end

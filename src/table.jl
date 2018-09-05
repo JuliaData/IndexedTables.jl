@@ -317,9 +317,8 @@ function Base.view(t::NextTable, I)
 end
 
 Base.length(t::NextTable) = length(t.columns)
-Base.start(t::NextTable) = start(t.columns)
-Base.next(t::NextTable, i) = next(t.columns, i)
-Base.done(t::NextTable, i) = done(t.columns, i)
+Base.iterate(t.columns, i) = iterate(t.columns, i)
+Base.iterate(t.columns) = iterate(t.columns)
 function getindex(t::NextTable, idxs::AbstractVector{<:Integer})
     if t.pkey == Int64[] || eltype(idxs) == Bool || issorted(idxs)
        #perms = map(t.perms) do p
@@ -339,7 +338,7 @@ function Base.getindex(d::ColDict{<:AbstractIndexedTable}, key::Tuple)
     idx = [colindex(t, k) for k in key]
     pkey = Int[]
     for (i, pk) in enumerate(t.pkey)
-        j = findfirst(idx, pk)
+        j = something(findfirst(isequal(pk), idx), 0)
         if j > 0
             push!(pkey, j)
         end
