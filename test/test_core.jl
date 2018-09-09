@@ -42,6 +42,7 @@ import IndexedTables: update!, pkeynames, pkeys, excludecols, sortpermby, primar
     x = Columns([1], [1.0], WeakRefStrings.StringArray(["a"]))
     @test IndexedTables.arrayof(eltype(x)) == typeof(x)
     @test IndexedTables.arrayof(WeakRefString{UInt8}) == WeakRefStrings.StringArray{WeakRefString{UInt8},1}
+println(@__LINE__)
     @test typeof(similar(c, 10)) == typeof(similar(typeof(c), 10)) == typeof(c)
     @test length(similar(c, 10)) == 10
     @test issorted(c)
@@ -60,6 +61,7 @@ A = NDSparse(rand(1:3,10), rand('A':'F',10), map(UInt8,rand(1:3,10)), collect(1:
 B = NDSparse(map(UInt8,rand(1:3,10)), rand('A':'F',10), rand(1:3,10), randn(10))
 C = NDSparse(map(UInt8,rand(1:3,10)), rand(1:3,10), rand(1:3,10), randn(10))
 
+println(@__LINE__)
 let a = NDSparse([12,21,32], [52,41,34], [11,53,150]), b = NDSparse([12,23,32], [52,43,34], [56,13,10])
     @test eltype(a) == Int
     @test sum(a) == 214
@@ -85,140 +87,271 @@ let a = NDSparse([12,21,32], [52,41,34], [11,53,150]), b = NDSparse([12,23,32], 
 end
 
 
+println(@__LINE__)
     idx = Columns(p=[1,2], q=[3,4])
+println(@__LINE__)
     t = NDSparse(idx, Columns(a=[5,6],b=[7,8]))
+println(@__LINE__)
     t1 = NDSparse(Columns(p=[1,2,3]), Columns(c=[4,5,6]))
+println(@__LINE__)
     t2 = NDSparse(Columns(q=[2,3]), Columns(c=[4,5]))
+println(@__LINE__)
 
     # scalar output
     @test broadcast(==, t, t) == NDSparse(idx, Bool[1,1])
+println(@__LINE__)
     @test broadcast((x,y)->x.a+y.c, t, t1) == NDSparse(idx, [9,11])
+println(@__LINE__)
     @test broadcast((x,y)->y.a+x.c, t1, t) == NDSparse(idx, [9,11])
+println(@__LINE__)
     @test broadcast((x,y)->x.a+y.c, t, t2) == NDSparse(idx[1:1], [10])
+println(@__LINE__)
 
+println(@__LINE__)
     # Tuple output
+println(@__LINE__)
     b1 = broadcast((x,y)->(x.a, y.c), t, t1)
+println(@__LINE__)
     @test isa(b1.data, Columns)
+println(@__LINE__)
     @test b1 == NDSparse(idx, Columns([5,6], [4,5]))
+println(@__LINE__)
 
+println(@__LINE__)
     b2 = broadcast((x,y)->(m=x.a, n=y.c), t, t1)
+println(@__LINE__)
     @test b2 == NDSparse(idx, Columns(m=[5,6], n=[4,5]))
+println(@__LINE__)
     @test isa(b2.data, Columns)
+println(@__LINE__)
     @test fieldnames(eltype(b2.data)) == (:m, :n)
+println(@__LINE__)
 
+println(@__LINE__)
     S = sprand(10,10,.1)
+println(@__LINE__)
     v = rand(10)
+println(@__LINE__)
     nd = convert(NDSparse, S)
+println(@__LINE__)
     ndv = convert(NDSparse,v)
+println(@__LINE__)
     @test broadcast(*, nd, ndv) == convert(NDSparse, S .* v)
+println(@__LINE__)
     # test matching dimensions by name
+println(@__LINE__)
     ndt0 = convert(NDSparse, sparse(S .* (v')))
+println(@__LINE__)
     ndt = NDSparse(Columns(a=ndt0.index.columns[1], b=ndt0.index.columns[2]), ndt0.data, presorted=true)
+println(@__LINE__)
+println(@__LINE__)
+println(@__LINE__)
     @test broadcast(*,
                     NDSparse(Columns(a=nd.index.columns[1], b=nd.index.columns[2]), nd.data),
                     NDSparse(Columns(b=ndv.index.columns[1]), ndv.data)) == ndt
+println(@__LINE__)
 
+println(@__LINE__)
 let a = rand(10), b = rand(10), c = rand(10)
+println(@__LINE__)
     @test NDSparse(a, b, c) == NDSparse(a, b, c)
+println(@__LINE__)
     c2 = copy(c)
+println(@__LINE__)
     c2[1] += 1
+println(@__LINE__)
     @test NDSparse(a, b, c) != NDSparse(a, b, c2)
+println(@__LINE__)
     b2 = copy(b)
+println(@__LINE__)
     b2[1] += 1
+println(@__LINE__)
     @test NDSparse(a, b, c) != NDSparse(a, b2, c)
+println(@__LINE__)
 end
+println(@__LINE__)
 
+println(@__LINE__)
 let a = rand(10), b = rand(10), c = rand(10), d = rand(10)
+println(@__LINE__)
     local nd = NDSparse(a,b,c,d)
+println(@__LINE__)
     @test permutedims(nd,[3,1,2]) == NDSparse(c,a,b,d)
+println(@__LINE__)
     @test_throws ArgumentError permutedims(nd, [1,2])
+println(@__LINE__)
     @test_throws ArgumentError permutedims(nd, [1,3])
+println(@__LINE__)
     @test_throws ArgumentError permutedims(nd, [1,2,2])
+println(@__LINE__)
 end
+println(@__LINE__)
 
+println(@__LINE__)
 let r=1:5, s=1:2:5
+println(@__LINE__)
     A = NDSparse([r;], [r;], [r;])
+println(@__LINE__)
     @test A[s, :] == NDSparse([s;], [s;], [s;])
+println(@__LINE__)
     @test_throws ErrorException A[s, :, :]
+println(@__LINE__)
 end
+println(@__LINE__)
 
+println(@__LINE__)
  a = NDSparse([1,2,2,2], [1,2,3,4], [10,9,8,7])
+println(@__LINE__)
     @test a[1,1] == 10
+println(@__LINE__)
     @test a[2,3] == 8
+println(@__LINE__)
     #@test_throws ErrorException a[2]
+println(@__LINE__)
     @test a[2,:] == NDSparse([2,3,4], [9,8,7])
+println(@__LINE__)
     @test a[:,1] == NDSparse([1], [10])
+println(@__LINE__)
     @test collect(where(a, 2, :)) == [9,8,7]
+println(@__LINE__)
     @test collect(Base.pairs(a)) == [(1,1)=>10, (2,2)=>9, (2,3)=>8, (2,4)=>7]
+println(@__LINE__)
     @test first(Base.pairs(a[:, 3])) == ((2,)=>8)
+println(@__LINE__)
 
+println(@__LINE__)
     update!(x->x+10, a, 2, :)
+println(@__LINE__)
     @test a == NDSparse([1,2,2,2], [1,2,3,4], [10,19,18,17])
+println(@__LINE__)
 
+println(@__LINE__)
     a[2,2:3] = 77
+println(@__LINE__)
     @test a == NDSparse([1,2,2,2], [1,2,3,4], [10,77,77,17])
+println(@__LINE__)
 
+println(@__LINE__)
 let a = NDSparse([1,2,2,2], [1,2,3,4], zeros(4))
+println(@__LINE__)
     a2 = copy(a); a3 = copy(a)
+println(@__LINE__)
     #a[2,:] = 1
+println(@__LINE__)
     #@test a == NDSparse([1,2,2,2], [1,2,3,4], Float64[0,1,1,1])
+println(@__LINE__)
     a2[2,[2,3]] = 1
+println(@__LINE__)
     @test a2 == NDSparse([1,2,2,2], [1,2,3,4], Float64[0,1,1,0])
+println(@__LINE__)
     a3[2,[2,3]] = [8,9]
+println(@__LINE__)
     @test a3 == NDSparse([1,2,2,2], [1,2,3,4], Float64[0,8,9,0])
+println(@__LINE__)
 end
+println(@__LINE__)
 
+println(@__LINE__)
 # issue #15
+println(@__LINE__)
 let a = NDSparse([1,2,3,4], [1,2,3,4], [1,2,3,4])
+println(@__LINE__)
     a[5,5] = 5
+println(@__LINE__)
     a[5,5] = 6
+println(@__LINE__)
     @test a[5,5] == 6
+println(@__LINE__)
 end
+println(@__LINE__)
 
+println(@__LINE__)
 let a = NDSparse([1,2,2,3,4,5], [1,2,2,3,4,5], [1,2,20,3,4,5], agg=+)
     @test a == NDSparse([1,2,3,4,5], [1,2,3,4,5], [1,22,3,4,5])
+println(@__LINE__)
 end
+println(@__LINE__)
 
+println(@__LINE__)
 let a = rand(5,5,5)
+println(@__LINE__)
     for dims in ([2,3], [1], [2])
+println(@__LINE__)
         r = squeeze(reducedim(+, a, dims), dims=(dims...,))
+println(@__LINE__)
         asnd = convert(NDSparse,a)
+println(@__LINE__)
         b = reducedim(+, asnd, dims)
+println(@__LINE__)
         bv = reducedim_vec(sum, asnd, dims)
+println(@__LINE__)
         c = convert(NDSparse, r)
+println(@__LINE__)
         @test b.index == c.index == bv.index
+println(@__LINE__)
         @test b.data ≈ c.data
+println(@__LINE__)
         @test bv.data ≈ c.data
+println(@__LINE__)
     end
+println(@__LINE__)
     @test_throws ArgumentError reducedim(+, convert(NDSparse,a), [1,2,3])
+println(@__LINE__)
 end
+println(@__LINE__)
 
+println(@__LINE__)
 for a in (rand(2,2), rand(3,5))
+println(@__LINE__)
     nd = convert(NDSparse, a)
+println(@__LINE__)
     @test nd == convert(NDSparse, sparse(a))
+println(@__LINE__)
     for (I,d) in zip(nd.index, nd.data)
+println(@__LINE__)
         @test a[I...] == d
+println(@__LINE__)
     end
+println(@__LINE__)
 end
+println(@__LINE__)
 
+println(@__LINE__)
 _colnames(x::NDSparse) = keys(x.index.columns)
+println(@__LINE__)
 
+println(@__LINE__)
 @test _colnames(NDSparse(ones(2),ones(2),ones(2),names=[:a,:b])) == (:a, :b)
+println(@__LINE__)
 @test _colnames(NDSparse(Columns(x=ones(2),y=ones(2)), ones(2))) == (:x, :y)
+println(@__LINE__)
 
+println(@__LINE__)
 x = NDSparse(Columns(x = [1,2,3], y = [4,5,6], z = [7,8,9]), [10,11,12])
+println(@__LINE__)
     names = (:x, :y, :z)
+println(@__LINE__)
     @test _colnames(x) == names
+println(@__LINE__)
     @test _colnames(filter(a->a==11, x)) == names
+println(@__LINE__)
     @test _colnames(selectkeys(x, (:z, :x))) == (:z, :x)
+println(@__LINE__)
     @test _colnames(selectkeys(x, (:y,))) == (:y,)
+println(@__LINE__)
     @test _colnames(filter((:x=>a->a>1, :z=>a->a>7), x, )) == names
+println(@__LINE__)
     @test _colnames(x[1:2, 4:5, 8:9]) == names
+println(@__LINE__)
     @test convertdim(x, :y, a->0) == NDSparse(Columns(x=[1,2,3], y=[0,0,0], z=[7,8,9]), [10,11,12])
+println(@__LINE__)
     @test convertdim(x, :y, a->0, name=:yy) == NDSparse(Columns(x=[1,2,3], yy=[0,0,0], z=[7,8,9]), [10,11,12])
 
+println(@__LINE__)
 # test showing
+println(@__LINE__)
 
+println(@__LINE__)
 @test repr(ndsparse(Columns([1]), Columns(()))) == """
 1-d NDSparse with 1 values (0-tuples):
 1 │
@@ -327,6 +460,7 @@ end
     @test column(t.columns,1) === cs.columns[1]
     @test t.pkey == Int[1]
     @test t.columns == [(1,4), (2,3)]
+println(@__LINE__)
 
     cs = Columns(x=[2, 1], y=[3,4])
     t = table(cs, copy=false, pkey=:x)
@@ -338,6 +472,7 @@ end
     t = table(cs, presorted=true, pkey=[1])
     @test t.pkey == Int[1]
     @test t.columns == [(2,3), (1,4)]
+println(@__LINE__)
 
     a = table([1, 2, 3], [4, 5, 6])
     b = table([1, 2, 3], [4, 5, 6], names=[:x, :y])
@@ -432,6 +567,7 @@ end
     @test summary(c) == "5-element Columns{Tuple{Int64,Int64}}"
 
 
+println(@__LINE__)
 @testset "Getindex" begin
     cs = Columns(x=[1.2, 3.4], y=[3,4])
     t = table(cs, copy=false, pkey=:x)
@@ -542,6 +678,7 @@ end
     @test collect(Base.pairs(x)) == [(a=1,b=1)=>(c=3,), (a=1,b=2)=>(c=4,)]
     @test collect(Base.pairs(y)) == [(a=1,b=1)=>3, (a=1,b=2)=>4]
 
+println(@__LINE__)
 @testset "column manipulation" begin
     t = table([1, 2], [3, 4], names=[:x, :y])
     @test setcol(t, 2, [5, 6]) == table([1, 2], [5, 6], names=Symbol[:x, :y])
@@ -651,6 +788,7 @@ end
     r = table([0, 1, 1, 3], [1, 1, 2, 2], [1, 2, 3, 4], names=[:a, :b, :d], pkey=(:a, :b))
     @test join(l, r) == table([1, 1], [1, 2], [1, 2], [2, 3], names=Symbol[:a, :b, :c, :d])
     @test isequal(join(l, r, how=:left), table([1, 1, 2, 2], [1, 2, 1, 2], [1, 2, 3, 4], [2, 3,missing, missing], names=Symbol[:a, :b, :c, :d]))
+println(@__LINE__)
     @test isequal(join(l, r, how=:outer), table([0, 1, 1, 2, 2, 3], [1, 1, 2, 1, 2, 2], [missing, 1, 2, 3, 4, missing], [1, 2, 3, missing, missing, 4], names=Symbol[:a, :b, :c, :d]))
     a = table([1],[2], names=[:x,:y])
     b = table([1],[3], names=[:a,:b])
@@ -660,6 +798,7 @@ end
     l1 = table([1, 2, 2, 3], [1, 2, 3, 4], names=[:x, :y])
     r1 = table([2, 2, 3, 3], [5, 6, 7, 8], names=[:x, :z])
     @test join(l1, r1, lkey=:x, rkey=:x) == table([2, 2, 2, 2, 3, 3], [2, 2, 3, 3, 4, 4], [5, 6, 5, 6, 7, 8], names=Symbol[:x, :y, :z])
+println(@__LINE__)
     @test isequal(join(l, r, lkey=:a, rkey=:a, lselect=:b, rselect=:d, how=:outer), table([0, 1, 1, 1, 1, 2, 2, 3], [missing, 1, 1, 2, 2, 1, 2, missing], [1, 2, 3, 2, 3, missing, missing, 4], names=Symbol[:a, :b, :d]))
 
 
@@ -902,6 +1041,7 @@ using OnlineStats
     @test value(y.Mean) == 0.45
     @test value(y.Variance) == 0.10749999999999998
     @test reduce((xsum = (:x => (+)), negtsum = ((:t => (-)) => (+))), t) == (xsum = 3, negtsum = -1.35)
+println(@__LINE__)
 
 @testset "groupreduce" begin
     a = table([1, 1, 2], [2, 3, 3], [4, 5, 2], pkey=[1,2])
@@ -929,6 +1069,7 @@ using OnlineStats
                      [2, 2, 2, 3, 3, 3],
                      [1, 4, 3, 5, 2, 0], presorted=true)
 end
+println(@__LINE__)
 
 @testset "groupby" begin
     x = Columns(a=[1, 1, 1, 1, 1, 1],
@@ -987,6 +1128,7 @@ end
                                      [1, 4, 3, 5, 2, 0], presorted=true),) ==
                         NDSparse([1, 1], [2, 3], Columns(maxv=[4, 5], minv=[1, 0]))
 end
+println(@__LINE__)
 
     a = table([1,3,5], [2,2,2], names = [:x, :y])
     @test summarize((mean, std), a) ==
@@ -1006,6 +1148,7 @@ end
     @test summarize((mean, sum), b, stack = true) ==
         table(["a","a","b","b"], [:y,:z,:y,:z], [2.0,2.0,6.0,2.0], [4,4,12,4],
         names = [:x, :variable, :mean, :sum], pkey = :x)
+println(@__LINE__)
 
 @testset "reshape" begin
     t = table(1:4, [1, 4, 9, 16], [1, 8, 27, 64], names = [:x, :xsquare, :xcube], pkey = :x)
@@ -1028,6 +1171,7 @@ end
     res = table(1:4, [1, 4, 9, 16], [1, 8, 27, 64], names = [:x, Symbol(2), Symbol(3)], pkey = :x)
     @test unstack(long2; variable = :var, value = :val) == res
 end
+println(@__LINE__)
 
 @testset "select" begin
     a = table([12,21,32], [52,41,34], [11,53,150], pkey=[1,2])
@@ -1045,6 +1189,7 @@ end
                                   [1, 4, 3, 5, 2, 0], presorted=true), 2, x->div(x,3), vecagg=maximum) ==
                         NDSparse([1, 1], [0, 1], [4, 5])
 end
+println(@__LINE__)
 
 @testset "conversions" begin
     A = rand(3,3)
@@ -1081,6 +1226,7 @@ end
     v = Columns(Pair(a, b))
     @test convert(NDSparse, a, b) == convert(NDSparse, v) == ndsparse(v) == ndsparse(a, b)
 end
+println(@__LINE__)
 
 @testset "mapslices" begin
     # scalar
@@ -1146,6 +1292,7 @@ end
     @test groupby(i -> (y = :y,), t, :x, flatten=true) == groupby(i -> (y = :y,), t, :x, flatten=false)
 end
 
+println(@__LINE__)
 @testset "ColDict" begin
     t = table([1], names=[:x1])
     d = ColDict(t)
@@ -1161,3 +1308,4 @@ end
     flush!(x)
     @test x == ndsparse(([1,2,3],[3,4,4]), [5,6,7])
 end
+println(@__LINE__)

@@ -317,8 +317,8 @@ function Base.view(t::NextTable, I)
 end
 
 Base.length(t::NextTable) = length(t.columns)
-Base.iterate(t.columns, i) = iterate(t.columns, i)
-Base.iterate(t.columns) = iterate(t.columns)
+Base.iterate(t::NextTable, i) = iterate(t.columns, i)
+Base.iterate(t::NextTable) = iterate(t.columns)
 function getindex(t::NextTable, idxs::AbstractVector{<:Integer})
     if t.pkey == Int64[] || eltype(idxs) == Bool || issorted(idxs)
        #perms = map(t.perms) do p
