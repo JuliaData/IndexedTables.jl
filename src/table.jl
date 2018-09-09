@@ -1,4 +1,5 @@
 import Base: setindex!, reduce, select
+import DataValues: dropna
 export NextTable, table, colnames, pkeynames, columns, pkeys, reindex, dropna
 
 """

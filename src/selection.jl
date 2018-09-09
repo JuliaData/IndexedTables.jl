@@ -280,11 +280,17 @@ function _nonna(t::Union{Columns, NextTable}, by=(colnames(t)...,))
     d = ColDict(t)
     for (key, c) in zip(by, bycols)
         x = rows(t, c)
-        filt_by_col!(!ismissing, x, indxs)
-        if Missing <: eltype(x)
-            y = Array{nonmissing(eltype(x))}(undef, length(x))
-            y[indxs] = x[indxs]
+       #filt_by_col!(!ismissing, x, indxs)
+       #if Missing <: eltype(x)
+       #    y = Array{nonmissing(eltype(x))}(undef, length(x))
+       #    y[indxs] = x[indxs]
+        filt_by_col!(!isnull, x, indxs)
+        if isa(x, Array{<:DataValue})
+            y = Array{eltype(eltype(x))}(length(x))
+            y[indxs] = map(get, x[indxs])
             x = y
+        elseif isa(x, DataValueArray)
+            x = x.values # unsafe unwrap
         end
         d[key] = x
     end
@@ -334,7 +340,9 @@ t    x  y
 
 Any columns whose NA rows have been dropped will be converted
 to non-na array type. In our last example, columns `t` and `x`
-got converted from `Array{Union{Int, Missing}}` to `Array{Int}`.
+got converted from `Array{DataValue{Int}}` to `Array{Int}`.
+Similarly if the vectors are of type `DataValueArray{T}`
+(default for `loadtable`) they will be converted to `Array{T}`.
 ```julia
 julia> typeof(column(dropna(t,:x), :x))
 Array{Int64,1}

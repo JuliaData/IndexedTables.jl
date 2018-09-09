@@ -1,7 +1,13 @@
+import DataValues: DataValue
+
 _is_subtype(::Type{S}, ::Type{T}) where {S, T} = promote_type(S, T) == T
 
 Base.@pure function dataarrayof(T)
-    Vector{T}
+    if T<:DataValue
+        DataValueArray{T.parameters[1],1}
+    else
+        Vector{T}
+    end
 end
 
 """

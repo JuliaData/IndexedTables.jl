@@ -1,6 +1,8 @@
 using IndexedTables
 using OnlineStats
-using Test
+using DataValues
+import DataValues: NA
+using Base.Test
 using WeakRefStrings
 
 @testset "IndexedTables" begin
