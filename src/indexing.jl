@@ -154,7 +154,7 @@ function _setindex!(d::NDSparse{T,D}, rhs::AbstractArray, idxs) where {T,D}
     I = d.index
     data = d.data
     ll = length(I)
-    p = Iterators.product(idxs...)
+    p = collect(Iterators.product(idxs...)) # FIXME: remove collect
     elem = iterate(p)
     elem === nothing && return d
     R, s = elem
@@ -170,12 +170,12 @@ function _setindex!(d::NDSparse{T,D}, rhs::AbstractArray, idxs) where {T,D}
             i += 1
             L = I[i]
             j += 1
-            elem = iterate(p)
+            elem = iterate(p, s)
             elem === nothing && break
             R, s = elem
         else
             j += 1
-            elem = iterate(p)
+            elem = iterate(p, s)
             elem === nothing && break
             R, s = elem
         end
