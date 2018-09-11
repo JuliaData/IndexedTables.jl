@@ -49,15 +49,3 @@ end
 
 # For backward compatibility
 NDSparse(x; kwargs...) = ndsparse(x; kwargs...)
-
-function table(rows::AbstractArray{T}; copy=false, kwargs...) where {T<:Union{Tup, Pair}}
-    table(collect_columns(rows); copy=false, kwargs...)
-end
-
-function table(iter; copy=false, kwargs...)
-    if TableTraits.isiterable(iter)
-        table(collect_columns(getiterator(iter)); copy=false, kwargs...)
-    else
-        throw(ArgumentError("iter cannot be turned into a NextTable."))
-    end
-end

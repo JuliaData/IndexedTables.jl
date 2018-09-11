@@ -57,5 +57,6 @@ include("reshape.jl")
 
 # TableTraits.jl integration
 include("tabletraits.jl")
+include("tables.jl")
 
 end # module

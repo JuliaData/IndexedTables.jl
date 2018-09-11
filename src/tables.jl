@@ -1,4 +1,4 @@
-using Tables
+using Tables, IteratorInterfaceExtensions
 
 Tables.istable(::Type{<:NextTable}) = true
 Tables.rowaccess(::Type{<:NextTable}) = true
@@ -11,18 +11,20 @@ sch(x::Type{T}) where {T <: Tuple} = NamedTuple{(i for i = 1:fieldcount(T)), T}
 Tables.schema(x::NextTable) = Tables.Schema(sch(eltype(x)))
 Base.getproperty(x::Tuple, i::Int) = getfield(x, i)
 
-function table(x::T; kwargs...) where {T}
+table(x::AbstractVector{T}; copy=false, kwargs...) where {T <: NamedTuple} = table(Tables.columntable(x); copy=copy, kwargs...)
+
+function table(x::T; copy=false, kwargs...) where {T}
     if Tables.istable(T)
-        return table(Tables.columntable(x); copy=false, kwargs...)
+        return table(Tables.columntable(x); copy=copy, kwargs...)
     end
     y = IteratorInterfaceExtensions.getiterator(x)
     yT = typeof(y)
     if Base.isiterable(yT)
         if Base.IteratorEltype(yT) === Base.HasEltype() && eltype(y) <: NamedTuple
-            return table(Tables.columns(Tables.DataValueUnwrapper(y)); copy=false, kwargs...)
+            return table(Tables.columns(Tables.DataValueUnwrapper(y)); copy=copy, kwargs...)
         else
             # non-NamedTuple or EltypeUnknown
-            return table(Tables.buildcolumns(nothing, Tables.DataValueUnwrapper(y)); copy=false, kwargs...)
+            return table(Tables.buildcolumns(nothing, Tables.DataValueUnwrapper(y)); copy=copy, kwargs...)
         end
     end
     throw(ArgumentError("unable to construct NextTable from $T"))
