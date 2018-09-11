@@ -1,9 +1,5 @@
-using IndexedTables
-using OnlineStats
-using DataValues
+using Test, IndexedTables, OnlineStats, DataValues, WeakRefStrings
 import DataValues: NA
-using Base.Test
-using WeakRefStrings
 
 @testset "IndexedTables" begin
 

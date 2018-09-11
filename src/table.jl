@@ -1,4 +1,4 @@
-import Base: setindex!, reduce, select
+import Base: setindex!, reduce
 import DataValues: dropna
 export NextTable, table, colnames, pkeynames, columns, pkeys, reindex, dropna
 
@@ -305,7 +305,7 @@ Base.isequal(a::NextTable, b::NextTable) = isequal(rows(a), rows(b))
 
 Base.getindex(t::NextTable, i::Integer) = getindex(t.columns, i)
 Base.getindex(t::NextTable, i::Colon) = copy(t)
-Base.endof(t::NextTable) = length(t)
+Base.lastindex(t::NextTable) = length(t)
 
 function Base.view(t::NextTable, I)
     t.pkey == Int64[] || eltype(I) == Bool || issorted(I) ||

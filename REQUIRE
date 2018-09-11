@@ -1,7 +1,7 @@
-julia 0.7-
-Compat 0.19
+julia 0.7
 OnlineStats 0.17
 PooledArrays 0.2.0
 WeakRefStrings 0.4.4
 TableTraits 0.0.1
 TableTraitsUtils 0.0.1
+DataValues

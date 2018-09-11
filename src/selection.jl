@@ -1,4 +1,4 @@
-export dropna, selectkeys, selectvalues
+export dropna, selectkeys, selectvalues, select
 
 """
 `select(t::Table, which::Selection)`
@@ -127,12 +127,12 @@ x  t     vx
 
 ```
 """
-function Base.select(t::AbstractIndexedTable, which)
+function select(t::AbstractIndexedTable, which)
     ColDict(t)[which]
 end
 
 # optimization
-@inline function Base.select(t::NextTable, which::Union{Symbol, Int})
+@inline function select(t::NextTable, which::Union{Symbol, Int})
     getfield(columns(t), which)
 end
 
@@ -455,7 +455,7 @@ n    t    │
 """
 function Base.filter(fn, t::Dataset; select=valuenames(t))
     x = rows(t, select)
-    indxs = find(map(fn, x))
+    indxs = findall(map(fn, x))
     subtable(t, indxs, presorted=true)
 end
 

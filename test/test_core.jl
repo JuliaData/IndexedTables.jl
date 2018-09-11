@@ -1,9 +1,4 @@
-using Test
-using Random
-using IndexedTables
-using PooledArrays
-using SparseArrays
-using WeakRefStrings
+using Test, Random, Dates, IndexedTables, PooledArrays, SparseArrays, WeakRefStrings
 import IndexedTables: update!, pkeynames, pkeys, excludecols, sortpermby, primaryperm, best_perm_estimate, hascolumns
 
     c = Columns([1,1,1,2,2], [1,2,4,3,5])
@@ -277,11 +272,11 @@ let a = rand(5,5,5)
 println(@__LINE__)
     for dims in ([2,3], [1], [2])
 println(@__LINE__)
-        r = squeeze(reducedim(+, a, dims), dims=(dims...,))
+        r = dropdims(reduce(+, a; dims=dims), dims=(dims...,))
 println(@__LINE__)
         asnd = convert(NDSparse,a)
 println(@__LINE__)
-        b = reducedim(+, asnd, dims)
+        b = reduce(+, asnd, dims)
 println(@__LINE__)
         bv = reducedim_vec(sum, asnd, dims)
 println(@__LINE__)
@@ -295,7 +290,7 @@ println(@__LINE__)
 println(@__LINE__)
     end
 println(@__LINE__)
-    @test_throws ArgumentError reducedim(+, convert(NDSparse,a), [1,2,3])
+    @test_throws ArgumentError reduce(+, convert(NDSparse,a), [1,2,3])
 println(@__LINE__)
 end
 println(@__LINE__)
@@ -435,9 +430,8 @@ let x = NDSparse([1,2],[3,4],[:a,:b],[3,5])
 end
 
 # issue #42
-using Base.Dates
 let hitemps = NDSparse([fill("New York",3); fill("Boston",3)],
-                           repmat(Date(2016,7,6):Date(2016,7,8), 2),
+                           repeat(Date(2016,7,6):Dates.Day(1):Date(2016,7,8), 2),
                            [91,89,91,95,83,76])
     @test hitemps[:, Date(2016,7,8)] == NDSparse(["New York", "Boston"],
                                                      [91,76])
@@ -743,12 +737,12 @@ end
     x = ndsparse((t = [0.01, 0.05],), (x = [1, 2], y = [3, 4]))
     manh = map((row->row.x + row.y), x)
     vx = map((row->row.x / row.t), x, select=(:t, :x))
-    polar = map((p->(r = hypot(p.x + p.y), θ = atan2(p.y, p.x))), x)
+    polar = map((p->(r = hypot(p.x + p.y), θ = atan(p.y, p.x))), x)
     @test map(sin, polar, select=:θ) == ndsparse((t = [0.01, 0.05],), [0.9486832980505138, 0.8944271909999159])
 
     t = table([0.01, 0.05], [1, 2], [3, 4], names=[:t, :x, :y])
     manh = map((row->row.x + row.y), t)
-    polar = map((p->(r = hypot(p.x + p.y), θ = atan2(p.y, p.x))), t)
+    polar = map((p->(r = hypot(p.x + p.y), θ = atan(p.y, p.x))), t)
     vx = map((row->row.x / row.t), t, select=(:t, :x))
     @test map(sin, polar, select=:θ) == sin.(column(polar, :θ))
     t = NDSparse([1,2,3], Columns(x=[4,5,6]))
@@ -872,8 +866,8 @@ end
 
 @testset "reducedim" begin
     x = ndsparse((x = [1, 1, 1, 2, 2, 2], y = [1, 2, 2, 1, 2, 2], z = [1, 1, 2, 1, 1, 2]), [1, 2, 3, 4, 5, 6])
-    @test reducedim(+, x, 1) == ndsparse((y = [1, 2, 2], z = [1, 1, 2]), [5, 7, 9])
-    @test reducedim(+, x, (1, 3)) == ndsparse((y = [1, 2],), [5, 16])
+    @test reduce(+, x, 1) == ndsparse((y = [1, 2, 2], z = [1, 1, 2]), [5, 7, 9])
+    @test reduce(+, x, (1, 3)) == ndsparse((y = [1, 2],), [5, 16])
 end
 
 @testset "select" begin

@@ -1,5 +1,3 @@
-using Compat
-
 import Base:
     push!, size, sort, sort!, permute!, issorted, sortperm,
     summary, resize!, vcat, append!, copyto!, view
@@ -229,12 +227,12 @@ end
 
 function convert(::Type{Columns}, x::AbstractArray{<:NTuple{N,Any}}) where N
     eltypes = (eltype(x).parameters...,)
-    copyto!(Columns(map(t->Vector{t}(length(x)), eltypes)), x)
+    copyto!(Columns(map(t->Vector{t}(undef, length(x)), eltypes)), x)
 end
 
 function convert(::Type{Columns}, x::AbstractArray{<:NamedTuple{names, typs}}) where {names,typs}
     eltypes = typs.parameters
-    copyto!(Columns(map(t->Vector{t}(length(x)), eltypes)..., names=fieldnames(eltype(x))), x)
+    copyto!(Columns(map(t->Vector{t}(undef, length(x)), eltypes)..., names=fieldnames(eltype(x))), x)
 end
 
 
@@ -668,7 +666,7 @@ lowerselection(t, s::Not)                = excludecols(t, lowerselection(t, s.co
 lowerselection(t, s::Keys)               = lowerselection(t, IndexedTables.pkeynames(t))
 lowerselection(t, s::Between)            = Tuple(colindex(t, s.first):colindex(t, s.last))
 lowerselection(t, s::Function)           = colindex(t, Tuple(filter(s, collect(colnames(t)))))
-lowerselection(t, s::Regex)              = lowerselection(t, x -> ismatch(s, string(x)))
+lowerselection(t, s::Regex)              = lowerselection(t, x -> occursin(s, string(x)))
 
 function lowerselection(t, s::All)
     s.cols == () && return lowerselection(t, valuenames(t))

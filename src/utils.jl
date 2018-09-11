@@ -1,5 +1,5 @@
 import Base: tuple_type_cons, tuple_type_head, tuple_type_tail, in, ==, isless, convert,
-             length, eltype, start, next, done, show
+             length, eltype, show
 using WeakRefStrings
 
 import WeakRefStrings: StringArray
@@ -86,7 +86,7 @@ function sortperm_int_range(x::Vector{T}, rangelen, minval) where T<:Integer
     end
     cumsum!(where, where)
 
-    P = Vector{Int}(n)
+    P = Vector{Int}(undef, n)
     @inbounds for i = 1:n
         label = x[i] + offs
         wl = where[label]

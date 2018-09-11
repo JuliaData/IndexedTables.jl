@@ -80,7 +80,7 @@ function where(d::NDSparse, idxs::Vararg{Any,N}) where N
     cs = astuple(I.columns)
     data = d.data
     rng = range_estimate(I, idxs)
-    (data[i] for i in Compat.Iterators.Filter(r->row_in(cs, r, idxs), rng))
+    (data[i] for i in Iterators.Filter(r->row_in(cs, r, idxs), rng))
 end
 
 """

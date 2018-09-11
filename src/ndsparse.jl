@@ -533,7 +533,7 @@ function convert(::Type{NDSparse}, a::AbstractArray{T}) where T
     nd = ndims(a)
     a = permutedims(a, [nd:-1:1;])
     data = reshape(a, (n,))
-    idxs = [ Vector{Int}(n) for i = 1:nd ]
+    idxs = [ Vector{Int}(undef, n) for i = 1:nd ]
     i = 1
     for I in CartesianIndices(size(a))
         for j = 1:nd

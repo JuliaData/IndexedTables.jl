@@ -561,7 +561,7 @@ convertdim(x::NDSparse, d::Int, xlat, agg) = convertdim(x, d, xlat, agg=agg)
 sum(x::NDSparse) = sum(x.data)
 
 """
-`reducedim(f, x::NDSparse, dims)`
+`reduce(f, x::NDSparse, dims)`
 
 Drop `dims` dimension(s) and aggregate with `f`.
 
@@ -579,7 +579,7 @@ x  y  z │
 2  2  1 │ 5
 2  2  2 │ 6
 
-julia> reducedim(+, x, 1)
+julia> reduce(+, x, 1)
 2-d NDSparse with 3 values (Int64):
 y  z │
 ─────┼──
@@ -587,7 +587,7 @@ y  z │
 2  1 │ 7
 2  2 │ 9
 
-julia> reducedim(+, x, (1,3))
+julia> reduce(+, x, (1,3))
 1-d NDSparse with 2 values (Int64):
 y │
 ──┼───
@@ -596,7 +596,7 @@ y │
 
 ```
 """
-function reducedim(f, x::NDSparse, dims)
+function Base.reduce(f, x::NDSparse, dims)
     keep = setdiff([1:ndims(x);], map(d->fieldindex(x.index.columns,d), dims))
     if isempty(keep)
         throw(ArgumentError("to remove all dimensions, use `reduce(f, A)`"))
@@ -604,12 +604,12 @@ function reducedim(f, x::NDSparse, dims)
     groupreduce(f, x, (keep...,))
 end
 
-reducedim(f, x::NDSparse, dims::Symbol) = reducedim(f, x, [dims])
+Base.reduce(f, x::NDSparse, dims::Symbol) = reduce(f, x, [dims])
 
 """
 `reducedim_vec(f::Function, arr::NDSparse, dims)`
 
-Like `reducedim`, except uses a function mapping a vector of values to a scalar instead
+Like `reduce`, except uses a function mapping a vector of values to a scalar instead
 of a 2-argument scalar function.
 """
 function reducedim_vec(f, x::NDSparse, dims; with=valuenames(x))

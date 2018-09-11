@@ -1,12 +1,11 @@
 module IndexedTables
 
-using Compat
 using PooledArrays
 
 import Base:
     show, eltype, length, getindex, setindex!, ndims, map, convert, keys, values,
     ==, broadcast, empty!, copy, similar, sum, merge, merge!, mapslices,
-    permutedims, reducedim, sort, sort!, iterate
+    permutedims, sort, sort!, iterate
 
 using Serialization
 import Serialization:  serialize, deserialize
