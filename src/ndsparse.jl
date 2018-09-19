@@ -173,7 +173,7 @@ function ndsparse(::Val{:serial}, ks::Tup, vs::Union{Tup, AbstractVector};
    #                   intersect(colnames(I), colnames(d))))
    #    error("All column names, including index and data columns, must be distinct")
    #end
-    if fieldcount(eltype(d)) !== 0
+    if !isconcretetype(eltype(d)) || fieldcount(eltype(d)) !== 0
         length(I) == length(d) ||
             error("index and data must have the same number of elements")
     end
@@ -268,7 +268,7 @@ pkeynames(t::NDSparse) = (dimlabels(t)...,)
 function valuenames(t::NDSparse)
     if isa(values(t), Columns)
         T = eltype(values(t))
-        ((ndims(t) + (1:fieldcount(eltype(values(t)))))...,)
+        ((ndims(t) .+ (1:fieldcount(eltype(values(t)))))...,)
     else
         ndims(t) + 1
     end
@@ -405,14 +405,12 @@ function showmeta(io, t::NDSparse, cnames)
     nkeys = length(columns(values(t)))
 
     print(io,"    ")
-    #with_output_format(:underline, println, io, "Dimensions")
-    println(io, "Dimensions")
+    printstyled(io, "Dimensions", color=:underline)
     metat = Columns(([1:nidx;], [Text(get(cnames, i, "<noname>")) for i in 1:nidx],
                      eltype.([columns(keys(t))...])))
     showtable(io, metat, cnames=["#", "colname", "type"], cstyle=fill(:bold, nc), full=true)
     print(io,"\n    ")
-    #with_output_format(:underline, println, io, "Values")
-    println(io, "Values")
+    printstyled(io, "Values", color=:underline)
     if isa(values(t), Columns)
         metat = Columns(([nidx+1:nkeys+nidx;], [Text(get(cnames, i, "<noname>")) for i in nidx+1:nkeys+nidx],
                          eltype.(Any[columns(values(t))...])))
@@ -420,21 +418,6 @@ function showmeta(io, t::NDSparse, cnames)
     else
         show(io, eltype(values(t)))
     end
-end
-
-abstract type SerializedNDSparse end
-
-function serialize(s::AbstractSerializer, x::NDSparse)
-    flush!(x)
-    Base.Serializer.serialize_type(s, SerializedNDSparse)
-    serialize(s, x.index)
-    serialize(s, x.data)
-end
-
-function deserialize(s::AbstractSerializer, ::Type{SerializedNDSparse})
-    I = deserialize(s)
-    d = deserialize(s)
-    NDSparse(I, d, presorted=true)
 end
 
 @noinline convert(::Type{NDSparse}, @nospecialize(ks), @nospecialize(vs); kwargs...) = ndsparse(ks, vs; kwargs...)

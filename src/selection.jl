@@ -284,9 +284,9 @@ function _nonna(t::Union{Columns, NextTable}, by=(colnames(t)...,))
        #if Missing <: eltype(x)
        #    y = Array{nonmissing(eltype(x))}(undef, length(x))
        #    y[indxs] = x[indxs]
-        filt_by_col!(!isnull, x, indxs)
+        filt_by_col!(!isna, x, indxs)
         if isa(x, Array{<:DataValue})
-            y = Array{eltype(eltype(x))}(length(x))
+            y = Array{eltype(eltype(x))}(undef, length(x))
             y[indxs] = map(get, x[indxs])
             x = y
         elseif isa(x, DataValueArray)

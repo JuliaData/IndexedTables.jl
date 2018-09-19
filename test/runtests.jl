@@ -5,7 +5,7 @@ import DataValues: NA
 
 include("test_core.jl")
 include("test_utils.jl")
-#include("test_tabletraits.jl")
+include("test_tabletraits.jl")
 include("test_collect.jl")
 
 end

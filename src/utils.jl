@@ -18,7 +18,7 @@ eltypes(::Type{T}) where {T<:Tuple} =
 eltypes(::Type{T}) where {T<:NamedTuple} = map_params(eltype, T)
 eltypes(::Type{T}) where T <: Pair = map_params(eltypes, T)
 eltypes(::Type{T}) where T<:AbstractArray{S, N} where {S, N} = S
-Base.@pure astuple(::Type{T}) where {T<:NamedTuple} = fieldstupletype(T)
+astuple(::Type{T}) where {T<:NamedTuple} = fieldstupletype(T)
 astuple(::Type{T}) where {T<:Tuple} = T
 
 # sizehint, making sure to return first argument
@@ -54,9 +54,7 @@ fieldindex(x::NamedTuple, s::Symbol) = findfirst(x->x===s, fieldnames(typeof(x))
 
 astuple(t::Tuple) = t
 
-@generated function astuple(n::NamedTuple)
-    Expr(:tuple, [ Expr(:., :n, Expr(:quote, fieldname(n,f))) for f = 1:fieldcount(n) ]...)
-end
+astuple(n::NamedTuple) = Tuple(n)
 
 # sortperm with counting sort
 
@@ -158,15 +156,13 @@ end
 function append_n!(X, val, n)
     l = length(X)
     resize!(X, l+n)
-    for i in (1:n)+l
+    for i in (1:n) .+ l
         @inbounds X[i] = val
     end
     X
 end
 
-Base.@pure function fieldstupletype(T::Type{<:NamedTuple})
-    T.parameters[2]
-end
+fieldstupletype(::Type{NamedTuple{N,T}}) where {N,T} = T
 fieldstupletype(T::Type{<:Tuple}) = T
 
 fieldtypes(x::Type) = fieldstupletype(x).parameters
@@ -348,11 +344,15 @@ end
 compact_mem(x) = x
 compact_mem(x::StringArray{String}) = convert(StringArray{WeakRefString{UInt8}}, x)
 
-nonmissing(::Type{Union{Missing, T}}) where T = T
+#nonmissing(::Type{Union{Missing, T}}) where T = T
 
 function getsubfields(n::NamedTuple, fields)
     fns = fieldnames(typeof(n))
-    ts = fieldtypes(typeof(n))
-    NamedTuple{Tuple(fns[f] for f in fields), Tuple{map(f->ts[f], fields)...}}(Tuple(n[f] for f in fields))
+    NamedTuple{(fns[fields]...,)}(n)
 end
 getsubfields(t::Tuple, fields) = t[fields]
+
+# lexicographic order product iterator
+
+product(itr) = itr
+product(itrs...) = Base.Generator(reverse, Iterators.product(reverse(itrs)...))

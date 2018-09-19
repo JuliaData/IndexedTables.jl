@@ -6,8 +6,6 @@ export Columns, colnames, ncols, ColDict, insertafter!, insertbefore!, @cols, se
 export map_rows
 export All, Not, Between, Keys
 
-import Serialization: serialize, deserialize
-
 """
 A type that stores an array of tuples as a tuple of arrays.
 
@@ -354,36 +352,6 @@ end
 function Base.vcat(c::Columns{<:Pair}, cs::Columns{<:Pair}...)
     Columns(vcat(c.columns.first, (x.columns.first for x in cs)...) =>
             vcat(c.columns.second, (x.columns.second for x in cs)...))
-end
-
-
-abstract type SerializedColumns end
-
-function serialize(s::AbstractSerializer, c::Columns)
-    Base.Serializer.serialize_type(s, SerializedColumns)
-    serialize(s, eltype(c) <: NamedTuple)
-    serialize(s, isa(c.columns, NamedTuple))
-    serialize(s, fieldnames(typeof(c.columns)))
-    for col in c.columns
-        serialize(s, col)
-    end
-end
-
-function deserialize(s::AbstractSerializer, ::Type{SerializedColumns})
-    Dnamed = deserialize(s)
-    Cnamed = deserialize(s)
-    fn = deserialize(s)
-    cols = Any[ deserialize(s) for i = 1:length(fn) ]
-    if Cnamed
-        c = Columns(cols..., names = fn)
-        if !Dnamed
-            dt = eltypes(typeof((c.columns...,)))
-            c = Columns{dt,typeof(c.columns)}(c.columns)
-        end
-    else
-        c = Columns(cols...)
-    end
-    return c
 end
 
 # fused indexing operations
@@ -1253,6 +1221,7 @@ function init_inputs(f, x, gettype, isvec) # normal functions
     f, x, gettype(f, x, isvec)
 end
 
+nicename(f::Function) = typeof(f).name.mt.name
 nicename(f) = Symbol(last(split(string(f), ".")))
 nicename(o::OnlineStat) = Symbol(typeof(o).name.name)
 

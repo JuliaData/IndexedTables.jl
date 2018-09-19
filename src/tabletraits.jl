@@ -1,18 +1,18 @@
-using TableTraits
-using TableTraitsUtils
+using TableTraits, TableTraitsUtils, IteratorInterfaceExtensions
 
-TableTraits.isiterable(x::NDSparse) = true
 TableTraits.isiterabletable(x::NDSparse) = true
 
-function TableTraits.getiterator(source::S) where {S <: NDSparse}
+function IteratorInterfaceExtensions.getiterator(source::NDSparse)
     return rows(source)
 end
 
 function _array_factory(t,rows)
     if isa(t, TypeVar)
-        return Array{Any}(rows)
+        return Array{Any}(undef, rows)
+    elseif t <: DataValue
+        return DataValueArray{eltype(t)}(rows)
     else
-        return Array{t}(rows)
+        return Array{t}(undef, rows)
     end
 end
 

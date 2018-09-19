@@ -28,7 +28,7 @@ struct NextTable{C<:Columns} <: AbstractIndexedTable
     # Cache permutations by various subsets of columns
     perms::Vector{Perm}
     # store what percent of the data in each column is unique
-    cardinality::Vector{Any}
+    cardinality::Vector{Union{Float64,Missing}}
 
     columns_buffer::Any
 end
@@ -588,8 +588,6 @@ end
 convert(T::Type{NextTable}, c::Columns{<:Pair}; kwargs...) = convert(T, c.columns.first, c.columns.second; kwargs...)
 # showing
 
-# import Base.Markdown.with_output_format
-
 global show_compact_when_wide = true
 function set_show_compact!(flag=true)
     global show_compact_when_wide
@@ -633,8 +631,7 @@ function showtable(io::IO, t; header=nothing, cnames=colnames(t), divider=nothin
         if style == nothing
             print(io, txt)
         else
-            #with_output_format(style, print, io, txt)
-            print(io, txt)
+            Base.with_output_color(print, style, io, txt)
         end
         if c == divider
             print(io, "│")

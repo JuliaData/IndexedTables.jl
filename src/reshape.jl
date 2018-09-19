@@ -34,7 +34,7 @@ function stack(t::D, by = pkeynames(t); select = isa(t, NDSparse) ? valuenames(t
     valuecols = columns(t, select)
     valuecol = [valuecol[i] for i in 1:length(t) for valuecol in valuecols]
 
-    labels = fieldnames(valuecols)
+    labels = fieldnames(typeof(valuecols))
     labelcol = [label for i in 1:length(t) for label in labels]
 
     bycols = map(arg -> repeat(arg, inner = length(valuecols)), columns(t, by))
@@ -46,7 +46,7 @@ function unstack(::Type{D}, ::Type{T}, key, val, cols::AbstractVector{S}) where 
     for (i, el) in enumerate(val)
         for j in el
             k, v = j
-            isnull(columns(dest_val, S(k))[i]) || error("Repeated values with same label are not allowed")
+            isna(columns(dest_val, S(k))[i]) || error("Repeated values with same label are not allowed")
             columns(dest_val, S(k))[i] = v
         end
     end

@@ -10,7 +10,7 @@ function dedup_names(ns)
         end
     end
 
-    repeated = filter((k,v) -> v > 1, count)
+    repeated = filter(((k,v),) -> v > 1, count)
     for k in keys(repeated)
         repeated[k] = 0
     end
@@ -212,7 +212,7 @@ x  a  b
 """
 function flatten(t::NextTable, col=length(columns(t)); pkey=nothing)
     vecvec = rows(t, col)
-    method_exists(start, (eltype(vecvec),)) || return t
+    hasmethod(iterate, (eltype(vecvec),)) || return t
     everythingbut = excludecols(t, col)
 
     order_others = Int[colindex(t, everythingbut)...]

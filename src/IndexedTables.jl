@@ -5,12 +5,9 @@ using PooledArrays
 import Base:
     show, eltype, length, getindex, setindex!, ndims, map, convert, keys, values,
     ==, broadcast, empty!, copy, similar, sum, merge, merge!, mapslices,
-    permutedims, sort, sort!, iterate
+    permutedims, sort, sort!, iterate, pairs
 
-using Serialization
-import Serialization:  serialize, deserialize
-
-export NDSparse, flush!, aggregate!, aggregate_vec, where, pairs, convertdim, columns, column, rows,
+export NDSparse, flush!, aggregate!, aggregate_vec, where, convertdim, columns, column, rows,
     itable, update!, aggregate, reducedim_vec, dimlabels, collect_columns
 
 const Tup = Union{Tuple,NamedTuple}
@@ -59,6 +56,6 @@ include("join.jl")
 include("reshape.jl")
 
 # TableTraits.jl integration
-#include("tabletraits.jl")
+include("tabletraits.jl")
 
 end # module

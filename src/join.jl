@@ -453,18 +453,18 @@ function Base.join(f, left::Dataset, right::Dataset;
 
     if !isempty(lnull_idx) && lout !== nothing
         lnulls = zeros(Bool, length(lout))
-        lnulls[lnull_idx] = true
+        lnulls[lnull_idx] .= true
         lout = if lout isa Columns
             Columns(map(lout.columns) do col
                         if col isa DataValueArray
-                            col.isnull[lnull_idx] = true
+                            col.isna[lnull_idx] .= true
                         else
                             DataValueArray(col, lnulls)
                         end
                     end)
         else
             if lout isa DataValueArray
-                lout.isnull[lnull_idx] = true
+                lout.isna[lnull_idx] .= true
             else
                 DataValueArray(lout, lnulls)
             end
@@ -474,18 +474,18 @@ function Base.join(f, left::Dataset, right::Dataset;
 
     if !isempty(rnull_idx) && rout !== nothing
         rnulls = zeros(Bool, length(rout))
-        rnulls[rnull_idx] = true
+        rnulls[rnull_idx] .= true
         rout = if rout isa Columns
             Columns(map(rout.columns) do col
                         if col isa DataValueArray
-                            col.isnull[rnull_idx] = true
+                            col.isna[rnull_idx] .= true
                         else
                             DataValueArray(col, rnulls)
                         end
                     end)
         else
             if rout isa DataValueArray
-                rout.isnull[rnull_idx] = true
+                rout.isna[rnull_idx] .= true
             else
                 DataValueArray(rout, rnulls)
             end
@@ -1139,3 +1139,7 @@ end
 
 broadcast(f::Function, x::NDSparse, y) = NDSparse(x.index, broadcast(f, x.data, y), presorted=true)
 broadcast(f::Function, y, x::NDSparse) = NDSparse(x.index, broadcast(f, y, x.data), presorted=true)
+
+Broadcast.broadcasted(f::Function, A::NDSparse, B::NDSparse) = broadcast(f, A, B)
+Broadcast.broadcasted(f::Function, A, B::NDSparse) = broadcast(f, A, B)
+Broadcast.broadcasted(f::Function, A::NDSparse, B) = broadcast(f, A, B)
