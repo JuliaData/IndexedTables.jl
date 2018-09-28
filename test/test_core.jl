@@ -178,14 +178,14 @@ let a = rand(5,5,5)
     for dims in ([2,3], [1], [2])
         r = dropdims(reduce(+, a; dims=dims), dims=(dims...,))
         asnd = convert(NDSparse,a)
-        b = reduce(+, asnd, dims)
+        b = reduce(+, asnd, dims=dims)
         bv = reducedim_vec(sum, asnd, dims)
         c = convert(NDSparse, r)
         @test b.index == c.index == bv.index
         @test b.data ≈ c.data
         @test bv.data ≈ c.data
     end
-    @test_throws ArgumentError reduce(+, convert(NDSparse,a), [1,2,3])
+    @test_throws ArgumentError reduce(+, convert(NDSparse,a), dims=[1,2,3])
 end
 
 for a in (rand(2,2), rand(3,5))
@@ -727,8 +727,8 @@ end
 
 @testset "reducedim" begin
     x = ndsparse((x = [1, 1, 1, 2, 2, 2], y = [1, 2, 2, 1, 2, 2], z = [1, 1, 2, 1, 1, 2]), [1, 2, 3, 4, 5, 6])
-    @test reduce(+, x, 1) == ndsparse((y = [1, 2, 2], z = [1, 1, 2]), [5, 7, 9])
-    @test reduce(+, x, (1, 3)) == ndsparse((y = [1, 2],), [5, 16])
+    @test reduce(+, x, dims=1) == ndsparse((y = [1, 2, 2], z = [1, 1, 2]), [5, 7, 9])
+    @test reduce(+, x, dims=(1, 3)) == ndsparse((y = [1, 2],), [5, 16])
 end
 
 @testset "select" begin
@@ -883,7 +883,7 @@ using OnlineStats
 
     t = table([0.1, 0.5, 0.75], [0, 1, 2], names=[:t, :x])
     @test reduce(+, t, select=:t) == 1.35
-    @test reduce(+, 1.0, t, select = :t) == 2.35
+    @test reduce(+, t, init = 1.0, select = :t) == 2.35
     @test reduce(((a, b)->(t = a.t + b.t, x = a.x + b.x)), t) == (t = 1.35, x = 3)
     @test value(reduce(Mean(), t, select=:t)) == 0.45
     y = reduce((min, max), t, select=:x)

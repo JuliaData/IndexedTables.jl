@@ -87,8 +87,8 @@ let
         b = rand(0:0.001:2, N)
         c = rand(N)
         t4 = IndexedTable(a, b, c)
-        @bench "dim-1" reducedim(+, $t4, 1)
-        @bench "dim-2" reducedim(+, $t4, 2)
+        @bench "dim-1" reduce(+, $t4, dims=1)
+        @bench "dim-2" reduce(+, $t4, dims=2)
         @bench "vec-dim-1" reducedim_vec(+, $t4, 1)
         @bench "vec-dim-2" reducedim_vec(+, $t4, 2)
     end

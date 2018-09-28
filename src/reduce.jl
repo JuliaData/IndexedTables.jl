@@ -101,18 +101,23 @@ julia> reduce(@NT(xsum=:x=>+, negtsum=(:t=>-)=>+), t)
 See [`Selection`](@ref) for more on what selectors can be specified. Here since each output can select its own input, `select` keyword is unsually unnecessary. If specified, the slections in the reducer tuple will be done over the result of selecting with the `select` argument.
 
 """
-function reduce(f, t::Dataset; select=valuenames(t))
+function reduce(f, t::NextTable; select=valuenames(t), kws...)
+    if haskey(kws, :init)
+        return _reduce_select_init(f, t, select, kws.data.init)
+    end
+    _reduce_select(f, t, select)
+end
+
+function _reduce_select(f, t::Dataset, select)
     fs, input, T = init_inputs(f, rows(t, select), reduced_type, false)
     acc = init_first(fs, input[1])
     _reduce(fs, input, acc, 2)
 end
 
-function reduce(f, v0, t::Dataset; select=valuenames(t))
+function _reduce_select_init(f, t::Dataset, select, v0)
     fs, input, T = init_inputs(f, rows(t, select), reduced_type, false)
     _reduce(fs, input, v0, 1)
 end
-
-@deprecate reduce(f, t::Dataset, v0; select=valuenames(t)) reduce(f, v0, t::Dataset; select=select)
 
 function _reduce(fs, input, acc, start)
     @inbounds @simd for i=start:length(input)
@@ -596,15 +601,28 @@ y │
 
 ```
 """
-function Base.reduce(f, x::NDSparse, dims)
-    keep = setdiff([1:ndims(x);], map(d->fieldindex(x.index.columns,d), dims))
-    if isempty(keep)
-        throw(ArgumentError("to remove all dimensions, use `reduce(f, A)`"))
+function Base.reduce(f, x::NDSparse; kws...)
+    if haskey(kws, :dims)
+        if haskey(kws, :select) || haskey(kws, :init)
+            throw(ArgumentError("select and init keyword arguments cannot be used with dims"))
+        end
+        dims = kws.data.dims
+        if dims isa Symbol
+            dims = [dims]
+        end
+        keep = setdiff([1:ndims(x);], map(d->fieldindex(x.index.columns,d), dims))
+        if isempty(keep)
+            throw(ArgumentError("to remove all dimensions, use `reduce(f, A)`"))
+        end
+        return groupreduce(f, x, (keep...,))
+    else
+        select = get(kws, :select, valuenames(x))
+        if haskey(kws, :init)
+            return _reduce_select_init(f, x, select, kws.data.init)
+        end
+        return _reduce_select(f, x, select)
     end
-    groupreduce(f, x, (keep...,))
 end
-
-Base.reduce(f, x::NDSparse, dims::Symbol) = reduce(f, x, [dims])
 
 """
 `reducedim_vec(f::Function, arr::NDSparse, dims)`
