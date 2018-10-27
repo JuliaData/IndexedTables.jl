@@ -17,17 +17,18 @@ function table(x::T; copy=false, kwargs...) where {T}
     if Tables.istable(T)
         return table(Tables.columntable(x); copy=copy, kwargs...)
     end
-    y = IteratorInterfaceExtensions.getiterator(x)
-    yT = typeof(y)
-    if Base.isiterable(yT)
-        if Base.IteratorEltype(yT) === Base.HasEltype() && eltype(y) <: NamedTuple
-            return table(Tables.columns(Tables.DataValueUnwrapper(y)); copy=copy, kwargs...)
-        else
-            # non-NamedTuple or EltypeUnknown
-            return table(Tables.buildcolumns(nothing, Tables.DataValueUnwrapper(y)); copy=copy, kwargs...)
-        end
+    it = TableTraits.isiterabletable(x)
+    if it === true
+        y = IteratorInterfaceExtensions.getiterator(x)
+        return table(Tables.columns(Tables.DataValueUnwrapper(y)); copy=copy, kwargs...)
+    elseif it === missing
+        y = IteratorInterfaceExtensions.getiterator(x)
+        # non-NamedTuple or EltypeUnknown
+        return table(Tables.buildcolumns(nothing, Tables.DataValueUnwrapper(y)); copy=copy, kwargs...)
     end
-    throw(ArgumentError("unable to construct NextTable from $T"))
+    throw(ArgumentError("unable to construct NextTable from $(typeof(x))"))
 end
 
 IteratorInterfaceExtensions.getiterator(x::NextTable) = Tables.datavaluerows(rows(x))
+IteratorInterfaceExtensions.isiterable(x::NextTable) = true
+TableTraits.isiterabletable(x::NextTable) = true
