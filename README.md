@@ -16,9 +16,11 @@ be used on its own for efficient in-memory data processing and analytics.
 First let's create some data to work with.
 
 ```julia
+using Dates
+
 city = vcat(fill("New York", 3), fill("Boston", 3))
 
-dates = repmat(Date(2016,7,6):Date(2016,7,8), 2)
+dates = repeat(Date(2016,7,6):Day(1):Date(2016,7,8), 2)
 
 values = [91, 89, 91, 95, 83, 76]
 ```
@@ -29,7 +31,9 @@ values = [91, 89, 91, 95, 83, 76]
 - Sorted by primary key(s), `pkey`.
 
 ```julia
-julia> t1 = table(@NT(city = city, dates = dates, values = values); pkey = [:city, :dates])
+using IndexedTables
+
+julia> t1 = table((city = city, dates = dates, values = values); pkey = [:city, :dates])
 Table with 6 rows, 3 columns:
 city        dates       values
 ──────────────────────────────
