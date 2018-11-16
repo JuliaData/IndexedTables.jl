@@ -31,15 +31,7 @@ right(x, y) = y
 
 # tuple and NamedTuple utilities
 
-@generated function ith_all(i, xs::Tuple)
-    :(Base.@ntuple $(fieldcount(xs)) j -> xs[j][i])
-end
-
-@generated function ith_all(i, n::NamedTuple)
-    Expr(:block,
-         :(@Base._inline_meta),
-         Expr(:tuple, [ Expr(:ref, Expr(:., :n, Expr(:quote, fieldname(n,f))), :i) for f = 1:fieldcount(n) ]...))
-end
+ith_all(i::Integer, xs::Union{Tuple, NamedTuple}) = map(x -> x[i], xs)
 
 @generated function foreach(f, x::Union{NamedTuple, Tuple}, xs::Union{NamedTuple, Tuple}...)
     args = [:(getfield(getfield(xs, $j), i))  for j in 1:length(xs)]
