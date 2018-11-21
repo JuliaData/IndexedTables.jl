@@ -354,9 +354,6 @@ end
 
 filt_by_col!(f, col, indxs) = filter!(i->f(col[i]), indxs)
 
-Base.@deprecate select(arr::NDSparse, conditions::Pair...) filter(conditions, arr)
-Base.@deprecate select(arr::NDSparse, which::DimName...; agg=nothing) selectkeys(arr, which; agg=agg)
-
 """
 `filter(pred, t::Union{NextTable, NDSparse}; select)`
 

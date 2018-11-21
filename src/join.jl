@@ -627,17 +627,9 @@ export innerjoin, asofjoin, groupjoin
 
 ## Joins
 
-# Natural Join (Both NDSParse arrays must have the same number of columns, in the same order)
-
-Base.@deprecate naturaljoin(left::NDSparse, right::NDSparse, op::Function) naturaljoin(op, left::NDSparse, right::NDSparse)
-
 const innerjoin = naturaljoin
 
 map(f, x::NDSparse{T,D}, y::NDSparse{S,D}) where {T,S,D} = naturaljoin(f, x, y)
-
-# left join
-
-Base.@deprecate leftjoin(left::NDSparse, right::NDSparse, op::Function) leftjoin(op, left, right)
 
 # asof join
 

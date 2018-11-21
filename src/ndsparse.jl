@@ -18,11 +18,6 @@ end
 
 convert(::Type{NextTable}, nd::NDSparse) = NextTable(nd)
 
-Base.@deprecate_binding IndexedTable NDSparse
-
-# optional, non-exported name
-Base.@deprecate_binding Table NDSparse
-
 
 """
 `ndsparse(indices, data; agg, presorted, copy, chunks)`
@@ -323,8 +318,6 @@ dimlabels(::Type{NDSparse{T,D,C,V}}) where {T,D,C,V} = fieldnames(eltype(C))
 
 # Generic ndsparse constructor that also works with distributed
 # arrays in JuliaDB
-
-Base.@deprecate itable(x, y) ndsparse(x, y)
 
 # Keys and Values iterators
 

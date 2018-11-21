@@ -512,25 +512,6 @@ function summarize(f, t, by = pkeynames(t); select = t isa AbstractIndexedTable 
 end
 
 
-Base.@deprecate aggregate(f, t;
-                          by=pkeynames(t),
-                          with=valuenames(t)) groupreduce(f, t, by; select=with)
-
-
-Base.@deprecate aggregate_vec(
-    fs::Function, x;
-    names=nothing,
-    by=pkeynames(x),
-    with=valuenames(x)) groupby(names === nothing ? fs : (names => fs,), x; select=with)
-
-Base.@deprecate aggregate_vec(
-    fs::AbstractVector, x;
-    names=nothing,
-    by=pkeynames(x),
-    with=valuenames(x)) groupby(names === nothing ? (fs...,) : (map(=>, names, fs)...,), x; select=with)
-
-Base.@deprecate aggregate_vec(t; funs...) groupby(namedtuple(first.(funs)...)(last.(funs)...), t)
-
 
 """
 `convertdim(x::NDSparse, d::DimName, xlate; agg::Function, vecagg::Function, name)`
