@@ -32,7 +32,7 @@ import IndexedTables: update!, pkeynames, pkeys, excludecols, sortpermby, primar
     @test d == Columns(Columns((a=[1,2,3,4,1,2,3,4],)) => Columns((b=["a","b","c","d","a","b","c","d"],)))
     @test d == e
     empty!(d)
-    @test d == c[Int64[]]
+    @test d == c[Int[]]
     @test c != Columns((a=[1,2,3], b=["a","b","c"]))
     x = Columns([1], [1.0], WeakRefStrings.StringArray(["a"]))
     @test IndexedTables.arrayof(eltype(x)) == typeof(x)
@@ -258,7 +258,7 @@ a  test │ x    y
 3  1 │ 6.0  7"""
 
 @test repr(NDSparse([1:19;],ones(Int,19))) == """
-1-d NDSparse with 19 values (Int64):
+1-d NDSparse with 19 values ($Int):
 1  │
 ───┼──
 1  │ 1
@@ -285,9 +285,6 @@ function foo(n, data=ones(Int, 1))
     NDSparse(Columns(t([ones(Int, 1) for i=1:n]...)), data)
 end
 
-#@test repr(foo(18)) == "18-d NDSparse with 1 values (Int64):\n    \e[4mDimensions\n\e[24m\e[1m#   \e[22m\e[1mcolname  \e[22m\e[1mtype\e[22m\n──────────────────\n1   x1       Int64\n2   x2       Int64\n3   x3       Int64\n4   x4       Int64\n5   x5       Int64\n6   x6       Int64\n7   x7       Int64\n8   x8       Int64\n9   x9       Int64\n10  x10      Int64\n11  x11      Int64\n12  x12      Int64\n13  x13      Int64\n14  x14      Int64\n15  x15      Int64\n16  x16      Int64\n17  x17      Int64\n18  x18      Int64\n    \e[4mValues\n\e[24mInt64"
-
-#@test repr(foo(17, Columns(x=ones(Int, 1), y=ones(Int, 1)))) == "17-d NDSparse with 1 values (2 field named tuples):\n    \e[4mDimensions\n\e[24m\e[1m#   \e[22m\e[1mcolname  \e[22m\e[1mtype\e[22m\n──────────────────\n1   x1       Int64\n2   x2       Int64\n3   x3       Int64\n4   x4       Int64\n5   x5       Int64\n6   x6       Int64\n7   x7       Int64\n8   x8       Int64\n9   x9       Int64\n10  x10      Int64\n11  x11      Int64\n12  x12      Int64\n13  x13      Int64\n14  x14      Int64\n15  x15      Int64\n16  x16      Int64\n17  x17      Int64\n    \e[4mValues\n\e[24m\e[1m#   \e[22m\e[1mcolname  \e[22m\e[1mtype\e[22m\n──────────────────\n18  x        Int64\n19  y        Int64"
 let x = Columns([6,5,4,3,2,2,1],[4,4,4,4,4,4,4],[1,2,3,4,5,6,7])
     @test issorted(x[sortperm(x)])
 end
@@ -370,16 +367,16 @@ end
     @test colnames(ndsparse(Columns(x=[1, 2, 3]), Columns([3, 4, 5], [6, 7, 8]))) == (:x, 2, 3)
 
     x = ndsparse(["a", "b"], [3, 4])
-    @test (keytype(x), eltype(x)) == (Tuple{String}, Int64)
+    @test (keytype(x), eltype(x)) == (Tuple{String}, Int)
     x = ndsparse((date = Date.(2014:2017),), [4:7;])
     @test x[Date("2015-01-01")] == 5
-    @test (keytype(x), eltype(x)) == (Tuple{Date}, Int64)
+    @test (keytype(x), eltype(x)) == (Tuple{Date}, Int)
     x = ndsparse((["a", "b"], [3, 4]), [5, 6])
-    @test (keytype(x), eltype(x)) == (Tuple{String,Int64}, Int64)
+    @test (keytype(x), eltype(x)) == (Tuple{String,Int}, Int)
     @test x["a", 3] == 5
     x = ndsparse((["a", "b"], [3, 4]), ([5, 6], [7.0, 8.0]))
     x = ndsparse((x = ["a", "a", "b"], y = [3, 4, 4]), (p = [5, 6, 7], q = [8.0, 9.0, 10.0]))
-    @test (keytype(x), eltype(x)) == (Tuple{String,Int64}, NamedTuple{(:p,:q), Tuple{Int64,Float64}})
+    @test (keytype(x), eltype(x)) == (Tuple{String,Int}, NamedTuple{(:p,:q), Tuple{Int,Float64}})
     @test x["a", :] == ndsparse((y = [3, 4],), Columns((p = [5, 6], q = [8.0, 9.0])))
 
     x = ndsparse([1, 2], [3, 4])
@@ -423,7 +420,7 @@ end
     @test vcat(Columns(x=[1]), Columns(x=[1.0])) == Columns(x=[1,1.0])
     @test vcat(Columns(x=PooledArray(["x"])), Columns(x=["y"])) == Columns(x=["x", "y"])
 
-    @test summary(c) == "5-element Columns{Tuple{Int64,Int64}}"
+    @test summary(c) == "5-element Columns{Tuple{$Int,$Int}}"
 
 
 @testset "Getindex" begin
@@ -804,7 +801,7 @@ end
     @test dropna(t) == table([0.7], [5], [7], names=Symbol[:t, :x, :y])
     @test isequal(dropna(t, :y), table([0.5, 0.7], [NA, 5], [6, 7], names=Symbol[:t, :x, :y]))
     t1 = dropna(t, (:t, :x))
-    @test typeof(column(dropna(t, :x), :x)) == Array{Int64,1}
+    @test typeof(column(dropna(t, :x), :x)) == Array{Int,1}
 
 @testset "filter" begin
     t = table(["a", "b", "c"], [0.01, 0.05, 0.07], [2, 1, 0], names=[:n, :t, :x])
