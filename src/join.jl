@@ -244,152 +244,43 @@ function init_join_output(typ, grp, f, ldata, rdata, left, keepkeys, lkey, rkey,
 end
 
 """
-`join([f, ] left, right; how, <options>)`
+    join(left, right; kw...)
+    join(f, left, right; kw...)
 
-Join two tables (`left` and `right`). `how` specifies which join method is used (one of `:inner`, `:left`, `:outer` and `:anti`).
-By default, join keys are implied to be the primary keys, but this can be changed using the `lkey` and `rkey` options. See Options section below.
+Join tables `left` and `right`.
 
-The function `f` must take 2 arguments: tuples of non-key fields from both tables as input. The fields chosen for `f` can be configured using `lselect` and `rselect` options. See Options section below. If `f` is not specified, then these tuples are concatenated to form the non-indexed fields of the output.
+If a function `f(leftrow, rightrow)` is provided, the returned table will have a single 
+output column.  See the Examples below.
 
-# Inner join
+If the same key occurs multiple times in either table, each `left` row will get matched 
+with each `right` row, resulting in `n_occurrences_left * n_occurrences_right` output rows.
 
-Inner join is the default join (when `how` is unspecified). It looks up keys from `left` in `right` and only joins them when there is a match. This generates the "intersection" of keys from `left` and `right`.
+# Options (keyword arguments)
 
-```jldoctest join
-julia> l = table([1,1,2,2], [1,2,1,2], [1,2,3,4],
-                 names=[:a,:b,:c], pkey=(:a, :b))
-Table with 4 rows, 3 columns:
-a  b  c
-───────
-1  1  1
-1  2  2
-2  1  3
-2  2  4
+- `how = :inner` -- join method to use. Described below.
+- `lkey = pkeys(left)` -- fields from `left` to match on (see [`pkeys`](@ref))
+- `rkey = pkeys(right)` -- fields from `right` to match on
+- `lselect = Not(lkey)` -- output columns from `left` (see [`Not`](@ref))
+- `rselect = Not(rkey)` -- output columns from `right`
 
-julia> r = table([0,1,1,3], [1,1,2,2], [1,2,3,4],
-                 names=[:a,:b,:d], pkey=(:a, :b))
-Table with 4 rows, 3 columns:
-a  b  d
-───────
-0  1  1
-1  1  2
-1  2  3
-3  2  4
+## Join methods (`how = :inner`)
 
-julia> join(l,r) # inner join
-Table with 2 rows, 4 columns:
-a  b  c  d
-──────────
-1  1  1  2
-1  2  2  3
-```
+- `:inner` -- rows with matching keys in both tables
+- `:left` -- all rows from `left`, plus matched rows from `right` (missing values can occur)
+- `:outer` -- all rows from both tables (missing values can occur)
+- `:anti` -- rows in `left` WITHOUT matching keys in `right`
 
-# Left join
+# Examples
 
-Left join looks up rows from `right` where keys match that in `left`. If there are no such rows in `right`, an NA value is used for every selected field from right.
+    a = table((x = 1:10,   y = rand(10)), pkey = :x)
+    b = table((x = 1:2:20, z = rand(10)), pkey = :x)
 
-```jldoctest join
-julia> join(l,r, how=:left)
-Table with 4 rows, 4 columns:
-a  b  c  d
-────────────
-1  1  1  2
-1  2  2  3
-2  1  3  #NA
-2  2  4  #NA
-```
+    join(a, b; how = :inner)
+    join(a, b; how = :left)
+    join(a, b; how = :outer)
+    join(a, b; how = :anti)
 
-# Outer join
-
-Outer (aka Union) join looks up rows from `right` where keys match that in `left`, and also rows from `left` where keys match those in `left`, if there are no matches on either side, a tuple of NA values is used. The output is guarranteed to contain the union of all keys from both tables.
-
-```jldoctest join
-julia> join(l,r, how=:outer)
-Table with 6 rows, 4 columns:
-a  b  c    d
-──────────────
-0  1  #NA  1
-1  1  1    2
-1  2  2    3
-2  1  3    #NA
-2  2  4    #NA
-3  2  #NA  4
-```
-
-# Anti join
-
-Anti join keeps rows in `left` whose keys are NOT present in `right`.
-
-```jldoctest join
-julia> join(l, r, how=:anti)
-Table with 2 rows, 3 columns:
-a  b  c
-───────
-2  1  3
-2  2  4
-```
-
-# One-to-many and many-to-many matches
-
-If the same key appears multiple times in either table (say, `m` and `n` times respectively), each row with a key from `left` is matched with each row from `right` with that key (resulting in `m×n` output rows with the same key.)
-
-```jldoctest join
-julia> l1 = table([1,2,2,3], [1,2,3,4], names=[:x,:y])
-Table with 4 rows, 2 columns:
-x  y
-────
-1  1
-2  2
-2  3
-3  4
-
-julia> r1 = table([2,2,3,3], [5,6,7,8], names=[:x,:z])
-Table with 4 rows, 2 columns:
-x  z
-────
-2  5
-2  6
-3  7
-3  8
-
-julia> join(l1,r1, lkey=:x, rkey=:x)
-Table with 6 rows, 3 columns:
-x  y  z
-───────
-2  2  5
-2  2  6
-2  3  5
-2  3  6
-3  4  7
-3  4  8
-```
-This applies to all joins described above except anti join where rows are not matched.
-
-# Options
-
-- `how::Symbol` -- join method to use. Described above.
-- `lkey::Selection` -- fields from `left` to match on
-- `rkey::Selection` -- fields from `right` to match on
-- `lselect::Selection` -- fields from `left` to use as output columns, or input to `f` if it is specified. By default, this is all fields not selected in `lkey`.
-- `rselect::Selection` -- fields from `right` to use as output columns, or input to `f` if it is specified. By default, this is all fields not selected in `rkey`.
-
-See `select` for a description of `Selection` type.
-
-```jldoctest join
-julia> join(l, r, lkey=:a, rkey=:a,
-            lselect=:b, rselect=:d, how=:outer)
-Table with 8 rows, 3 columns:
-a  b    d
-───────────
-0  #NA  1
-1  1    2
-1  1    3
-1  2    2
-1  2    3
-2  1    #NA
-2  2    #NA
-3  #NA  4
-```
+    join((l, r) -> l.y + r.z, a, b)
 """
 function Base.join(f, left::Dataset, right::Dataset;
                    how=:inner, group=false,
@@ -505,94 +396,22 @@ function Base.join(left::Dataset, right::Dataset; how=:inner, kwargs...)
 end
 
 """
-`groupjoin([f, ] left, right; how, <options>)`
+    groupjoin(left, right; kw...)
+    groupjoin(f, left, right; kw...)
 
 Join `left` and `right` creating groups of values with matching keys.
 
-# Inner join
+For keyword argument options, see [`join`](@ref).
 
-Inner join is the default join (when `how` is unspecified). It looks up keys from `left` in `right` and only joins them when there is a match. This generates the "intersection" of keys from `left` and `right`.
+# Examples
 
-# One-to-many and many-to-many matches
+    l = table([1,1,1,2], [1,2,2,1], [1,2,3,4], names=[:a,:b,:c], pkey=(:a, :b))
+    r = table([0,1,1,2], [1,2,2,1], [1,2,3,4], names=[:a,:b,:d], pkey=(:a, :b))
 
-If the same key appears multiple times in either table (say, `m` and `n` times respectively), each row with a key from `left` is matched with each row from `right` with that key. The resulting group has `m×n` output elements.
-
-```jldoctest groupjoin
-julia> l = table([1,1,1,2], [1,2,2,1], [1,2,3,4],
-                 names=[:a,:b,:c], pkey=(:a, :b))
-Table with 4 rows, 3 columns:
-a  b  c
-───────
-1  1  1
-1  2  2
-1  2  3
-2  1  4
-
-julia> r = table([0,1,1,2], [1,2,2,1], [1,2,3,4],
-                 names=[:a,:b,:d], pkey=(:a, :b))
-Table with 4 rows, 3 columns:
-a  b  d
-───────
-0  1  1
-1  2  2
-1  2  3
-2  1  4
-
-julia> groupjoin(l,r)
-Table with 2 rows, 3 columns:
-a  b  groups
-──────────────────────────────────────────────────────────────────────────────────────────────────────
-1  2  NamedTuples._NT_c_d{Int64,Int64}[(c = 2, d = 2), (c = 2, d = 3), (c = 3, d = 2), (c = 3, d = 3)]
-2  1  NamedTuples._NT_c_d{Int64,Int64}[(c = 4, d = 4)]
-```
-
-# Left join
-
-Left join looks up rows from `right` where keys match that in `left`. If there are no such rows in `right`, an NA value is used for every selected field from right.
-
-```jldoctest groupjoin
-julia> groupjoin(l,r, how=:left)
-Table with 3 rows, 3 columns:
-a  b  groups
-──────────────────────────────────────────────────────────────────────────────────────────────────────
-1  1  NamedTuples._NT_c_d{Int64,Int64}[]
-1  2  NamedTuples._NT_c_d{Int64,Int64}[(c = 2, d = 2), (c = 2, d = 3), (c = 3, d = 2), (c = 3, d = 3)]
-2  1  NamedTuples._NT_c_d{Int64,Int64}[(c = 4, d = 4)]
-```
-
-# Outer join
-
-Outer (aka Union) join looks up rows from `right` where keys match that in `left`, and also rows from `left` where keys match those in `left`, if there are no matches on either side, a tuple of NA values is used. The output is guarranteed to contain
-
-```jldoctest groupjoin
-
-julia> groupjoin(l,r, how=:outer)
-Table with 4 rows, 3 columns:
-a  b  groups
-──────────────────────────────────────────────────────────────────────────────────────────────────────
-0  1  NamedTuples._NT_c_d{Int64,Int64}[]
-1  1  NamedTuples._NT_c_d{Int64,Int64}[]
-1  2  NamedTuples._NT_c_d{Int64,Int64}[(c = 2, d = 2), (c = 2, d = 3), (c = 3, d = 2), (c = 3, d = 3)]
-2  1  NamedTuples._NT_c_d{Int64,Int64}[(c = 4, d = 4)]
-```
-
-# Options
-
-- `how::Symbol` -- join method to use. Described above.
-- `lkey::Selection` -- fields from `left` to match on
-- `rkey::Selection` -- fields from `right` to match on
-- `lselect::Selection` -- fields from `left` to use as input to use as output columns, or input to `f` if it is specified. By default, this is all fields not selected in `lkey`.
-- `rselect::Selection` -- fields from `left` to use as input to use as output columns, or input to `f` if it is specified. By default, this is all fields not selected in `rkey`.
-
-```jldoctest groupjoin
-julia> groupjoin(l,r, lkey=:a, rkey=:a, lselect=:c, rselect=:d, how=:outer)
-Table with 3 rows, 2 columns:
-a  groups
-───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-0  NamedTuples._NT_c_d{Int64,Int64}[]
-1  NamedTuples._NT_c_d{Int64,Int64}[(c = 1, d = 2), (c = 1, d = 3), (c = 2, d = 2), (c = 2, d = 3), (c = 3, d = 2), (c = 3, d = 3)]
-2  NamedTuples._NT_c_d{Int64,Int64}[(c = 4, d = 4)]
-```
+    groupjoin(l, r)
+    groupjoin(l, r; how = :left)
+    groupjoin(l, r; how = :outer)
+    groupjoin(l, r; how = :anti)
 """
 function groupjoin(left::Dataset, right::Dataset; how=:inner, kwargs...)
     f = how === :anti ? (x,y) -> x : concat_tup
@@ -634,30 +453,25 @@ map(f, x::NDSparse{T,D}, y::NDSparse{S,D}) where {T,S,D} = naturaljoin(f, x, y)
 # asof join
 
 """
-`asofjoin(left::NDSparse, right::NDSparse)`
+    asofjoin(left::NDSparse, right::NDSparse)
 
-asofjoin is most useful on two time-series.
-It joins rows from `left` with the "most recent" value from `right`.
+Join rows from `left` with the "most recent" value from `right`.
 
-```jldoctest
-julia> x = ndsparse((["ko","ko", "xrx","xrx"],
-                     Date.(["2017-11-11", "2017-11-12",
-                            "2017-11-11", "2017-11-12"])), [1,2,3,4]);
+# Example
 
-julia> y = ndsparse((["ko","ko", "xrx","xrx"],
-                     Date.(["2017-11-12", "2017-11-13",
-                            "2017-11-10", "2017-11-13"])), [5,6,7,8])
+    using Dates
+    akey1 = ["A", "A", "B", "B"]
+    akey2 = [Date(2017,11,11), Date(2017,11,12), Date(2017,11,11), Date(2017,11,12)]
+    avals = collect(1:4)
 
-julia> asofjoin(x,y)
-2-d NDSparse with 4 values (Int64):
-1      2          │
-──────────────────┼──
-"ko"   2017-11-11 │ 1
-"ko"   2017-11-12 │ 5
-"xrx"  2017-11-11 │ 7
-"xrx"  2017-11-12 │ 7
-```
+    bkey1 = ["A", "A", "B", "B"]
+    bkey2 = [Date(2017,11,12), Date(2017,11,13), Date(2017,11,10), Date(2017,11,13)]
+    bvals = collect(5:8)
 
+    a = ndsparse((akey1, akey2), avals)
+    b = ndsparse((bkey1, bkey2), bvals)
+
+    asofjoin(a, b)
 """
 function asofjoin(left::NDSparse, right::NDSparse)
     flush!(left); flush!(right)
@@ -790,71 +604,26 @@ end
 
 
 """
-`merge(a::Table, a::Table; pkey)`
+    merge(a::NextTable, b::NextTable; pkey)
 
-Merge rows from two datasets while keeping them ordered by primary keys (`pkey`). By default, if the tables have the same primary key columns in the same order, they will be used. Otherwise no primary key will be used. The tables must have the same column names. If they are not in the same order, the order from the first table will be used.
+Merge rows of `a` with rows of `b` and remain ordered by the primary key(s).  `a` and `b` must
+have the same column names.
 
-# Examples:
+    merge(a::NDSparse, a::NDSparse; agg)
 
-```jldoctest
-julia> a = table([1,3,5], [1,2,3], names=[:x,:y], pkey=:x)
-Table with 3 rows, 2 columns:
-x  y
-────
-1  1
-3  2
-5  3
+Merge rows of `a` with rows of `b`.  To keep unique keys, the value from `b` takes priority.
+A provided function `agg` will aggregate values from `a` and `b` that have the same key(s).
 
-julia> b = table([2,3,4], [1,2,3], names=[:x,:y], pkey=:x)
-Table with 3 rows, 2 columns:
-x  y
-────
-2  1
-3  2
-4  3
+# Example:
 
-julia> merge(a,b)
-Table with 6 rows, 2 columns:
-x  y
-────
-1  1
-2  1
-3  2
-3  2
-4  3
-5  3
+    a = table((x = 1:5, y = rand(5)); pkey = :x)
+    b = table((x = 6:10, y = rand(5)); pkey = :x)
+    merge(a, b)
 
-```
-
-`merge(a::NDSparse, a::NDSparse; agg)`
-
-Merge rows from two NDSparse objects. To keep unique keys, if a key is present in both inputs, the value from the second input is chosen. You can pass the `agg` keyword argument to combine the values with a custom function.
-
-```jldoctest merge
-julia> a = ndsparse([1,3,5], [1,2,3]);
-
-julia> b = ndsparse([2,3,4], [1,2,3]);
-
-julia> merge(a,b)
-1-d NDSparse with 5 values (Int64):
-1 │
-──┼──
-1 │ 1
-2 │ 1
-3 │ 2
-4 │ 3
-5 │ 3
-
-julia> merge(a,b,agg=+)
-1-d NDSparse with 5 values (Int64):
-1 │
-──┼──
-1 │ 1
-2 │ 1
-3 │ 4
-4 │ 3
-5 │ 3
-```
+    a = ndsparse([1,3,5], [1,2,3])
+    b = ndsparse([2,3,4], [4,5,6])
+    merge(a, b)
+    merge(a, b; agg = (x,y) -> x)
 """
 function Base.merge(a::Dataset, b) end
 
@@ -1050,7 +819,8 @@ function _broadcast!(f::Function, A::NDSparse, B::NDSparse, C::NDSparse; dimmap=
 end
 
 """
-`broadcast(f::Function, A::NDSparse, B::NDSparse; dimmap::Tuple{Vararg{Int}})`
+    broadcast(f, A::NDSparse, B::NDSparse; dimmap::Tuple{Vararg{Int}})
+    A .* B
 
 Compute an inner join of `A` and `B` using function `f`, where the dimensions
 of `B` are a subset of the dimensions of `A`. Values from `B` are repeated over
@@ -1064,59 +834,16 @@ dimensions of `j` should have `dimmap[i]==0`.
 If `dimmap` is not specified, it is determined automatically using index column
 names and types.
 
-```jldoctest bcast
-julia> a = ndsparse(([1,1,2,2], [1,2,1,2]), [1,2,3,4])
-2-d NDSparse with 4 values (Int64):
-1  2 │
-─────┼──
-1  1 │ 1
-1  2 │ 2
-2  1 │ 3
-2  2 │ 4
+# Example 
 
-julia> b = ndsparse([1,2], [1/1, 1/2])
-1-d NDSparse with 2 values (Float64):
-1 │
-──┼────
-1 │ 1.0
-2 │ 0.5
+    a = ndsparse(([1,1,2,2], [1,2,1,2]), [1,2,3,4])
+    b = ndsparse([1,2], [1/1, 1/2])
+    broadcast(*, a, b)
 
-julia> broadcast(*, a, b)
-2-d NDSparse with 4 values (Float64):
-1  2 │
-─────┼────
-1  1 │ 1.0
-1  2 │ 2.0
-2  1 │ 1.5
-2  2 │ 2.0
-```
-
-The `.`-broadcast syntax works with NDSparse:
-```jldoctest bcast
-julia> a.*b
-2-d NDSparse with 4 values (Float64):
-1  2 │
-─────┼────
-1  1 │ 1.0
-1  2 │ 2.0
-2  1 │ 1.5
-2  2 │ 2.0
-```
 
 `dimmap` maps dimensions that should be broadcasted:
 
-```jldoctest bcast
-
-julia> broadcast(*, a, b, dimmap=(0,1))
-2-d NDSparse with 4 values (Float64):
-1  2 │
-─────┼────
-1  1 │ 1.0
-1  2 │ 1.0
-2  1 │ 3.0
-2  2 │ 2.0
-
-```
+    broadcast(*, a, b, dimmap=(0,1))
 """
 function broadcast(f::Function, A::NDSparse, B::NDSparse; dimmap=nothing)
     out_T = _promote_op(f, eltype(A), eltype(B))

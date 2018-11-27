@@ -172,43 +172,20 @@ function _flatten!(others, vecvec, out_others, out_vecvec)
 end
 
 """
-`flatten(t::Table, col=length(columns(t)))`
+    flatten(t::Table, col=length(columns(t)))
 
 Flatten `col` column which may contain a vector of vectors while repeating the other fields.
 If column argument is not provided, default to last column.
 
-## Examples:
+# Examples:
 
-```jldoctest
-julia> x = table([1,2], [[3,4], [5,6]], names=[:x, :y])
-Table with 2 rows, 2 columns:
-x  y
-─────────
-1  [3, 4]
-2  [5, 6]
+    x = table([1,2], [[3,4], [5,6]], names=[:x, :y])
+    flatten(x, 2)
 
-julia> flatten(x, 2)
-Table with 4 rows, 2 columns:
-x  y
-────
-1  3
-1  4
-2  5
-2  6
-
-julia> x = table([1,2], [table([3,4],[5,6], names=[:a,:b]),
-                         table([7,8], [9,10], names=[:a,:b])], names=[:x, :y]);
-
-julia> flatten(x, :y)
-Table with 4 rows, 3 columns:
-x  a  b
-────────
-1  3  5
-1  4  6
-2  7  9
-2  8  10
-```
-
+    t1 = table([3,4],[5,6], names=[:a,:b])
+    t2 = table([7,8], [9,10], names=[:a,:b])
+    x = table([1,2], [t1, t2], names=[:x, :y]);
+    flatten(x, :y)
 """
 function flatten(t::NextTable, col=length(columns(t)); pkey=nothing)
     vecvec = rows(t, col)

@@ -7,11 +7,11 @@ export map_rows
 export All, Not, Between, Keys
 
 """
-A type that stores an array of tuples as a tuple of arrays.
+Wrapper around a (named) tuple of Vectors that acts like a Vector of (named) tuples.
 
 # Fields:
 
-- `columns`: a tuple or named tuples of arrays. Also `columns(x)`
+- `columns`: a (named) tuple of Vectors. Also `columns(x)`
 """
 struct Columns{D<:Union{Tup, Pair}, C<:Union{Tup, Pair}} <: AbstractVector{D}
     columns::C
@@ -60,59 +60,17 @@ Returns the names of the "columns" in `itr`.
 
 # Examples:
 
-```jldoctest
-julia> colnames([1,2,3])
-1-element Array{Int64,1}:
- 1
+    colnames(1:3)
+    colnames(Columns([1,2,3], [3,4,5]))
+    colnames(table([1,2,3], [3,4,5]))
+    colnames(Columns(x=[1,2,3], y=[3,4,5]))
+    colnames(table([1,2,3], [3,4,5], names=[:x,:y]))
+    colnames(ndsparse(Columns(x=[1,2,3]), Columns(y=[3,4,5])))
+    colnames(ndsparse(Columns(x=[1,2,3]), [3,4,5]))
+    colnames(ndsparse(Columns(x=[1,2,3]), [3,4,5]))
+    colnames(ndsparse(Columns([1,2,3], [4,5,6]), Columns(x=[6,7,8])))
+    colnames(ndsparse(Columns(x=[1,2,3]), Columns([3,4,5],[6,7,8])))
 
-julia> colnames(Columns([1,2,3], [3,4,5]))
-2-element Array{Int64,1}:
- 1
- 2
-
-julia> colnames(table([1,2,3], [3,4,5]))
-2-element Array{Int64,1}:
- 1
- 2
-
-julia> colnames(Columns(x=[1,2,3], y=[3,4,5]))
-2-element Array{Symbol,1}:
- :x
- :y
-
-julia> colnames(table([1,2,3], [3,4,5], names=[:x,:y]))
-2-element Array{Symbol,1}:
- :x
- :y
-
-julia> colnames(ndsparse(Columns(x=[1,2,3]), Columns(y=[3,4,5])))
-2-element Array{Symbol,1}:
- :x
- :y
-
-julia> colnames(ndsparse(Columns(x=[1,2,3]), [3,4,5]))
-2-element Array{Any,1}:
- :x
- 1
- 2
-
-julia> colnames(ndsparse(Columns(x=[1,2,3]), [3,4,5]))
-2-element Array{Any,1}:
- :x
- 2
-
-julia> colnames(ndsparse(Columns([1,2,3], [4,5,6]), Columns(x=[6,7,8])))
-3-element Array{Any,1}:
- 1
- 2
- :x
-
-julia> colnames(ndsparse(Columns(x=[1,2,3]), Columns([3,4,5],[6,7,8])))
-3-element Array{Any,1}:
- :x
- 2
- 3
-```
 """
 function colnames end
 
@@ -123,37 +81,24 @@ Base.@pure colnames(t::Columns) = fieldnames(eltype(t))
 Base.@pure colnames(t::Columns{<:Pair, <:Pair}) = colnames(t.columns.first) => colnames(t.columns.second)
 
 """
-`columns(itr[, select::Selection])`
+`columns(itr, select::Selection = All())`
 
 Select one or more columns from an iterable of rows as a tuple of vectors.
 
-`select` specifies which columns to select. See [`Selection convention`](@ref select) for possible values. If unspecified, returns all columns.
+`select` specifies which columns to select. Refer to the [`select`](@ref) function for the 
+available selection options and syntax.
 
-`itr` can be `NDSparse`, `Columns` and `AbstractVector`, and their distributed counterparts.
+`itr` can be `NDSparse`, `Columns`, `AbstractVector`, or their distributed counterparts.
 
 # Examples
 
-```jldoctest
-julia> t = table([1,2],[3,4], names=[:x,:y])
-Table with 2 rows, 2 columns:
-x  y
-────
-1  3
-2  4
+```
+t = table(1:2, 3:4; names = [:x, :y])
 
-julia> columns(t)
-(x = [1, 2], y = [3, 4])
-
-julia> columns(t, :x)
-2-element Array{Int64,1}:
- 1
- 2
-
-julia> columns(t, (:x,))
-(x = [1, 2])
-
-julia> columns(t, (:y,:x=>-))
-(y = [3, 4], x = [-1, -2])
+columns(t)
+columns(t, :x)
+columns(t, (:x,))
+columns(t, (:y, :x => -))
 ```
 """
 function columns end
@@ -175,22 +120,13 @@ ndims(c::Columns) = 1
 
 Returns the number of columns in `itr`.
 
-```jldoctest
-julia> ncols([1,2,3])
-1
+# Examples
 
-julia> d = ncols(rows(([1,2,3],[4,5,6])))
-2
-
-julia> ncols(table(([1,2,3],[4,5,6])))
-2
-
-julia> ncols(table(@NT(x=[1,2,3],y=[4,5,6])))
-2
-
-julia> ncols(ndsparse(d, [7,8,9]))
-3
-```
+    ncols([1,2,3])
+    ncols(rows(([1,2,3],[4,5,6])))
+    ncols(table(([1,2,3],[4,5,6])))
+    ncols(table(@NT(x=[1,2,3],y=[4,5,6])))
+    ncols(ndsparse(d, [7,8,9]))
 """
 function ncols end
 ncols(c::Columns) = fieldcount(typeof(c.columns))
@@ -448,15 +384,7 @@ elementwise. Collect output as `Columns` if `f` returns
 
 # Examples
 
-```jldoctest map_rows
-julia> map_rows(i -> @NT(exp = exp(i), log = log(i)), 1:5)
-5-element IndexedTables.Columns{NamedTuples._NT_exp_log{Float64,Float64},NamedTuples._NT_exp_log{Array{Float64,1},Array{Float64,1}}}:
- (exp = 2.71828, log = 0.0)
- (exp = 7.38906, log = 0.693147)
- (exp = 20.0855, log = 1.09861)
- (exp = 54.5982, log = 1.38629)
- (exp = 148.413, log = 1.60944)
-```
+    map_rows(i -> (exp = exp(i), log = log(i)), 1:5)
 """
 function map_rows(f, iters...)
     collect_columns(f(i...) for i in zip(iters...))
@@ -468,41 +396,15 @@ map_rows(f, iter) = collect_columns(f(i) for i in iter)
 ## Special selectors to simplify column selector
 
 """
-`All(cols)`
+    All(cols::Union{Symbol, Int}...)
 
 Select the union of the selections in `cols`. If `cols == ()`, select all columns.
 
 # Examples
 
-```jldoctest All
-julia> t = table([1,1,2,2], [1,2,1,2], [1,2,3,4], [0, 0, 0, 0],
-                        names=[:a,:b,:c,:d])
-Table with 4 rows, 4 columns:
-a  b  c  d
-──────────
-1  1  1  0
-1  2  2  0
-2  1  3  0
-2  2  4  0
-
-julia> select(t, All(:a, (:b, :c)))
-Table with 4 rows, 3 columns:
-a  b  c
-───────
-1  1  1
-1  2  2
-2  1  3
-2  2  4
-
-julia> select(t, All())
-Table with 4 rows, 4 columns:
-a  b  c  d
-──────────
-1  1  1  0
-1  2  2  0
-2  1  3  0
-2  2  4  0
-```
+    t = table([1,1,2,2], [1,2,1,2], [1,2,3,4], [0, 0, 0, 0], names=[:a,:b,:c,:d])
+    select(t, All(:a, (:b, :c)))
+    select(t, All())
 """
 struct All{T}
     cols::T
@@ -511,42 +413,16 @@ end
 All(args...) = All(args)
 
 """
-`Not(cols)`
+    Not(cols::Union{Symbol, Int}...)
 
 Select the complementary of the selection in `cols`. `Not` can accept several arguments,
 in which case it returns the complementary of the union of the selections.
 
 # Examples
 
-```jldoctest Not
-julia> t = table([1,1,2,2], [1,2,1,2], [1,2,3,4],
-                        names=[:a,:b,:c], pkey = (:a, :b))
-Table with 4 rows, 3 columns:
-a  b  c
-───────
-1  1  1
-1  2  2
-2  1  3
-2  2  4
-
-julia> select(t, Keys())
-Table with 4 rows, 2 columns:
-b  c
-────
-1  1
-2  2
-1  3
-2  4
-
-julia> select(t, Not(:a, (:a, :b)))
-Table with 4 rows, 1 columns:
-c
-─
-1
-2
-3
-4
-```
+    t = table([1,1,2,2], [1,2,1,2], [1,2,3,4], names=[:a,:b,:c], pkey = (:a, :b))
+    select(t, Not(:a))
+    select(t, Not(:a, (:a, :b)))
 """
 struct Not{T}
     cols::T
@@ -555,62 +431,26 @@ end
 Not(args...) = Not(All(args))
 
 """
-`Keys()`
+    Keys()
 
 Select the primary keys.
 
 # Examples
 
-```jldoctest Keys
-julia> t = table([1,1,2,2], [1,2,1,2], [1,2,3,4],
-                               names=[:a,:b,:c], pkey = (:a, :b))
-Table with 4 rows, 3 columns:
-a  b  c
-───────
-1  1  1
-1  2  2
-2  1  3
-2  2  4
-
-julia> select(t, Keys())
-Table with 4 rows, 2 columns:
-a  b
-────
-1  1
-1  2
-2  1
-2  2
-```
+    t = table([1,1,2,2], [1,2,1,2], [1,2,3,4], names=[:a,:b,:c], pkey = (:a, :b))
+    select(t, Keys())
 """
 struct Keys; end
 
 """
-`Between(first, last)`
+    Between(first, last)
 
 Select the columns between `first` and `last`.
 
 # Examples
 
-```jldoctest Between
-julia> t = table([1,1,2,2], [1,2,1,2], [1,2,3,4], ["a", "b", "c", "d"],
-                                      names=[:a,:b,:c, :d])
-Table with 4 rows, 4 columns:
-a  b  c  d
-────────────
-1  1  1  "a"
-1  2  2  "b"
-2  1  3  "c"
-2  2  4  "d"
-
-julia> select(t, Between(:b, :d))
-Table with 4 rows, 3 columns:
-b  c  d
-─────────
-1  1  "a"
-2  2  "b"
-1  3  "c"
-2  4  "d"
-```
+    t = table([1,1,2,2], [1,2,1,2], 1:4, 'a':'d', names=[:a,:b,:c,:d])
+    select(t, Between(:b, :d))
 """
 struct Between{T1 <: Union{Int, Symbol}, T2 <: Union{Int, Symbol}}
     first::T1
@@ -738,52 +578,25 @@ function colname(c, col)
 end
 
 """
-`rows(itr[, select::Selection])`
+    rows(itr, select = All())
 
-Select one or more fields from an iterable of rows as a vector of their values.
+Select one or more fields from an iterable of rows as a vector of their values.  Refer to 
+the [`select`](@ref) function for selection options and syntax.
 
-`select` specifies which fields to select. See [`Selection convention`](@ref select) for possible values. If unspecified, returns all columns.
-
-`itr` can be `NDSparse`, `Columns` and `AbstractVector`, and their distributed counterparts.
+`itr` can be [`NDSparse`](@ref), [`Columns`](@ref), `AbstractVector`, or their distributed counterparts.
 
 # Examples
 
-```jldoctest
-julia> t = table([1,2],[3,4], names=[:x,:y])
-Table with 2 rows, 2 columns:
-x  y
-────
-1  3
-2  4
-
-julia> rows(t)
-2-element IndexedTables.Columns{NamedTuples._NT_x_y{Int64,Int64},NamedTuples._NT_x_y{Array{Int64,1},Array{Int64,1}}}:
- (x = 1, y = 3)
- (x = 2, y = 4)
-
-julia> rows(t, :x)
-2-element Array{Int64,1}:
- 1
- 2
-
-julia> rows(t, (:x,))
-2-element IndexedTables.Columns{NamedTuples._NT_x{Int64},NamedTuples._NT_x{Array{Int64,1}}}:
- (x = 1)
- (x = 2)
-
-julia> rows(t, (:y,:x=>-))
-2-element IndexedTables.Columns{NamedTuples._NT_y_x{Int64,Int64},NamedTuples._NT_y_x{Array{Int64,1},Array{Int64,1}}}:
- (y = 3, x = -1)
- (y = 4, x = -2)
-```
-Note that vectors of tuples returned are `Columns` object and have columnar internal storage.
+    t = table([1,2],[3,4], names=[:x,:y])
+    rows(t)
+    rows(t, :x)
+    rows(t, (:x,))
+    rows(t, (:y, :x => -))
 """
 function rows end
 
 rows(x::AbstractVector) = x
-function rows(cols::Tup)
-    Columns(cols)
-end
+rows(cols::Tup) = Columns(cols)
 
 rows(t, which...) = rows(columns(t, which...))
 
@@ -955,238 +768,110 @@ end
 # Modifying a columns
 
 """
-`setcol(t::Table, col::Union{Symbol, Int}, x::Selection)`
+    setcol(t::Table, col::Union{Symbol, Int}, x::Selection)
 
 Sets a `x` as the column identified by `col`. Returns a new table.
 
-`setcol(t::Table, map::Pair...)`
+    setcol(t::Table, map::Pair{}...)
 
 Set many columns at a time.
 
 # Examples:
 
-```jldoctest setcol
-julia> t = table([1,2], [3,4], names=[:x, :y])
-Table with 2 rows, 2 columns:
-x  y
-────
-1  3
-2  4
+    t = table([1,2], [3,4], names=[:x, :y])
 
-julia> setcol(t, 2, [5,6])
-Table with 2 rows, 2 columns:
-x  y
-────
-1  5
-2  6
+    # change second column to [5,6]
+    setcol(t, 2 => [5,6])
+    setcol(t, :y , :y => x -> x + 2)
 
-```
+    # add [5,6] as column :z 
+    setcol(t, :z => 5:6)
+    setcol(t, :z, :y => x -> x + 2)
 
-`x` can be any selection that transforms existing columns.
-
-```jldoctest setcol
-julia> setcol(t, :x, :x => x->1/x)
-Table with 2 rows, 2 columns:
-x    y
-──────
-1.0  5
-0.5  6
-
-```
-
-`setcol` will result in a re-sorted copy if a primary key column is replaced.
-
-```jldoctest setcol
-julia> t = table([0.01, 0.05], [1,2], [3,4], names=[:t, :x, :y], pkey=:t)
-Table with 2 rows, 3 columns:
-t     x  y
-──────────
-0.01  1  3
-0.05  2  4
-
-julia> t2 = setcol(t, :t, [0.1,0.05])
-Table with 2 rows, 3 columns:
-t     x  y
-──────────
-0.05  2  4
-0.1   1  3
-
-julia> t == t2
-false
-
-```
-
-If `col` is not an existing column, `setcol` will add it:
-
-```jldoctest setcol
-julia> t = table([1,2], [2,3], names = [:a,:b])
-Table with 2 rows, 2 columns:
-a  b
-────
-1  2
-2  3
-
-julia> setcol(t, :c, [1,2])
-Table with 2 rows, 3 columns:
-a  b  c
-───────
-1  2  1
-2  3  2
-```
+    # replacing the primary key results in a re-sorted copy
+    t = table([0.01, 0.05], [1,2], [3,4], names=[:t, :x, :y], pkey=:t)
+    t2 = setcol(t, :t, [0.1,0.05])
 """
 setcol(t, args...) = @cols set!(t, args...)
 
 """
-`pushcol(t, name, x)`
+    pushcol(t, name, x)
 
 Push a column `x` to the end of the table. `name` is the name for the new column. Returns a new table.
 
-`pushcol(t, map::Pair...)`
+    pushcol(t, map::Pair...)
 
 Push many columns at a time.
 
-# Example:
+# Example
 
-```jldoctest
-julia> t = table([0.01, 0.05], [2,1], [3,4], names=[:t, :x, :y], pkey=:t)
-Table with 2 rows, 3 columns:
-t     x  y
-──────────
-0.01  2  3
-0.05  1  4
-
-julia> pushcol(t, :z, [1//2, 3//4])
-Table with 2 rows, 4 columns:
-t     x  y  z
-────────────────
-0.01  2  3  1//2
-0.05  1  4  3//4
-
-```
+    t = table([0.01, 0.05], [2,1], [3,4], names=[:t, :x, :y], pkey=:t)
+    pushcol(t, :z, [1//2, 3//4])
+    pushcol(t, :z => [1//2, 3//4])
 """
 pushcol(t, args...) = @cols push!(t, args...)
 
 """
-`popcol(t, col)`
+    popcol(t, cols...)
 
-Remove the column `col` from the table. Returns a new table.
+Remove the column(s) `cols` from the table. Returns a new table.
 
-`popcol(t, cols...)`
+# Example
 
-Remove many columns at a time.
-
-```jldoctest
-julia> t = table([0.01, 0.05], [2,1], [3,4], names=[:t, :x, :y], pkey=:t)
-Table with 2 rows, 3 columns:
-t     x  y
-──────────
-0.01  2  3
-0.05  1  4
-
-julia> popcol(t, :x)
-Table with 2 rows, 2 columns:
-t     y
-───────
-0.01  3
-0.05  4
-```
+    t = table([0.01, 0.05], [2,1], [3,4], names=[:t, :x, :y], pkey=:t)
+    popcol(t, :x)
 """
 popcol(t, args...) = @cols pop!(t, args...)
 
 """
-`insertcol(t, position::Integer, name, x)`
+    insertcol(t, position::Integer, name, x)
 
 Insert a column `x` named `name` at `position`. Returns a new table.
 
-```jldoctest
-julia> t = table([0.01, 0.05], [2,1], [3,4], names=[:t, :x, :y], pkey=:t)
-Table with 2 rows, 3 columns:
-t     x  y
-──────────
-0.01  2  3
-0.05  1  4
+# Example
 
-julia> insertcol(t, 2, :w, [0,1])
-Table with 2 rows, 4 columns:
-t     w  x  y
-─────────────
-0.01  0  2  3
-0.05  1  1  4
-
-```
+    t = table([0.01, 0.05], [2,1], [3,4], names=[:t, :x, :y], pkey=:t)
+    insertcol(t, 2, :w, [0,1])
 """
 insertcol(t, i::Integer, name, x) = @cols insert!(t, i, name, x)
 
 """
-`insertcolafter(t, after, name, col)`
+    insertcolafter(t, after, name, col)
 
 Insert a column `col` named `name` after `after`. Returns a new table.
 
-```jldoctest
-julia> t = table([0.01, 0.05], [2,1], [3,4], names=[:t, :x, :y], pkey=:t)
-Table with 2 rows, 3 columns:
-t     x  y
-──────────
-0.01  2  3
-0.05  1  4
+# Example
 
-julia> insertcolafter(t, :t, :w, [0,1])
-Table with 2 rows, 4 columns:
-t     w  x  y
-─────────────
-0.01  0  2  3
-0.05  1  1  4
-```
+    t = table([0.01, 0.05], [2,1], [3,4], names=[:t, :x, :y], pkey=:t)
+    insertcolafter(t, :t, :w, [0,1])
 """
 insertcolafter(t, after, name, x) = @cols insertafter!(t, after, name, x)
 
 """
-`insertcolbefore(t, before, name, col)`
+    insertcolbefore(t, before, name, col)
 
 Insert a column `col` named `name` before `before`. Returns a new table.
 
-```jldoctest
-julia> t = table([0.01, 0.05], [2,1], [3,4], names=[:t, :x, :y], pkey=:t)
-Table with 2 rows, 3 columns:
-t     x  y
-──────────
-0.01  2  3
-0.05  1  4
+# Example
 
-julia> insertcolbefore(t, :x, :w, [0,1])
-Table with 2 rows, 4 columns:
-t     w  x  y
-─────────────
-0.01  0  2  3
-0.05  1  1  4
-```
+    t = table([0.01, 0.05], [2,1], [3,4], names=[:t, :x, :y], pkey=:t)
+    insertcolbefore(t, :x, :w, [0,1])
 """
 insertcolbefore(t, before, name, x) = @cols insertbefore!(t, before, name, x)
 
 """
-`renamecol(t, col, newname)`
+    renamecol(t, col, newname)
 
 Set `newname` as the new name for column `col` in `t`. Returns a new table.
 
-`renamecol(t, map::Pair...)`
+    renamecol(t, map::Pair...)
 
-Rename many columns at a time.
+Rename multiple columns at a time.
 
-```jldoctest
-julia> t = table([0.01, 0.05], [2,1], names=[:t, :x])
-Table with 2 rows, 2 columns:
-t     x
-───────
-0.01  2
-0.05  1
+# Example
 
-julia> renamecol(t, :t, :time)
-Table with 2 rows, 2 columns:
-time  x
-───────
-0.01  2
-0.05  1
-```
+    t = table([0.01, 0.05], [2,1], names=[:t, :x])
+    renamecol(t, :t, :time)
 """
 renamecol(t, args...) = @cols rename!(t, args...)
 

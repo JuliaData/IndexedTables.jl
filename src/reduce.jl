@@ -12,94 +12,26 @@ selected by `select`.
 `f` can be:
 
 1. A function
-2. An OnlineStat
-3. A tuple of functions and/or OnlineStats
-4. A named tuple of functions and/or OnlineStats
-5. A named tuple of (selector => function or OnlineStat) pairs
-
-```jldoctest reduce
-julia> t = table([0.1, 0.5, 0.75], [0,1,2], names=[:t, :x])
-Table with 3 rows, 2 columns:
-t     x
-───────
-0.1   0
-0.5   1
-0.75  2
-```
-
-When `f` is a function, it reduces the selection as usual:
-
-```jldoctest reduce
-julia> reduce(+, t, select=:t)
-1.35
-```
-
-If `select` is omitted, the rows themselves are passed to reduce as tuples.
-
-```jldoctest reduce
-julia> reduce((a, b) -> @NT(t=a.t+b.t, x=a.x+b.x), t)
-(t = 1.35, x = 3)
-```
-
-If `f` is an OnlineStat object from the [OnlineStats](https://github.com/joshday/OnlineStats.jl) package, the statistic is computed on the selection.
-
-```jldoctest reduce
-julia> using OnlineStats
-
-julia> reduce(Mean(), t, select=:t)
-Mean: n=3 | value=0.45
-```
-
-# Reducing with multiple functions
-
-Often one needs many aggregate values from a table. This is when `f` can be passed as a tuple of functions:
-
-```jldoctest reduce
-julia> y = reduce((min, max), t, select=:x)
-(min = 0, max = 2)
-
-julia> y.max
-2
-
-julia> y.min
-0
-```
-
-Note that the return value of invoking reduce with a tuple of functions
-will be a named tuple which has the function names as the keys. In the example, we reduced using `min` and `max` functions to obtain the minimum and maximum values in column `x`.
-
-If you want to give a different name to the fields in the output, use a named tuple as `f` instead:
-
-```jldoctest reduce
-julia> y = reduce(@NT(sum=+, prod=*), t, select=:x)
-(sum = 3, prod = 0)
-```
-
-You can also compute many OnlineStats by passing tuple or named tuple of OnlineStat objects as the reducer.
-
-```jldoctest reduce
-julia> y = reduce((Mean(), Variance()), t, select=:t)
-(Mean = Mean: n=3 | value=0.45, Variance = Variance: n=3 | value=0.1075)
-
-julia> y.Mean
-Mean: n=3 | value=0.45
-
-julia> y.Variance
-Variance: n=3 | value=0.1075
-```
-
-# Combining reduction and selection
-
-In the above section where we computed many reduced values at once, we have been using the same selection for all reducers, that specified by `select`. It's possible to select different inputs for different reducers by using a named tuple of `slector => function` pairs:
-
-```jldoctest reduce
-julia> reduce(@NT(xsum=:x=>+, negtsum=(:t=>-)=>+), t)
-(xsum = 3, negtsum = -1.35)
+1. An OnlineStat
+1. A (named) tuple of functions and/or OnlineStats
+1. A (named) tuple of (selector => function) or (selector => OnlineStat) pairs
 
 ```
+t = table([0.1, 0.5, 0.75], [0,1,2], names=[:t, :x])
 
-See [`Selection`](@ref) for more on what selectors can be specified. Here since each output can select its own input, `select` keyword is unsually unnecessary. If specified, the slections in the reducer tuple will be done over the result of selecting with the `select` argument.
+reduce(+, t, select = :t)
+reduce((a, b) -> (t = a.t + b.t, x = a.x + b.x), t)
 
+using OnlineStats
+reduce(Mean(), t, select = :t)
+reduce((Mean(), Variance()), t, select = :t)
+
+y = reduce((min, max), t, select=:x)
+reduce((sum = +, prod = *), t, select=:x)
+
+# combining reduction and selection
+reduce((xsum = :x => +, negtsum = (:t => -) => +), t)
+```
 """
 function reduce(f, t::NextTable; select=valuenames(t), kws...)
     if haskey(kws, :init)

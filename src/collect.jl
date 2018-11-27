@@ -13,22 +13,12 @@ Collect an iterable as a `Columns` object if it iterates `Tuples` or `NamedTuple
 
 ## Examples
 
-```jldoctest collect
-julia> s = [(1,2), (3,4)];
+```
+s = [(1,2), (3,4)]
+collect_columns(s)
 
-julia> collect_columns(s)
-2-element Columns{Tuple{Int64,Int64}}:
- (1, 2)
- (3, 4)
-
- julia> s = Iterators.filter(isodd, 1:8);
-
- julia> collect_columns(s)
- 4-element Array{Int64,1}:
-  1
-  3
-  5
-  7
+s2 = Iterators.filter(isodd, 1:8)
+collect_columns(s2)
 ```
 """
 collect_columns(itr) = collect_columns(itr, Base.IteratorSize(itr))

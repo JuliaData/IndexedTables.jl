@@ -20,126 +20,37 @@ convert(::Type{NextTable}, nd::NDSparse) = NextTable(nd)
 
 
 """
-`ndsparse(indices, data; agg, presorted, copy, chunks)`
+    ndsparse(keys, values; kw...)
 
-Construct an NDSparse array with the given indices and data. Each vector in `indices` represents the index values for one dimension. On construction, the indices and data are sorted in lexicographic order of the indices.
+Construct an NDSparse array with the given `keys` and `values` columns. On construction, 
+the keys and data are sorted in lexicographic order of the `keys`.
 
-# Arguments:
+# Keyword Argument Options:
 
-* `agg::Function`: If `indices` contains duplicate entries, the corresponding data items are reduced using this 2-argument function.
-* `presorted::Bool`: If true, the indices are assumed to already be sorted and no sorting is done.
-* `copy::Bool`: If true, the storage for the new array will not be shared with the passed indices and data. If false (the default), the passed arrays will be copied only if necessary for sorting. The only way to guarantee sharing of data is to pass `presorted=true`.
-* `chunks::Integer`: distribute the table into `chunks` (Integer) chunks (a safe bet is nworkers()). Not distributed by default. See [Distributed](@distributed) docs.
+- `agg = nothing` -- Function to aggregate values with duplicate keys.
+- `presorted = false` -- Are the key columns already sorted?
+- `copy = true` -- Should the columns in `keys` and `values` be copied?
+- `chunks = nothing` -- Provide an integer to distribute data into `chunks` chunks.
+    - A good choice is `nworkers()` (after `using Distributed`)
+    - See also: [`distribute`](@ref)
 
 # Examples:
 
-1-dimensional NDSparse can be constructed with a single array as index.
-```jldoctest ndsparse
-julia> x = ndsparse(["a","b"],[3,4])
-1-d NDSparse with 2 values (Int64):
-1   │
-────┼──
-"a" │ 3
-"b" │ 4
+    x = ndsparse(["a","b"], [3,4])
+    keys(x)
+    values(x)
+    x["a"]
 
-julia> keytype(x), eltype(x)
-(Tuple{String}, Int64)
+    # Dimensions are named if constructed with a named tuple of columns 
+    x = ndsparse((index = 1:10,), rand(10))
+    x[1]
 
-```
+    # Multiple dimensions by passing a (named) tuple of columns
+    x = ndsparse((x = 1:10, y = 1:2:20), rand(10))
+    x[1, 1]
 
-A dimension will be named if constructed with a named tuple of columns as index.
-```jldoctest ndsparse
-julia> x = ndsparse(@NT(date=Date.(2014:2017)), [4:7;])
-1-d NDSparse with 4 values (Int64):
-date       │
-───────────┼──
-2014-01-01 │ 4
-2015-01-01 │ 5
-2016-01-01 │ 6
-2017-01-01 │ 7
-
-```
-
-```jldoctest ndsparse
-julia> x[Date("2015-01-01")]
-5
-
-julia> keytype(x), eltype(x)
-(Tuple{Date}, Int64)
-
-```
-
-Multi-dimensional `NDSparse` can be constructed by passing a tuple of index columns:
-
-```jldoctest ndsparse
-julia> x = ndsparse((["a","b"],[3,4]), [5,6])
-2-d NDSparse with 2 values (Int64):
-1    2 │
-───────┼──
-"a"  3 │ 5
-"b"  4 │ 6
-
-julia> keytype(x), eltype(x)
-(Tuple{String,Int64}, Int64)
-
-julia> x["a", 3]
-5
-```
-
-The data itself can also contain tuples (these are stored in columnar format, just like in `table`.)
-
-```jldoctest ndsparse
-julia> x = ndsparse((["a","b"],[3,4]), ([5,6], [7.,8.]))
-2-d NDSparse with 2 values (2-tuples):
-1    2 │ 3  4
-───────┼───────
-"a"  3 │ 5  7.0
-"b"  4 │ 6  8.0
-
-julia> x = ndsparse(@NT(x=["a","a","b"],y=[3,4,4]),
-                    @NT(p=[5,6,7], q=[8.,9.,10.]))
-2-d NDSparse with 3 values (2 field named tuples):
-x    y │ p  q
-───────┼────────
-"a"  3 │ 5  8.0
-"a"  4 │ 6  9.0
-"b"  4 │ 7  10.0
-
-julia> keytype(x), eltype(x)
-(Tuple{String,Int64}, NamedTuples._NT_p_q{Int64,Float64})
-
-julia> x["a", :]
-2-d NDSparse with 2 values (2 field named tuples):
-x    y │ p  q
-───────┼───────
-"a"  3 │ 5  8.0
-"a"  4 │ 6  9.0
-
-```
-
-Passing a `chunks` option to `ndsparse`, or constructing with a distributed array will cause the result to be distributed. Use `distribute` function to distribute an array.
-
-```jldoctest ndsparse
-julia> x = ndsparse(@NT(date=Date.(2014:2017)), [4:7.;], chunks=2)
-1-d Distributed NDSparse with 4 values (Float64) in 2 chunks:
-date       │
-───────────┼────
-2014-01-01 │ 4.0
-2015-01-01 │ 5.0
-2016-01-01 │ 6.0
-2017-01-01 │ 7.0
-
-julia> x = ndsparse(@NT(date=Date.(2014:2017)), distribute([4:7.0;], 2))
-1-d Distributed NDSparse with 4 values (Float64) in 2 chunks:
-date       │
-───────────┼────
-2014-01-01 │ 4.0
-2015-01-01 │ 5.0
-2016-01-01 │ 6.0
-2017-01-01 │ 7.0
-```
-
-Distribution is done to match the first distributed column from left to right. Specify `chunks` to override this.
+    # Value columns can also have names via named tuples
+    x = ndsparse(1:10, (x=rand(10), y=rand(10)))
 """
 function ndsparse end
 
@@ -242,19 +153,11 @@ Names of the primary key columns in `t`.
 
 # Example
 
-```jldoctest
+    x = ndsparse([1,2],[3,4])
+    pkeynames(x)
 
-julia> x = ndsparse([1,2],[3,4])
-1-d NDSparse with 2 values (Int64):
-1 │
-──┼──
-1 │ 3
-2 │ 4
-
-julia> pkeynames(x)
-(1,)
-
-```
+    x = ndsparse((x=1:10, y=1:2:20), rand(10))
+    pkeynames(x)
 """
 pkeynames(t::NDSparse) = (dimlabels(t)...,)
 
@@ -419,57 +322,25 @@ end
 # map and convert
 
 """
-    map(f, x::NDSparse; select)
+    map(f, x::NDSparse; select = values(x))
+
+Apply `f` to every value of `select` selected from `x` (see [`select`](@ref)).
 
 Apply `f` to every data value in `x`. `select` selects fields
 passed to `f`. By default, the data values are selected.
 
-If the return value of `f` is a tuple or named tuple the result
-will contain many data columns.
+If the return value of `f` is a tuple or named tuple the result will contain many data columns.
 
 # Examples
 
-```jldoctest
-julia> x = ndsparse(@NT(t=[0.01, 0.05]), @NT(x=[1,2], y=[3,4]))
-1-d NDSparse with 2 values (2 field named tuples):
-t    │ x  y
-─────┼─────
-0.01 │ 1  3
-0.05 │ 2  4
+    x = ndsparse((t=[0.01, 0.05],), (x=[1,2], y=[3,4]))
 
-julia> manh = map(row->row.x + row.y, x)
-1-d NDSparse with 2 values (Int64):
-t    │
-─────┼──
-0.01 │ 4
-0.05 │ 6
+    polar = map(row -> (r = hypot(row.x, row.y), θ = atan(row.y, row.x)), x)
 
-julia> vx = map(row->row.x/row.t, x, select=(:t,:x))
-1-d NDSparse with 2 values (Float64):
-t    │
-─────┼──────
-0.01 │ 100.0
-0.05 │ 40.0
-
-julia> polar = map(p->@NT(r=hypot(p.x + p.y), θ=atan2(p.y, p.x)), x)
-1-d NDSparse with 2 values (2 field named tuples):
-t    │ r    θ
-─────┼─────────────
-0.01 │ 4.0  1.24905
-0.05 │ 6.0  1.10715
-
-julia> map(sin, polar, select=:θ)
-1-d NDSparse with 2 values (Float64):
-t    │
-─────┼─────────
-0.01 │ 0.948683
-0.05 │ 0.894427
-
-```
+    back2x = map(row -> (x = row.r * cos(row.θ), y = row.r * sin(row.θ)), polar)
 """
 function map(f, x::NDSparse; select=x.data)
-    ndsparse(copy(x.index), map_rows(f, rows(x, select)),
-             presorted=true, copy=false)
+    ndsparse(copy(x.index), map_rows(f, rows(x, select)), presorted=true, copy=false)
 end
 
 # """

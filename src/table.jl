@@ -17,9 +17,6 @@ end
 
 abstract type AbstractIndexedTable end
 
-"""
-A table.
-"""
 struct NextTable{C<:Columns} <: AbstractIndexedTable
     # `Columns` object which iterates to give an array of rows
     columns::C
@@ -570,15 +567,7 @@ Construct a table with `pkeys` as primary keys and `vals` as corresponding non-i
 keyword arguments will be forwarded to [`table`](@ref) constructor.
 
 # Example
-
-```jldoctest
-julia> convert(NextTable, Columns(x=[1,2],y=[3,4]), Columns(z=[1,2]), presorted=true)
-Table with 2 rows, 3 columns:
-x  y  z
-───────
-1  3  1
-2  4  2
-```
+    convert(NextTable, Columns(x=[1,2],y=[3,4]), Columns(z=[1,2]), presorted=true)
 """
 function convert(::Type{NextTable}, key, val; kwargs...)
     cs = concat_cols(key, val)
