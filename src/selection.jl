@@ -54,38 +54,19 @@ function selectvalues(x::NDSparse, which; presorted=true, copy=false, kwargs...)
 end
 
 """
-`reindex(t::Table, by[, select])`
+    reindex(t::NextTable, by)
+    reindex(t::NextTable, by, select)
 
-Reindex `t` by columns selected in `by`.
-Keeps columns selected by `select` as non-indexed columns.
-By default all columns not mentioned in `by` are kept.
+Reindex table `t` with new primary key `by`, optionally keeping a subset of columns via
+`select`.  For [`NDSparse`](@ref), use [`selectkeys`](@ref).
 
-Use [`selectkeys`](@ref) to reindex and NDSparse object.
+# Example
 
-```jldoctest reindex
-julia> t = table([2,1],[1,3],[4,5], names=[:x,:y,:z], pkey=(1,2))
+    t = table([2,1],[1,3],[4,5], names=[:x,:y,:z], pkey=(1,2))
 
-julia> reindex(t, (:y, :z))
-Table with 2 rows, 3 columns:
-y  z  x
-───────
-1  4  2
-3  5  1
+    t2 = reindex(t, (:y, :z))
 
-julia> pkeynames(t)
-(:y, :z)
-
-julia> reindex(t, (:w=>[4,5], :z))
-Table with 2 rows, 4 columns:
-w  z  x  y
-──────────
-4  5  1  3
-5  4  2  1
-
-julia> pkeynames(t)
-(:w, :z)
-
-```
+    pkeynames(t2)
 """
 function reindex end
 
@@ -119,53 +100,18 @@ canonname(t, x::Symbol) = x
 canonname(t, x::Int) = colnames(t)[colindex(t, x)]
 
 """
-`map(f, t::Table; select)`
+    map(f, t::NextTable; select)
 
-Apply `f` to every row in `t`. `select` selects fields
-passed to `f`.
-
-Returns a new table if `f` returns a tuple or named tuple.
-If not, returns a vector.
+Apply `f` to every item in `t` selected by `select` (see also the [`select`](@ref) function).  
+Returns a new table if `f` returns a tuple or named tuple.  If not, returns a vector.
 
 # Examples
 
-```jldoctest map
-julia> t = table([0.01, 0.05], [1,2], [3,4], names=[:t, :x, :y])
-Table with 2 rows, 3 columns:
-t     x  y
-──────────
-0.01  1  3
-0.05  2  4
+    t = table([1,2], [3,4], names=[:x, :y])
 
-julia> manh = map(row->row.x + row.y, t)
-2-element Array{Int64,1}:
- 4
- 6
+    polar = map(p -> (r = hypot(p.x, p.y), θ = atan(p.y, p.x)), t)
 
-julia> polar = map(p->@NT(r=hypot(p.x + p.y), θ=atan2(p.y, p.x)), t)
-Table with 2 rows, 2 columns:
-r    θ
-────────────
-4.0  1.24905
-6.0  1.10715
-
-```
-
-`select` argument selects a subset of columns while iterating.
-
-```jldoctest map
-
-julia> vx = map(row->row.x/row.t, t, select=(:t,:x)) # row only cotains t and x
-2-element Array{Float64,1}:
- 100.0
-  40.0
-
-julia> map(sin, polar, select=:θ)
-2-element Array{Float64,1}:
- 0.948683
- 0.894427
-
-```
+    back2t = map(p -> (x = p.r * cos(p.θ), y = p.r * sin(p.θ)), polar)
 """
 function map(f, t::AbstractIndexedTable; select=nothing) end
 
@@ -207,55 +153,19 @@ function _nonna(t::Union{Columns, NextTable}, by=(colnames(t)...,))
 end
 
 """
-`dropna(t[, select])`
+    dropna(t)
+    dropna(t, select)
 
-Drop rows which contain NA values.
+Drop rows of table `t` which contain NA (`DataValues.DataValue`) values, optionally only 
+using the columns in `select`.  
 
-```jldoctest dropna
-julia> t = table([0.1, 0.5, NA,0.7], [2,NA,4,5], [NA,6,NA,7],
-                  names=[:t,:x,:y])
-Table with 4 rows, 3 columns:
-t    x    y
-─────────────
-0.1  2    #NA
-0.5  #NA  6
-#NA  4    #NA
-0.7  5    7
+Column types will be converted to non-NA types.  E.g. `Array{DataValue{Int}}` to `Array{Int}`.
 
-julia> dropna(t)
-Table with 1 rows, 3 columns:
-t    x  y
-─────────
-0.7  5  7
-```
-Optionally `select` can be speicified to limit columns to look for NAs in.
+# Example
 
-```jldoctest dropna
-
-julia> dropna(t, :y)
-Table with 2 rows, 3 columns:
-t    x    y
-───────────
-0.5  #NA  6
-0.7  5    7
-
-julia> t1 = dropna(t, (:t, :x))
-Table with 2 rows, 3 columns:
-t    x  y
-───────────
-0.1  2  #NA
-0.7  5  7
-```
-
-Any columns whose NA rows have been dropped will be converted
-to non-na array type. In our last example, columns `t` and `x`
-got converted from `Array{DataValue{Int}}` to `Array{Int}`.
-Similarly if the vectors are of type `DataValueArray{T}`
-(default for `loadtable`) they will be converted to `Array{T}`.
-```julia
-julia> typeof(column(dropna(t,:x), :x))
-Array{Int64,1}
-```
+    t = table([0.1,0.5,NA,0.7], [2,NA,4,5], [NA,6,NA,7], names=[:t,:x,:y])
+    dropna(t)
+    dropna(t, (:t, :x))
 """
 function dropna(t::Dataset, by=(colnames(t)...,))
     subtable(_nonna(t, by)...,)
@@ -264,100 +174,24 @@ end
 filt_by_col!(f, col, indxs) = filter!(i->f(col[i]), indxs)
 
 """
-`filter(pred, t::Union{NextTable, NDSparse}; select)`
+    filter(f, t::Union{NextTable, NDSparse}; select)
 
-Filter rows in `t` according to `pred`. `select` choses the fields that act as input to `pred`.
+Iterate over `t` and Return the rows for which `f(row)` returns true.  `select` determines 
+the rows that are given as arguments to `f` (see [`select`](@ref)).
 
-`pred` can be:
+`f` can also be a tuple of `column => function` pairs.  Returned rows will be those for
+which all conditions are true.
 
-- A function - selected structs or values are passed to this function
-- A tuple of `column => function` pairs: applies to each named column the corresponding function, keeps only rows where all such conditions are satisfied.
 
-By default, `filter` iterates a table a row at a time:
-```jldoctest filter
-julia> t = table(["a","b","c"], [0.01, 0.05, 0.07], [2,1,0],
-                 names=[:n, :t, :x])
-Table with 3 rows, 3 columns:
-n    t     x
-────────────
-"a"  0.01  2
-"b"  0.05  1
-"c"  0.07  0
+# Example
 
-julia> filter(p->p.x/p.t < 100, t) # whole row
-Table with 2 rows, 3 columns:
-n    t     x
-────────────
-"b"  0.05  1
-"c"  0.07  0
+    # filter iterates over ROWS of a NextTable
+    t = table(rand(100), rand(100), rand(100), names = [:x, :y, :z])
+    filter(r -> r.x + r.y + r.z < 1, t)
 
-```
-
-By default, `filter` iterates by values of an `NDSparse`:
-
-```jldoctest filter
-julia> x = ndsparse(@NT(n=["a","b","c"], t=[0.01, 0.05, 0.07]), [2,1,0])
-2-d NDSparse with 3 values (Int64):
-n    t    │
-──────────┼──
-"a"  0.01 │ 2
-"b"  0.05 │ 1
-"c"  0.07 │ 0
-
-julia> filter(y->y<2, x)
-2-d NDSparse with 2 values (Int64):
-n    t    │
-──────────┼──
-"b"  0.05 │ 1
-"c"  0.07 │ 0
-```
-
-If select is specified. (See [Selection convention](@ref select)) then, the selected values will be iterated instead.
-
-```jldoctest filter
-julia> filter(iseven, t, select=:x)
-Table with 2 rows, 3 columns:
-n    t     x
-────────────
-"a"  0.01  2
-"c"  0.07  0
-
-julia> filter(p->p.x/p.t < 100, t, select=(:x,:t))
-Table with 2 rows, 3 columns:
-n    t     x
-────────────
-"b"  0.05  1
-"c"  0.07  0
-```
-
-`select` works similarly for `NDSparse`:
-```jldoctest filter
-julia> filter(p->p[2]/p[1] < 100, x, select=(:t, 3))
-2-d NDSparse with 2 values (Int64):
-n    t    │
-──────────┼──
-"b"  0.05 │ 1
-"c"  0.07 │ 0
-```
-Here 3 represents the third column, which is the values, `p` is a tuple of `t` field and the value.
-
-Filtering by many single columns can be done by passing a tuple of `column_name => function` pairs.
-
-```jldoctest filter
-julia> filter((:x=>iseven, :t=>a->a>0.01), t)
-Table with 1 rows, 3 columns:
-n    t     x
-────────────
-"c"  0.07  0
-
-julia> filter((3=>iseven, :t=>a->a>0.01), x) # NDSparse
-2-d NDSparse with 1 values (Int64):
-n    t    │
-──────────┼──
-"c"  0.07 │ 0
-
-```
-
+    # filter iterates over VALUES of an NDSparse
+    x = ndsparse(1:100, randn(100))
+    filter(val -> val > 0, x)
 """
 function Base.filter(fn, t::Dataset; select=valuenames(t))
     x = rows(t, select)

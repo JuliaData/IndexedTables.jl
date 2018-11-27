@@ -17,6 +17,10 @@ end
 
 abstract type AbstractIndexedTable end
 
+"""
+A tabular data structure that extends [`Columns`](@ref).  Create a `NextTable` with the 
+[`table`](@ref) function.
+"""
 struct NextTable{C<:Columns} <: AbstractIndexedTable
     # `Columns` object which iterates to give an array of rows
     columns::C
@@ -31,151 +35,43 @@ struct NextTable{C<:Columns} <: AbstractIndexedTable
 end
 
 """
-`table(cols::AbstractVector...; names, <options>)`
+    table(cols; kw...)
 
-Create a table with columns given by `cols`.
-```jldoctest table
-julia> a = table([1,2,3], [4,5,6])
-Table with 3 rows, 2 columns:
-1  2
-────
-1  4
-2  5
-3  6
-```
+Create a table from a (named) tuple of AbstractVectors.
 
-`names` specify names for columns. If specified, the table will be an iterator of named tuples.
+    table(cols::AbstractVector...; names::Vector{Symbol}, kw...)
 
-```jldoctest table
-julia> b = table([1,2,3], [4,5,6], names=[:x, :y])
-Table with 3 rows, 2 columns:
-x  y
-────
-1  4
-2  5
-3  6
+Create a table from the provided `cols`, optionally with `names`.
 
-```
+    table(cols::Columns; kw...)
 
-`table(cols::Union{Tuple, NamedTuple}; <options>)`
+Construct a table from a vector of tuples. See [`rows`](@ref) and [`Columns`](@ref).
 
-Convert a struct of columns to a table of structs.
-
-```jldoctest table
-julia> table(([1,2,3], [4,5,6])) == a
-true
-
-julia> table(@NT(x=[1,2,3], y=[4,5,6])) == b
-true
-```
-
-`table(cols::Columns; <options>)`
-
-Construct a table from a vector of tuples. See [`rows`](@ref).
-
-```jldoctest table
-julia> table(Columns([1,2,3], [4,5,6])) == a
-true
-
-julia> table(Columns(x=[1,2,3], y=[4,5,6])) == b
-true
-```
-
-`table(t::Union{Table, NDSparse}; <options>)`
+    table(t::Union{NextTable, NDSparse}; kw...)
 
 Copy a Table or NDSparse to create a new table. The same primary keys as the input are used.
 
-```jldoctest table
-julia> b == table(b)
-true
-```
-
-`table(iter; <options>)`
-
-Construct a table from an iterable table.
+    table(iter; kw...)
 
 
-# Options:
+# Keyword Argument Options:
 
-- `pkey`: select columns to act as the primary key. By default, no columns are used as primary key.
-- `presorted`: is the data pre-sorted by primary key columns? If so, skip sorting. `false` by default. Irrelevant if `chunks` is specified.
-- `copy`: creates a copy of the input vectors if `true`. `true` by default. Irrelavant if `chunks` is specified.
-- `chunks`: distribute the table into `chunks` (Integer) chunks (a safe bet is nworkers()). Table is not distributed by default. See [Distributed](@distributed) docs.
+- `pkey`: select columns to sort by and be the primary key.
+- `presorted = false`: is the data pre-sorted by primary key columns? 
+- `copy = true`: creates a copy of the input vectors if `true`. Irrelevant if `chunks` is specified.
+- `chunks::Integer`: distribute the table.  Options are:
+    - `Int` -- (number of chunks) a safe bet is `nworkers()` after `using Distributed`.
+    - `Vector{Int}` -- Number of elements in each of the `length(chunks)` chunks.
 
 # Examples:
 
-Specifying `pkey` will cause the table to be sorted by the columns named in pkey:
+    table(rand(10), rand(10), names = [:x, :y], pkey = :x)
 
-```jldoctest table
-julia> b = table([2,3,1], [4,5,6], names=[:x, :y], pkey=:x)
-Table with 3 rows, 2 columns:
-x  y
-────
-1  6
-2  4
-3  5
+    table(rand(Bool, 20), rand(20), rand(20), pkey = [1,2])
 
-julia> b = table([2,1,2,1],[2,3,1,3],[4,5,6,7],
-                 names=[:x, :y, :z], pkey=(:x,:y))
-Table with 4 rows, 3 columns:
-x  y  z
-───────
-1  3  5
-1  3  7
-2  1  6
-2  2  4
-```
-Note that the keys do not have to be unique.
+    table((x = 1:10, y = randn(10)))
 
-`chunks` option creates a distributed table.
-
-`chunks` can be:
-
-1. An integer -- number of chunks to create
-2. An vector of `k` integers -- number of elements in each of the `k` chunks.
-3. The distribution of another array. i.e. `vec.subdomains` where `vec` is a distributed array.
-
-```jldoctest table
-julia> t = table([2,3,1,4], [4,5,6,7],
-                  names=[:x, :y], pkey=:x, chunks=2)
-Distributed Table with 4 rows in 2 chunks:
-x  y
-────
-1  6
-2  4
-3  5
-4  7
-```
-
-A distributed table will be constructed if one of the arrays passed into `table` constructor is a distributed
-array. A distributed Array can be constructed using `distribute`:
-
-```jldoctest table
-
-julia> x = distribute([1,2,3,4], 2);
-
-julia> t = table(x, [5,6,7,8], names=[:x,:y])
-Distributed Table with 4 rows in 2 chunks:
-x  y
-────
-1  5
-2  6
-3  7
-4  8
-
-julia> table(columns(t)..., [9,10,11,12],
-             names=[:x,:y,:z])
-Distributed Table with 4 rows in 2 chunks:
-x  y  z
-────────
-1  5  9
-2  6  10
-3  7  11
-4  8  12
-
-```
-
-Distribution is done to match the first distributed column from left to right. Specify `chunks` to override this.
+    table([(1,2), (3,4)])
 """
 function table end
 
@@ -373,32 +269,20 @@ permcache(t::NextTable) = vcat(primaryperm(t), t.perms)
 cacheperm!(t::NextTable, p) = push!(t.perms, p)
 
 """
-`pkeynames(t::Table)`
+    pkeynames(t::Table)
 
 Names of the primary key columns in `t`.
 
-# Example
+# Examples
 
-```jldoctest pkeynames
+    t = table([1,2], [3,4]);
+    pkeynames(t)
 
-julia> t = table([1,2], [3,4]);
+    t = table([1,2], [3,4], pkey=1);
+    pkeynames(t)
 
-julia> pkeynames(t)
-()
-
-julia> t = table([1,2], [3,4], pkey=1);
-
-julia> pkeynames(t)
-(1,)
-
-julia> t = table([2,1],[1,3],[4,5], names=[:x,:y,:z], pkey=(1,2));
-
-julia> pkeys(t)
-2-element IndexedTables.Columns{NamedTuples._NT_x_y{Int64,Int64},NamedTuples._NT_x_y{Array{Int64,1},Array{Int64,1}}}:
- (x = 1, y = 3)
- (x = 2, y = 1)
-
-```
+    t = table([2,1],[1,3],[4,5], names=[:x,:y,:z], pkey=(1,2));
+    pkeynames(t)
 """
 function pkeynames(t::AbstractIndexedTable)
     if eltype(t) <: NamedTuple
@@ -412,7 +296,7 @@ end
 valuenames(t::AbstractIndexedTable) = (colnames(t)...,)
 
 """
-    pkeys(itr::Table)
+    pkeys(itr::NextTable)
 
 Primary keys of the table. If Table doesn't have any designated
 primary key columns (constructed without `pkey` argument) then
@@ -420,33 +304,11 @@ a default key of tuples `(1,):(n,)` is generated.
 
 # Example
 
-```jldoctest pkeys
+    a = table(["a","b"], [3,4]) # no pkey
+    pkeys(a)
 
-julia> a = table(["a","b"], [3,4]) # no pkey
-Table with 2 rows, 2 columns:
-1    2
-──────
-"a"  3
-"b"  4
-
-julia> pkeys(a)
-2-element Columns{Tuple{Int64}}:
- (1,)
- (2,)
-
-julia> a = table(["a","b"], [3,4], pkey=1)
-Table with 2 rows, 2 columns:
-1    2
-──────
-"a"  3
-"b"  4
-
-julia> pkeys(a)
-2-element Columns{Tuple{String}}:
- ("a",)
- ("b",)
-```
-
+    a = table(["a","b"], [3,4], pkey=1)
+    pkeys(a)
 """
 function pkeys(t::NextTable)
     if isempty(t.pkey)
@@ -459,54 +321,30 @@ end
 Base.values(t::NextTable) = rows(t)
 
 """
-`sort(t[, by::Selection]; select::Selection, kwargs...)`
+    sort(t    ; select, kw...)
+    sort(t, by; select, kw...)
 
-Sort rows by `by`. All of `Base.sort` keywords can be used.
+Sort rows by `by`. All of `Base.sort` keyword arguments can be used.
 
 # Examples
 
-```jldoctest sort
-julia> t=table([1,1,1,2,2,2], [1,1,2,2,1,1], [1,2,3,4,5,6],
-names=[:x,:y,:z]);
-
-julia> sort(t, :z; select = (:y, :z), rev = true)
-Table with 6 rows, 2 columns:
-y  z
-────
-1  6
-1  5
-2  4
-2  3
-1  2
-1  1
-```
+    t=table([1,1,1,2,2,2], [1,1,2,2,1,1], [1,2,3,4,5,6],
+    sort(t, :z; select = (:y, :z), rev = true)
 """
 sort(t::NextTable, by...; select = valuenames(t), kwargs...) =
     table(rows(t, select)[sortperm(rows(t, by...); kwargs...)], copy = false)
 
 """
-`sort!(t[, by::Selection]; kwargs...)`
+    sort!(t    ; kw...)
+    sort!(t, by; kw...)
 
-Sort rows by `by` in place. All of `Base.sort` keywords can be used.
+Sort rows of `t` by `by` in place. All of `Base.sort` keyword arguments can be used.
 
 # Examples
 
-```jldoctest sort!
-julia> t=table([1,1,1,2,2,2], [1,1,2,2,1,1], [1,2,3,4,5,6],
-names=[:x,:y,:z]);
-
-julia> sort!(t, :z, rev = true);
-
-julia> t
-Table with 6 rows, 3 columns:
-x  y  z
-───────
-2  1  6
-2  1  5
-2  2  4
-1  2  3
-1  1  2
-1  1  1
+    t = table([1,1,1,2,2,2], [1,1,2,2,1,1], [1,2,3,4,5,6], names=[:x,:y,:z]);
+    sort!(t, :z, rev = true)
+    t
 """
 function sort!(t::NextTable, by...; kwargs...)
     isempty(t.pkey) || error("Tables with primary keys can't be sorted in place")
@@ -520,27 +358,16 @@ end
 Names of all columns in `itr` except `cols`. `itr` can be any of
 `Table`, `NDSparse`, `Columns`, or `AbstractVector`
 
-```jldoctest excludecols
-julia> t = table([2,1],[1,3],[4,5], names=[:x,:y,:z], pkey=(1,2))
-Table with 2 rows, 3 columns:
-x  y  z
-───────
-1  3  5
-2  1  4
+# Examples
 
-julia> excludecols(t, (:x,))
-(:y, :z)
+    using IndexedTables: excludecols
 
-julia> excludecols(t, (2,))
-(:x, :z)
+    t = table([2,1],[1,3],[4,5], names=[:x,:y,:z], pkey=(1,2))
 
-julia> excludecols(t, pkeynames(t))
-(:z,)
-
-julia> excludecols([1,2,3], (1,))
-()
-
-```
+    excludecols(t, (:x,))
+    excludecols(t, (2,))
+    excludecols(t, pkeynames(t))
+    excludecols([1,2,3], (1,))
 """
 function excludecols(t, cols)
     if cols isa SpecialSelector
