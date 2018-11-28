@@ -1,5 +1,3 @@
-export dropna, selectkeys, selectvalues, select
-
 """
     select(t::Table, which::Selection)
 

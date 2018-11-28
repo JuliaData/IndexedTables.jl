@@ -1,8 +1,5 @@
 import Base: tuple_type_cons, tuple_type_head, tuple_type_tail, in, ==, isless, convert,
              length, eltype, show
-using WeakRefStrings
-
-import WeakRefStrings: StringArray
 
 (T::Type{<:StringArray})(::typeof(undef), args...) = T(args...)
 

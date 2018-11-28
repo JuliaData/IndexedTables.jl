@@ -1,6 +1,3 @@
-export AbstractNDSparse, NDSparse, ndsparse
-using SparseArrays
-
 abstract type AbstractNDSparse end
 
 mutable struct NDSparse{T, D<:Tuple, C<:Columns, V<:AbstractVector} <: AbstractNDSparse

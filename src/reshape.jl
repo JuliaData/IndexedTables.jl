@@ -1,5 +1,3 @@
-export stack, unstack
-
 """
     stack(t, by = pkeynames(t); select = Not(by), variable = :variable, value = :value)`
 

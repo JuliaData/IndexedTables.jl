@@ -1,7 +1,3 @@
-using DataValues
-
-export groupjoin
-
 # product-join on equal lkey and rkey starting at i, j
 function joinequalblock(::Val{typ}, ::Val{grp}, f, I, data, lout, rout, lkey, rkey,
               ldata, rdata, lperm, rperm, init_group, accumulate, i,j) where {typ, grp}
@@ -432,8 +428,6 @@ for (fn, how) in [:naturaljoin =>     (:inner, false, concat_tup),
 
     how, group, f = how
 
-    @eval export $fn
-
     @eval function $fn(f, left::Dataset, right::Dataset; kwargs...)
         join(f, left, right; group=$group, how=$(Expr(:quote, how)), kwargs...)
     end
@@ -442,7 +436,6 @@ for (fn, how) in [:naturaljoin =>     (:inner, false, concat_tup),
         $fn($f, left, right; kwargs...)
     end
 end
-export innerjoin, asofjoin, groupjoin
 
 ## Joins
 

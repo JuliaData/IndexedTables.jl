@@ -1,5 +1,3 @@
-using TableTraits, TableTraitsUtils, IteratorInterfaceExtensions
-
 TableTraits.isiterabletable(x::NDSparse) = true
 
 function IteratorInterfaceExtensions.getiterator(source::NDSparse)

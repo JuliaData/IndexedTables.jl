@@ -1,6 +1,4 @@
 import Base: setindex!, reduce
-import DataValues: dropna
-export IndexedTable, table, colnames, pkeynames, columns, pkeys, reindex, dropna
 
 """
 A permutation

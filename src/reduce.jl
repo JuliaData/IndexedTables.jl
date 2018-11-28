@@ -1,8 +1,3 @@
-using OnlineStats
-using Statistics
-
-export groupreduce, groupby, aggregate, aggregate_vec, summarize, ApplyColwise
-
 """
     reduce(f, t::IndexedTable; select::Selection)
 
@@ -17,7 +12,7 @@ can be:
 # Examples
 
     t = table(1:5, 6:10, names = [:t, :x])
-    
+
     reduce(+, t, select = :t)
     reduce((a, b) -> (t = a.t + b.t, x = a.x + b.x), t)
 

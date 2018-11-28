@@ -1,5 +1,3 @@
-export flatten
-
 function dedup_names(ns)
     count = Dict{Symbol,Int}()
     for n in ns

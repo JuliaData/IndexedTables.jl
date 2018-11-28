@@ -1,14 +1,37 @@
 module IndexedTables
 
-using PooledArrays
+using PooledArrays, SparseArrays, Statistics, WeakRefStrings, TableTraits, 
+    TableTraitsUtils, IteratorInterfaceExtensions
+
+using OnlineStatsBase: OnlineStat, fit!
+using DataValues: DataValue, NA, isna
+import DataValues: dropna
 
 import Base:
     show, eltype, length, getindex, setindex!, ndims, map, convert, keys, values,
     ==, broadcast, empty!, copy, similar, sum, merge, merge!, mapslices,
     permutedims, sort, sort!, iterate, pairs
 
-export NDSparse, flush!, aggregate!, aggregate_vec, where, convertdim, columns, column, rows,
-    update!, aggregate, reducedim_vec, dimlabels, collect_columns
+#-----------------------------------------------------------------------# exports
+export 
+    # macros
+    @cols, 
+    # types
+    AbstractNDSparse, All, ApplyColwise, Between, ColDict, Columns, IndexedTable,
+    Keys, NDSparse, NextTable, Not,
+    # functions
+    aggregate, aggregate!, aggregate_vec, antijoin, asofjoin, collect_columns, colnames,
+    column, columns, convertdim, dimlabels, dropna, flatten, flush!, groupby, groupjoin,
+    groupreduce, innerjoin, insertafter!, insertbefore!, insertcol, insertcolafter, 
+    insertcolbefore, leftgroupjoin, leftjoin, map_rows, naturalgroupjoin, naturaljoin,
+    ncols, ndsparse, outergroupjoin, outerjoin, pkeynames, pkeys, popcol, pushcol,
+    reducedim_vec, reindex, renamecol, rows, select, selectkeys, selectvalues, setcol,
+    stack, summarize, table, unstack, update!, where
+
+
+
+# NDSparse, flush!, aggregate!, aggregate_vec, where, convertdim, columns, column, rows,
+#     update!, aggregate, reducedim_vec, dimlabels, collect_columns
 
 const Tup = Union{Tuple,NamedTuple}
 const DimName = Union{Int,Symbol}
