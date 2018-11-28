@@ -187,7 +187,7 @@ If column argument is not provided, default to last column.
     x = table([1,2], [t1, t2], names=[:x, :y]);
     flatten(x, :y)
 """
-function flatten(t::NextTable, col=length(columns(t)); pkey=nothing)
+function flatten(t::IndexedTable, col=length(columns(t)); pkey=nothing)
     vecvec = rows(t, col)
     hasmethod(iterate, (eltype(vecvec),)) || return t
     everythingbut = excludecols(t, col)

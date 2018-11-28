@@ -23,29 +23,29 @@ include("collect.jl")
 # Poor man's traits
 
 # These support `colnames` and `columns`
-const TableTrait = Union{AbstractVector, NextTable, NDSparse}
+const TableTrait = Union{AbstractVector, IndexedTable, NDSparse}
 
 # These support `colnames`, `columns`,
 # `pkeynames`, `permcache`, `cacheperm!`
 =#
 
-const Dataset = Union{NextTable, NDSparse}
+const Dataset = Union{IndexedTable, NDSparse}
 
 # no-copy convert
-_convert(::Type{NextTable}, x::NextTable) = x
-function _convert(::Type{NDSparse}, t::NextTable)
+_convert(::Type{IndexedTable}, x::IndexedTable) = x
+function _convert(::Type{NDSparse}, t::IndexedTable)
     NDSparse(rows(t, pkeynames(t)), rows(t, excludecols(t, pkeynames(t))),
              copy=false, presorted=true)
 end
 
-function _convert(::Type{NextTable}, x::NDSparse)
-    convert(NextTable, x.index, x.data;
+function _convert(::Type{IndexedTable}, x::NDSparse)
+    convert(IndexedTable, x.index, x.data;
             perms=x._table.perms,
             presorted=true, copy=false)
 end
 
-ndsparse(t::NextTable; kwargs...) = _convert(NDSparse, t; kwargs...)
-table(t::NDSparse; kwargs...) = _convert(NextTable, t; kwargs...)
+ndsparse(t::IndexedTable; kwargs...) = _convert(NDSparse, t; kwargs...)
+table(t::NDSparse; kwargs...) = _convert(IndexedTable, t; kwargs...)
 
 include("sortperm.jl")
 include("indexing.jl") # x[y]

@@ -4,36 +4,34 @@ using Statistics
 export groupreduce, groupby, aggregate, aggregate_vec, summarize, ApplyColwise
 
 """
-`reduce(f, t::Table; select::Selection)`
+    reduce(f, t::IndexedTable; select::Selection)
 
-Reduce `t` by applying `f` pair-wise on values or structs
-selected by `select`.
-
-`f` can be:
+Apply reducer function `f` pair-wise to the selection `select` in `t`.  The reducer `f` 
+can be:
 
 1. A function
 1. An OnlineStat
 1. A (named) tuple of functions and/or OnlineStats
 1. A (named) tuple of (selector => function) or (selector => OnlineStat) pairs
 
-```
-t = table([0.1, 0.5, 0.75], [0,1,2], names=[:t, :x])
+# Examples
 
-reduce(+, t, select = :t)
-reduce((a, b) -> (t = a.t + b.t, x = a.x + b.x), t)
+    t = table(1:5, 6:10, names = [:t, :x])
+    
+    reduce(+, t, select = :t)
+    reduce((a, b) -> (t = a.t + b.t, x = a.x + b.x), t)
 
-using OnlineStats
-reduce(Mean(), t, select = :t)
-reduce((Mean(), Variance()), t, select = :t)
+    using OnlineStats
+    reduce(Mean(), t, select = :t)
+    reduce((Mean(), Variance()), t, select = :t)
 
-y = reduce((min, max), t, select=:x)
-reduce((sum = +, prod = *), t, select=:x)
+    y = reduce((min, max), t, select=:x)
+    reduce((sum = +, prod = *), t, select=:x)
 
-# combining reduction and selection
-reduce((xsum = :x => +, negtsum = (:t => -) => +), t)
-```
+    # combining reduction and selection
+    reduce((xsum = :x => +, negtsum = (:t => -) => +), t)
 """
-function reduce(f, t::NextTable; select=valuenames(t), kws...)
+function reduce(f, t::IndexedTable; select=valuenames(t), kws...)
     if haskey(kws, :init)
         return _reduce_select_init(f, t, select, kws.data.init)
     end
@@ -133,7 +131,7 @@ function groupreduce(f, t::Dataset, by=pkeynames(t);
 
     fs, input, T = init_inputs(f, data, reduced_type, false)
 
-    name = isa(t, NextTable) ? namedtuple(nicename(f)) : nothing
+    name = isa(t, IndexedTable) ? namedtuple(nicename(f)) : nothing
     iter = GroupReduce(fs, key, input, perm, name=name)
     convert(collectiontype(t), collect_columns(iter),
             presorted=true, copy=false)
@@ -181,7 +179,7 @@ function Base.iterate(iter::GroupBy, i1=1)
 end
 
 collectiontype(::Type{<:NDSparse}) = NDSparse
-collectiontype(::Type{<:NextTable}) = NextTable
+collectiontype(::Type{<:IndexedTable}) = IndexedTable
 collectiontype(t::Dataset) = collectiontype(typeof(t))
 
 """
@@ -234,11 +232,11 @@ function groupby(f, t::Dataset, by=pkeynames(t);
 
     perm = sortpermby(t, by)
     # Note: we're not using S here, we'll let _groupby figure it out
-    name = isa(t, NextTable) ? namedtuple(nicename(f)) : nothing
+    name = isa(t, IndexedTable) ? namedtuple(nicename(f)) : nothing
     iter = GroupBy(fs, key, input, perm, usekey = usekey, name = name)
 
     t = convert(collectiontype(t), collect_columns(iter), presorted=true, copy=false)
-    t isa NextTable && flatten ?
+    t isa IndexedTable && flatten ?
         IndexedTables.flatten(t, length(columns(t))) : t
 end
 

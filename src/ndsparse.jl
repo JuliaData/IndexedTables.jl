@@ -6,17 +6,17 @@ abstract type AbstractNDSparse end
 mutable struct NDSparse{T, D<:Tuple, C<:Columns, V<:AbstractVector} <: AbstractNDSparse
     index::C
     data::V
-    _table::NextTable
+    _table::IndexedTable
 
     index_buffer::C
     data_buffer::V
 end
 
-function NextTable(nds::NDSparse; kwargs...)
-    convert(NextTable, nds.index, nds.data; kwargs...)
+function IndexedTable(nds::NDSparse; kwargs...)
+    convert(IndexedTable, nds.index, nds.data; kwargs...)
 end
 
-convert(::Type{NextTable}, nd::NDSparse) = NextTable(nd)
+convert(::Type{IndexedTable}, nd::NDSparse) = IndexedTable(nd)
 
 
 """
@@ -99,7 +99,7 @@ function ndsparse(::Val{:serial}, ks::Tup, vs::Union{Tup, AbstractVector};
         end
     end
     stripnames(x) = isa(x, Columns) ? rows(astuple(columns(x))) : rows((x,))
-    _table = convert(NextTable, I, stripnames(d); presorted=true, copy=false)
+    _table = convert(IndexedTable, I, stripnames(d); presorted=true, copy=false)
     nd = NDSparse{eltype(d),astuple(eltype(I)),typeof(I),typeof(d)}(
         I, d, _table, similar(I,0), similar(d,0)
     )
@@ -232,7 +232,7 @@ Get the keys of an `NDSparse` object. Same as [`rows`](@ref) but acts only on th
 """
 keys(t::NDSparse, which...) = rows(keys(t), which...)
 
-# works for both NextTable and NDSparse
+# works for both IndexedTable and NDSparse
 pkeys(t::NDSparse, which...) = keys(t, which...)
 
 values(t::NDSparse) = t.data

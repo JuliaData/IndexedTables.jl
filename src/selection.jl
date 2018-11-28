@@ -1,7 +1,7 @@
 export dropna, selectkeys, selectvalues, select
 
 """
-`select(t::Table, which::Selection)`
+    select(t::Table, which::Selection)
 
 Select all or a subset of columns, or a single column from the table.
 
@@ -16,32 +16,30 @@ Select all or a subset of columns, or a single column from the table.
 
 # Examples:
 
-```
-t = table(1:10, randn(10), rand(Bool, 10); names = [:x, :y, :z])
+    t = table(1:10, randn(10), rand(Bool, 10); names = [:x, :y, :z])
 
-# select the :x vector
-select(t, 1)
-select(t, :x)
+    # select the :x vector
+    select(t, 1)
+    select(t, :x)
 
-# map a function to the :y vector
-select(t, 2 => abs)
-select(t, :y => x -> x > 0 ? x : -x)
+    # map a function to the :y vector
+    select(t, 2 => abs)
+    select(t, :y => x -> x > 0 ? x : -x)
 
-# select the table of :x and :z
-select(t, (:x, :z))
-select(t, r"(x|z)")
+    # select the table of :x and :z
+    select(t, (:x, :z))
+    select(t, r"(x|z)")
 
-# map a function to the table of :x and :y
-select(t, (:x, :y) => row -> row[1] + row[2])
-select(t, (1, :y) => row -> row.x + row.y)
-```
+    # map a function to the table of :x and :y
+    select(t, (:x, :y) => row -> row[1] + row[2])
+    select(t, (1, :y) => row -> row.x + row.y)
 """
 function select(t::AbstractIndexedTable, which)
     ColDict(t)[which]
 end
 
 # optimization
-@inline function select(t::NextTable, which::Union{Symbol, Int})
+@inline function select(t::IndexedTable, which::Union{Symbol, Int})
     getfield(columns(t), which)
 end
 
@@ -54,8 +52,8 @@ function selectvalues(x::NDSparse, which; presorted=true, copy=false, kwargs...)
 end
 
 """
-    reindex(t::NextTable, by)
-    reindex(t::NextTable, by, select)
+    reindex(t::IndexedTable, by)
+    reindex(t::IndexedTable, by, select)
 
 Reindex table `t` with new primary key `by`, optionally keeping a subset of columns via
 `select`.  For [`NDSparse`](@ref), use [`selectkeys`](@ref).
@@ -77,7 +75,7 @@ function reindex(T::Type, t, by, select; kwargs...)
     if !isa(by, Tuple)
         return reindex(T, t, (by,), select; kwargs...)
     end
-    if T <: NextTable && !isa(select, Tuple) && !isa(select, SpecialSelector)
+    if T <: IndexedTable && !isa(select, Tuple) && !isa(select, SpecialSelector)
         return reindex(T, t, by, (select,); kwargs...)
     end
     perm = sortpermby(t, by)
@@ -88,7 +86,7 @@ function reindex(T::Type, t, by, select; kwargs...)
     end
 end
 
-function reindex(t::NextTable, by=pkeynames(t), select=excludecols(t, by); kwargs...)
+function reindex(t::IndexedTable, by=pkeynames(t), select=excludecols(t, by); kwargs...)
     reindex(collectiontype(t), t, by, select; kwargs...)
 end
 
@@ -100,7 +98,7 @@ canonname(t, x::Symbol) = x
 canonname(t, x::Int) = colnames(t)[colindex(t, x)]
 
 """
-    map(f, t::NextTable; select)
+    map(f, t::IndexedTable; select)
 
 Apply `f` to every item in `t` selected by `select` (see also the [`select`](@ref) function).  
 Returns a new table if `f` returns a tuple or named tuple.  If not, returns a vector.
@@ -126,7 +124,7 @@ function map(f, t::Dataset; select=nothing, copy=false, kwargs...)
     isa(x, Columns) ? table(x; copy=false, kwargs...) : x
 end
 
-function _nonna(t::Union{Columns, NextTable}, by=(colnames(t)...,))
+function _nonna(t::Union{Columns, IndexedTable}, by=(colnames(t)...,))
     indxs = [1:length(t);]
     if !isa(by, Tuple)
         by = (by,)
@@ -174,7 +172,7 @@ end
 filt_by_col!(f, col, indxs) = filter!(i->f(col[i]), indxs)
 
 """
-    filter(f, t::Union{NextTable, NDSparse}; select)
+    filter(f, t::Union{IndexedTable, NDSparse}; select)
 
 Iterate over `t` and Return the rows for which `f(row)` returns true.  `select` determines 
 the rows that are given as arguments to `f` (see [`select`](@ref)).
@@ -185,7 +183,7 @@ which all conditions are true.
 
 # Example
 
-    # filter iterates over ROWS of a NextTable
+    # filter iterates over ROWS of a IndexedTable
     t = table(rand(100), rand(100), rand(100), names = [:x, :y, :z])
     filter(r -> r.x + r.y + r.z < 1, t)
 

@@ -1,6 +1,6 @@
 import Base: setindex!, reduce
 import DataValues: dropna
-export NextTable, table, colnames, pkeynames, columns, pkeys, reindex, dropna
+export IndexedTable, table, colnames, pkeynames, columns, pkeys, reindex, dropna
 
 """
 A permutation
@@ -18,10 +18,10 @@ end
 abstract type AbstractIndexedTable end
 
 """
-A tabular data structure that extends [`Columns`](@ref).  Create a `NextTable` with the 
+A tabular data structure that extends [`Columns`](@ref).  Create a `IndexedTable` with the 
 [`table`](@ref) function.
 """
-struct NextTable{C<:Columns} <: AbstractIndexedTable
+struct IndexedTable{C<:Columns} <: AbstractIndexedTable
     # `Columns` object which iterates to give an array of rows
     columns::C
     # columns that are primary keys (Vector{Int})
@@ -33,6 +33,8 @@ struct NextTable{C<:Columns} <: AbstractIndexedTable
 
     columns_buffer::Any
 end
+
+@deprecate NextTable IndexedTable
 
 """
     table(cols; kw...)
@@ -47,7 +49,7 @@ Create a table from the provided `cols`, optionally with `names`.
 
 Construct a table from a vector of tuples. See [`rows`](@ref) and [`Columns`](@ref).
 
-    table(t::Union{NextTable, NDSparse}; kw...)
+    table(t::Union{IndexedTable, NDSparse}; kw...)
 
 Copy a Table or NDSparse to create a new table. The same primary keys as the input are used.
 
@@ -109,7 +111,7 @@ function table(::Val{:serial}, cols::Tup;
 
     intpkey = map(k->colindex(cs, k), pkey)
 
-    NextTable{typeof(cs)}(cs,
+    IndexedTable{typeof(cs)}(cs,
            intpkey,
            perms,
            cardinality,
@@ -141,7 +143,7 @@ function table(cs::Tup; chunks=nothing, kwargs...)
 end
 
 table(cs::Columns; kwargs...) = table(columns(cs); kwargs...)
-table(c::Columns{<:Pair}; kwargs...) = convert(NextTable, c.columns.first, c.columns.second; kwargs...)
+table(c::Columns{<:Pair}; kwargs...) = convert(IndexedTable, c.columns.first, c.columns.second; kwargs...)
 
 function table(cols::AbstractArray...; names=nothing, kwargs...)
     if isa(names, AbstractArray) && all(x->isa(x, Symbol), names)
@@ -153,7 +155,7 @@ function table(cols::AbstractArray...; names=nothing, kwargs...)
 end
 
 # Easy constructor to create a derivative table
-function table(t::NextTable;
+function table(t::IndexedTable;
                columns=t.columns,
                chunks=nothing,
                pkey=t.pkey,
@@ -172,10 +174,10 @@ function table(t::NextTable;
 end
 
 Base.@pure colnames(t::AbstractIndexedTable) = fieldnames(eltype(t))
-columns(t::NextTable) = columns(t.columns)
+columns(t::IndexedTable) = columns(t.columns)
 # throw a better error message when a custom array
 # of different size is used
-function column(t::NextTable, a::AbstractArray)
+function column(t::IndexedTable, a::AbstractArray)
     if length(t) != length(a)
         throw(ArgumentError(
                 "vector provided must have the same length as table"
@@ -185,22 +187,22 @@ function column(t::NextTable, a::AbstractArray)
     column(rows(t), a)
 end
 
-Base.eltype(::Type{NextTable{C}}) where {C} = eltype(C)
-Base.eltype(t::NextTable) = eltype(typeof(t))
-Base.copy(t::NextTable) = table(t, copy=true)
-function Base.empty!(t::NextTable)
+Base.eltype(::Type{IndexedTable{C}}) where {C} = eltype(C)
+Base.eltype(t::IndexedTable) = eltype(typeof(t))
+Base.copy(t::IndexedTable) = table(t, copy=true)
+function Base.empty!(t::IndexedTable)
     empty!(t.perms)
     empty!(rows(t))
     t
 end
-Base.:(==)(a::NextTable, b::NextTable) = rows(a) == rows(b)
-Base.isequal(a::NextTable, b::NextTable) = isequal(rows(a), rows(b))
+Base.:(==)(a::IndexedTable, b::IndexedTable) = rows(a) == rows(b)
+Base.isequal(a::IndexedTable, b::IndexedTable) = isequal(rows(a), rows(b))
 
-Base.getindex(t::NextTable, i::Integer) = getindex(t.columns, i)
-Base.getindex(t::NextTable, i::Colon) = copy(t)
-Base.lastindex(t::NextTable) = length(t)
+Base.getindex(t::IndexedTable, i::Integer) = getindex(t.columns, i)
+Base.getindex(t::IndexedTable, i::Colon) = copy(t)
+Base.lastindex(t::IndexedTable) = length(t)
 
-function Base.view(t::NextTable, I)
+function Base.view(t::IndexedTable, I)
     t.pkey == Int64[] || eltype(I) == Bool || issorted(I) ||
         throw(ArgumentError("`view` called with unsorted index."))
     table(
@@ -210,10 +212,10 @@ function Base.view(t::NextTable, I)
         presorted = true)
 end
 
-Base.length(t::NextTable) = length(t.columns)
-Base.iterate(t::NextTable, i) = iterate(t.columns, i)
-Base.iterate(t::NextTable) = iterate(t.columns)
-function getindex(t::NextTable, idxs::AbstractVector{<:Integer})
+Base.length(t::IndexedTable) = length(t.columns)
+Base.iterate(t::IndexedTable, i) = iterate(t.columns, i)
+Base.iterate(t::IndexedTable) = iterate(t.columns)
+function getindex(t::IndexedTable, idxs::AbstractVector{<:Integer})
     if t.pkey == Int64[] || eltype(idxs) == Bool || issorted(idxs)
        #perms = map(t.perms) do p
        #    # TODO: make the ranks continuous
@@ -257,16 +259,16 @@ function Base.getindex(d::ColDict{<:AbstractIndexedTable})
           pkey=d.pkey)
 end
 
-function subtable(t::Union{Columns, NextTable}, idxs; presorted=true)
+function subtable(t::Union{Columns, IndexedTable}, idxs; presorted=true)
     table(t, columns=rows(t)[idxs], perms=t.perms, copy=false, presorted=presorted)
 end
 
-function primaryperm(t::NextTable)
+function primaryperm(t::IndexedTable)
     Perm(t.pkey, Base.OneTo(length(t)))
 end
 
-permcache(t::NextTable) = vcat(primaryperm(t), t.perms)
-cacheperm!(t::NextTable, p) = push!(t.perms, p)
+permcache(t::IndexedTable) = vcat(primaryperm(t), t.perms)
+cacheperm!(t::IndexedTable, p) = push!(t.perms, p)
 
 """
     pkeynames(t::Table)
@@ -296,7 +298,7 @@ end
 valuenames(t::AbstractIndexedTable) = (colnames(t)...,)
 
 """
-    pkeys(itr::NextTable)
+    pkeys(itr::IndexedTable)
 
 Primary keys of the table. If Table doesn't have any designated
 primary key columns (constructed without `pkey` argument) then
@@ -310,7 +312,7 @@ a default key of tuples `(1,):(n,)` is generated.
     a = table(["a","b"], [3,4], pkey=1)
     pkeys(a)
 """
-function pkeys(t::NextTable)
+function pkeys(t::IndexedTable)
     if isempty(t.pkey)
         Columns(Base.OneTo(length(t)))
     else
@@ -318,7 +320,7 @@ function pkeys(t::NextTable)
     end
 end
 
-Base.values(t::NextTable) = rows(t)
+Base.values(t::IndexedTable) = rows(t)
 
 """
     sort(t    ; select, kw...)
@@ -331,7 +333,7 @@ Sort rows by `by`. All of `Base.sort` keyword arguments can be used.
     t=table([1,1,1,2,2,2], [1,1,2,2,1,1], [1,2,3,4,5,6],
     sort(t, :z; select = (:y, :z), rev = true)
 """
-sort(t::NextTable, by...; select = valuenames(t), kwargs...) =
+sort(t::IndexedTable, by...; select = valuenames(t), kwargs...) =
     table(rows(t, select)[sortperm(rows(t, by...); kwargs...)], copy = false)
 
 """
@@ -346,7 +348,7 @@ Sort rows of `t` by `by` in place. All of `Base.sort` keyword arguments can be u
     sort!(t, :z, rev = true)
     t
 """
-function sort!(t::NextTable, by...; kwargs...)
+function sort!(t::IndexedTable, by...; kwargs...)
     isempty(t.pkey) || error("Tables with primary keys can't be sorted in place")
     permute!(rows(t), sortperm(rows(t, by...); kwargs...))
     t
@@ -388,20 +390,20 @@ function excludecols(t, cols)
 end
 
 """
-    convert(NextTable, pkeys, vals; kwargs...)
+    convert(IndexedTable, pkeys, vals; kwargs...)
 
 Construct a table with `pkeys` as primary keys and `vals` as corresponding non-indexed items.
 keyword arguments will be forwarded to [`table`](@ref) constructor.
 
 # Example
-    convert(NextTable, Columns(x=[1,2],y=[3,4]), Columns(z=[1,2]), presorted=true)
+    convert(IndexedTable, Columns(x=[1,2],y=[3,4]), Columns(z=[1,2]), presorted=true)
 """
-function convert(::Type{NextTable}, key, val; kwargs...)
+function convert(::Type{IndexedTable}, key, val; kwargs...)
     cs = concat_cols(key, val)
     table(cs, pkey=[1:ncols(key);]; kwargs...)
 end
 
-convert(T::Type{NextTable}, c::Columns{<:Pair}; kwargs...) = convert(T, c.columns.first, c.columns.second; kwargs...)
+convert(T::Type{IndexedTable}, c::Columns{<:Pair}; kwargs...) = convert(T, c.columns.first, c.columns.second; kwargs...)
 # showing
 
 global show_compact_when_wide = true
@@ -500,7 +502,7 @@ function subscriptprint(x::Integer)
     join([lookup[parse(Int, c)+1] for c in s],"")
 end
 
-function show(io::IO, t::NextTable{T}) where {T}
+function show(io::IO, t::IndexedTable{T}) where {T}
     header = "Table with $(length(t)) rows, $(length(columns(t))) columns:"
     cstyle = Dict([i=>:bold for i in t.pkey])
     cnames = string.(colnames(t))
