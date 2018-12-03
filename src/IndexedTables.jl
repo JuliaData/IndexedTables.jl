@@ -33,7 +33,7 @@ const DimName = Union{Int,Symbol}
 
 include("utils.jl")
 include("columns.jl")
-include("table.jl")
+include("indexedtable.jl")
 include("ndsparse.jl")
 include("collect.jl")
 

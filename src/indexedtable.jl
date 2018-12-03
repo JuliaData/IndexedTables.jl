@@ -16,7 +16,7 @@ end
 abstract type AbstractIndexedTable end
 
 """
-A tabular data structure that extends [`Columns`](@ref).  Create a `IndexedTable` with the 
+A tabular data structure that extends [`Columns`](@ref).  Create an `IndexedTable` with the 
 [`table`](@ref) function.
 """
 struct IndexedTable{C<:Columns} <: AbstractIndexedTable
