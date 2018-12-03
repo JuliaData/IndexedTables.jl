@@ -1,11 +1,8 @@
-using Test, IndexedTables, OnlineStats, DataValues, WeakRefStrings
+using Test, IndexedTables, OnlineStats, DataValues, WeakRefStrings, Tables
 import DataValues: NA
 
-@testset "IndexedTables" begin
-
-include("test_core.jl")
-include("test_utils.jl")
-include("test_tabletraits.jl")
-include("test_collect.jl")
-
-end
+include("test_tables.jl")
+# include("test_core.jl")
+# include("test_utils.jl")
+# include("test_tabletraits.jl")
+# include("test_collect.jl")

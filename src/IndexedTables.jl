@@ -6,11 +6,14 @@ using PooledArrays, SparseArrays, Statistics, WeakRefStrings, TableTraits,
 using OnlineStatsBase: OnlineStat, fit!
 using DataValues: DataValues, DataValue, NA, isna, DataValueArray
 import DataValues: dropna
+import Tables
 
 import Base:
     show, eltype, length, getindex, setindex!, ndims, map, convert, keys, values,
     ==, broadcast, empty!, copy, similar, sum, merge, merge!, mapslices,
-    permutedims, sort, sort!, iterate, pairs
+    permutedims, sort, sort!, iterate, pairs, reduce, push!, size, permute!, issorted, 
+    sortperm, summary, resize!, vcat, append!, copyto!, view
+
 
 #-----------------------------------------------------------------------# exports
 export 
@@ -75,5 +78,6 @@ include("reshape.jl")
 
 # TableTraits.jl integration
 include("tabletraits.jl")
+include("tables.jl")
 
 end # module

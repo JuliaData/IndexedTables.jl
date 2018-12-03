@@ -1,7 +1,3 @@
-import Base:
-    push!, size, sort, sort!, permute!, issorted, sortperm,
-    summary, resize!, vcat, append!, copyto!, view
-
 """
 Wrapper around a (named) tuple of Vectors that acts like a Vector of (named) tuples.
 
