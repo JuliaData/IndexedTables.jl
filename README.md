@@ -14,7 +14,7 @@ IndexedTables offers two data structures: `IndexedTable` and `NDSparse`.
 
 - **Both types store data _in columns_**.
 - **`IndexedTable` and `NDSparse` differ mainly in how data is accessed.**
-- **Both types have equal performance fr Table operations (`select`, `filter`, etc.).** 
+- **Both types have equal performance for Table operations (`select`, `filter`, etc.).** 
 
 
 ## Quickstart
