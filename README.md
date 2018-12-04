@@ -10,8 +10,28 @@ be used on its own for efficient in-memory data processing and analytics.
 
 ## Data Structures 
 
-- **The two table types in IndexedTables differ in how data is accessed.**
-- **There is no performance difference between table types for operations such as selecting, filtering, and map/reduce.**
+IndexedTables offers two data structures: `IndexedTable` and `NDSparse`.
+
+- **Both types store data _in columns_**.
+- **`IndexedTable` and `NDSparse` differ mainly in how data is accessed.**
+- **Both types have equal performance fr Table operations (`select`, `filter`, etc.).** 
+
+
+## Quickstart
+
+```
+using Pkg
+Pkg.add("IndexedTables")
+using IndexedTables
+
+t = table((x = 1:100, y = randn(100)))
+
+select(t, :x)
+
+filter(row -> row.y > 0, t)
+```
+
+## `IndexedTable` vs. `NDSparse`
 
 First let's create some data to work with.
 
@@ -22,18 +42,18 @@ city = vcat(fill("New York", 3), fill("Boston", 3))
 
 dates = repeat(Date(2016,7,6):Day(1):Date(2016,7,8), 2)
 
-values = [91, 89, 91, 95, 83, 76]
+vals = [91, 89, 91, 95, 83, 76]
 ```
 
-### Table
+### IndexedTable
 
-- Data is accessed as a Vector of NamedTuples.  
-- Sorted by primary key(s), `pkey`.
+- (Optionally) Sorted by primary key(s), `pkey`.
+- Data is accessed as a Vector of NamedTuples.
 
 ```julia
 using IndexedTables
 
-julia> t1 = table((city = city, dates = dates, values = values); pkey = [:city, :dates])
+julia> t1 = table((city = city, dates = dates, values = vals); pkey = [:city, :dates])
 Table with 6 rows, 3 columns:
 city        dates       values
 ──────────────────────────────
@@ -46,18 +66,15 @@ city        dates       values
 
 julia> t1[1]
 (city = "Boston", dates = 2016-07-06, values = 95)
-
-julia> first(t1)
-(city = "Boston", dates = 2016-07-06, values = 95)
 ```
 
 ### NDSparse
 
-- Data is accessed as an N-dimensional sparse array with arbitrary indexes.
 - Sorted by index variables (first argument).
+- Data is accessed as an N-dimensional sparse array with arbitrary indexes.
 
 ```julia
-julia> t2 = ndsparse(@NT(city=city, dates=dates), @NT(value=values))
+julia> t2 = ndsparse((city=city, dates=dates), (value=vals,))
 2-d NDSparse with 6 values (1 field named tuples):
 city        dates      │ value
 ───────────────────────┼──────
@@ -70,26 +87,8 @@ city        dates      │ value
 
 julia> t2["Boston", Date(2016, 7, 6)]
 (value = 95)
-
-julia> first(t2)
-(value = 95)
-```
-
-As with other multi-dimensional arrays, dimensions can be permuted to change the sort order:
-
-```julia
-julia> permutedims(t2, [2,1])
-2-d NDSparse with 6 values (1 field named tuples):
-dates       city       │ value
-───────────────────────┼──────
-2016-07-06  "Boston"   │ 95
-2016-07-06  "New York" │ 91
-2016-07-07  "Boston"   │ 83
-2016-07-07  "New York" │ 89
-2016-07-08  "Boston"   │ 76
-2016-07-08  "New York" │ 91
 ```
 
 ## Get started
 
-For more information, check out the [JuliaDB API Reference](http://juliadb.org/latest/api/datastructures.html).
+For more information, check out the [JuliaDB Documentation](http://juliadb.org/latest/index.html).

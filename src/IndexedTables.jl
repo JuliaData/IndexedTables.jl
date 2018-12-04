@@ -23,7 +23,7 @@ export
     AbstractNDSparse, All, ApplyColwise, Between, ColDict, Columns, IndexedTable,
     Keys, NDSparse, NextTable, Not,
     # functions
-    aggregate, aggregate!, aggregate_vec, antijoin, asofjoin, collect_columns, colnames,
+    aggregate!, antijoin, asofjoin, collect_columns, colnames,
     column, columns, convertdim, dimlabels, dropna, flatten, flush!, groupby, groupjoin,
     groupreduce, innerjoin, insertafter!, insertbefore!, insertcol, insertcolafter, 
     insertcolbefore, leftgroupjoin, leftjoin, map_rows, naturalgroupjoin, naturaljoin,

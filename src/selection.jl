@@ -41,10 +41,20 @@ end
     getfield(columns(t), which)
 end
 
+"""
+    selectkeys(x::NDSparse, sel)
+
+Return an `NDSparse` with a subset of keys.
+"""
 function selectkeys(x::NDSparse, which; kwargs...)
     ndsparse(rows(keys(x), which), values(x); kwargs...)
 end
 
+"""
+    selectvalues(x::NDSparse, sel)
+
+Return an `NDSparse` with a subset of values
+"""
 function selectvalues(x::NDSparse, which; presorted=true, copy=false, kwargs...)
     ndsparse(keys(x), rows(values(x), which); presorted=presorted, copy=copy, kwargs...)
 end

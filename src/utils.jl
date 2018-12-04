@@ -161,7 +161,7 @@ function namedtuple(fields...)
 end
 
 """
-`arrayof(T)`
+    arrayof(T)
 
 Returns the type of `Columns` or `Vector` suitable to store
 values of type T. Nested tuples beget nested Columns.

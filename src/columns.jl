@@ -106,17 +106,14 @@ length(c::Columns{<:Pair, <:Pair}) = length(c.columns.first)
 ndims(c::Columns) = 1
 
 """
-`ncols(itr)`
+    ncols(itr)
 
 Returns the number of columns in `itr`.
 
 # Examples
 
-    ncols([1,2,3])
-    ncols(rows(([1,2,3],[4,5,6])))
-    ncols(table(([1,2,3],[4,5,6])))
-    ncols(table(@NT(x=[1,2,3],y=[4,5,6])))
-    ncols(ndsparse(d, [7,8,9]))
+    ncols([1,2,3]) == 1
+    ncols(rows(([1,2,3],[4,5,6]))) == 2
 """
 function ncols end
 ncols(c::Columns) = fieldcount(typeof(c.columns))
