@@ -181,10 +181,9 @@ function ==(x::Columns, y::Columns)
     nc = length(x.columns)
     length(y.columns) == nc || return false
     fieldnames(eltype(x)) == fieldnames(eltype(y)) || return false
-    n = length(x)
-    length(y) == n || return false
-    for i in 1:nc
-        x.columns[i] == y.columns[i] || return false
+    length(y) == length(x) || return false
+    for (xi, yi) in zip(x.columns, y.columns)
+        all(r -> r[1] === r[2] || r[1] == r[2], zip(xi, yi)) || return false
     end
     return true
 end

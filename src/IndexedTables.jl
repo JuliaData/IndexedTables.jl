@@ -5,7 +5,7 @@ using PooledArrays, SparseArrays, Statistics, WeakRefStrings, TableTraits,
 
 using OnlineStatsBase: OnlineStat, fit!
 using DataValues: DataValues, DataValue, NA, isna, DataValueArray
-import DataValues: dropna
+# import DataValues: dropna
 import Tables
 
 import Base:
