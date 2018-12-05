@@ -1,6 +1,5 @@
 #-----------------------------------------------------------------------# Columns 
 const TableColumns = Columns{T} where {T<:NamedTuple}
-Columns(x) = Columns(Tables.columntable(x))
 
 Columns(x; kw...) = Columns(Tables.columntable(x); kw...)
 
