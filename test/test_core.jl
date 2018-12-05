@@ -797,11 +797,11 @@ end
     @test hascolumns(t, r"x|z")
 end
 
-    t = table([0.1, 0.5, NA, 0.7], [2, NA, 4, 5], [NA, 6, NA, 7], names=[:t, :x, :y])
-    @test dropna(t) == table([0.7], [5], [7], names=Symbol[:t, :x, :y])
-    @test isequal(dropna(t, :y), table([0.5, 0.7], [NA, 5], [6, 7], names=Symbol[:t, :x, :y]))
-    t1 = dropna(t, (:t, :x))
-    @test typeof(column(dropna(t, :x), :x)) == Array{Int,1}
+    # t = table([0.1, 0.5, NA, 0.7], [2, NA, 4, 5], [NA, 6, NA, 7], names=[:t, :x, :y])
+    # @test dropna(t) == table([0.7], [5], [7], names=Symbol[:t, :x, :y])
+    # @test isequal(dropna(t, :y), table([0.5, 0.7], [NA, 5], [6, 7], names=Symbol[:t, :x, :y]))
+    # t1 = dropna(t, (:t, :x))
+    # @test typeof(column(dropna(t, :x), :x)) == Array{Int,1}
 
 @testset "filter" begin
     t = table(["a", "b", "c"], [0.01, 0.05, 0.07], [2, 1, 0], names=[:n, :t, :x])
