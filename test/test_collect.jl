@@ -95,9 +95,9 @@ end
     tuple_itr = (exp(i) for i in itr)
     @test collect_columns(tuple_itr) == Float64[]
 
-    t = collect_columns((a = i,) for i in (1, DataValue{Int}(), 3))
-    @test columns(t, 1) isa DataValueArray
-    @test isequal(columns(t, 1), DataValueArray([1, DataValue{Int}(), 3]))
+    # t = collect_columns((a = i,) for i in (1, DataValue{Int}(), 3))
+    # @test columns(t, 1) isa DataValueArray
+    # @test isequal(columns(t, 1), DataValueArray([1, DataValue{Int}(), 3]))
 end
 
 @testset "collectpairs" begin
@@ -126,8 +126,8 @@ end
     @test collect_columns(v) == Columns(Columns((a = Int[],))=>Columns((b = String[],)))
     @test eltype(collect_columns(v)) == Pair{NamedTuple{(:a,), Tuple{Int}}, NamedTuple{(:b,), Tuple{String}}}
 
-    t = table(collect_columns((b = 1,) => (a = i,) for i in (2, DataValue{Int}(), 3)))
-    @test t == table((b = [1,1,1], a = [2, DataValue{Int}(), 3]), pkey = :b)
+    # t = table(collect_columns((b = 1,) => (a = i,) for i in (2, DataValue{Int}(), 3)))
+    # @test t == table((b = [1,1,1], a = [2, DataValue{Int}(), 3]), pkey = :b)
 end
 
 @testset "issubtype" begin

@@ -4,16 +4,6 @@ function IteratorInterfaceExtensions.getiterator(source::NDSparse)
     return rows(source)
 end
 
-function _array_factory(t,rows)
-    if isa(t, TypeVar)
-        return Array{Any}(undef, rows)
-    elseif t <: DataValue
-        return DataValueArray{eltype(t)}(rows)
-    else
-        return Array{t}(undef, rows)
-    end
-end
-
 function ndsparse(x; idxcols=nothing, datacols=nothing, copy=false, kwargs...)
     if isiterable(x)
         source_data = collect_columns(getiterator(x))

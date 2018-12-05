@@ -1,5 +1,5 @@
 using Test, IndexedTables, OnlineStats, DataValues, WeakRefStrings, Tables
-import DataValues: NA
+# import DataValues: NA
 
 include("test_tables.jl")
 include("test_core.jl")

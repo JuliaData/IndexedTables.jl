@@ -1,6 +1,6 @@
 _is_subtype(::Type{S}, ::Type{T}) where {S, T} = promote_type(S, T) == T
 
-dataarrayof(::Type{<:DataValue{T}}, len) where {T} = DataValueArray{T,1}(len)
+# dataarrayof(::Type{<:DataValue{T}}, len) where {T} = DataValueArray{T,1}(len)
 dataarrayof(::Type{T}, len) where {T} = Vector{T}(undef, len)
 
 """
