@@ -12,7 +12,8 @@ import Base:
     show, eltype, length, getindex, setindex!, ndims, map, convert, keys, values,
     ==, broadcast, empty!, copy, similar, sum, merge, merge!, mapslices,
     permutedims, sort, sort!, iterate, pairs, reduce, push!, size, permute!, issorted, 
-    sortperm, summary, resize!, vcat, append!, copyto!, view
+    sortperm, summary, resize!, vcat, append!, copyto!, view, tail,
+    tuple_type_cons, tuple_type_head, tuple_type_tail, in, convert
 
 
 #-----------------------------------------------------------------------# exports
@@ -29,7 +30,7 @@ export
     insertcolbefore, leftgroupjoin, leftjoin, map_rows, naturalgroupjoin, naturaljoin,
     ncols, ndsparse, outergroupjoin, outerjoin, pkeynames, pkeys, popcol, pushcol,
     reducedim_vec, reindex, renamecol, rows, select, selectkeys, selectvalues, setcol,
-    stack, summarize, table, unstack, update!, where
+    stack, summarize, table, unstack, update!, where, dropmissing
 
 const Tup = Union{Tuple,NamedTuple}
 const DimName = Union{Int,Symbol}
@@ -76,7 +77,7 @@ include("flatten.jl")
 include("join.jl")
 include("reshape.jl")
 
-# TableTraits.jl integration
+# TableTraits/Tables integration
 include("tabletraits.jl")
 include("tables.jl")
 

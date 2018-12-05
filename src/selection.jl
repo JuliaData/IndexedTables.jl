@@ -132,50 +132,46 @@ function map(f, t::Dataset; select=nothing, copy=false, kwargs...)
     isa(x, Columns) ? table(x; copy=false, kwargs...) : x
 end
 
-function _nonna(t::Union{Columns, IndexedTable}, by=(colnames(t)...,))
-    indxs = [1:length(t);]
-    if !isa(by, Tuple)
-        by = (by,)
-    end
+function _non_missing(t::Union{Columns, IndexedTable}, sel=(colnames(t)...,))
+    indxs = collect(1:length(t))
+    by = isa(sel, Tuple) ? sel : (sel,)
     bycols = columns(t, by)
     d = ColDict(t)
     for (key, c) in zip(by, bycols)
         x = rows(t, c)
-       #filt_by_col!(!ismissing, x, indxs)
-       #if Missing <: eltype(x)
-       #    y = Array{nonmissing(eltype(x))}(undef, length(x))
-       #    y[indxs] = x[indxs]
-        filt_by_col!(!isna, x, indxs)
-        if isa(x, Array{<:DataValue})
-            y = Array{eltype(eltype(x))}(undef, length(x))
-            y[indxs] = map(get, x[indxs])
-            x = y
-        elseif isa(x, DataValueArray)
-            x = x.values # unsafe unwrap
+        if Missing <: eltype(x)
+            filt_by_col!(!ismissing, x, indxs)
+            y = Vector{nonmissing(eltype(x))}(undef, length(x))
+            y[indxs] = x[indxs]
+            d[key] = y
+        else
+            d[key] = x
         end
-        d[key] = x
     end
     (d[], indxs)
 end
 
 """
-    dropna(t)
-    dropna(t, select)
+    dropmissing(t)
+    dropmissing(t, select)
 
-Drop rows of table `t` which contain NA (`DataValues.DataValue`) values, optionally only 
+Drop rows of table `t` which contain `missing` values, optionally only 
 using the columns in `select`.  
 
-Column types will be converted to non-NA types.  E.g. `Array{DataValue{Int}}` to `Array{Int}`.
+Column types will be converted to non-`Missing` types.  E.g. `Array{Union{Int, Missing}}` 
+to `Array{Int}`.
 
 # Example
 
-    t = table([0.1,0.5,NA,0.7], [2,NA,4,5], [NA,6,NA,7], names=[:t,:x,:y])
-    dropna(t)
-    dropna(t, (:t, :x))
+    t = table([0.1,0.5,missing,0.7], [2,missing,4,5], [missing,6,missing,7], names=[:t,:x,:y])
+    dropmissing(t)
+    dropmissing(t, (:t, :x))
 """
-function dropna(t::Dataset, by=(colnames(t)...,))
-    subtable(_nonna(t, by)...,)
+function dropmissing(t::Dataset, by=colnames(t))
+    subtable(_non_missing(t, by)...)
 end
+
+@deprecate dropna dropmissing
 
 filt_by_col!(f, col, indxs) = filter!(i->f(col[i]), indxs)
 

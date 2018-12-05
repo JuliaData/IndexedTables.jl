@@ -271,8 +271,6 @@ function permutedims(t::NDSparse, p::AbstractVector)
 end
 
 # showing
-
-import Base.show
 function show(io::IO, t::NDSparse{T,D}) where {T,D}
     flush!(t)
     if !(values(t) isa Columns)

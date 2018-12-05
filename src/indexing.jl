@@ -19,7 +19,6 @@ _in(x, v::AbstractString) = x == v
 _in(x, v::Symbol) = x === v
 _in(x, v::Number) = isequal(x, v)
 
-import Base: tail
 # test whether row r is within product(idxs...)
 @inline row_in(cs, r::Integer, idxs) = _row_in(cs[1], r, idxs[1], tail(cs), tail(idxs))
 @inline _row_in(c1, r, i1, rI, ri) = _in(c1[r],i1) & _row_in(rI[1], r, ri[1], tail(rI), tail(ri))
