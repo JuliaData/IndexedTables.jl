@@ -1,5 +1,6 @@
 #-----------------------------------------------------------------------# Columns 
 const TableColumns = Columns{T} where {T<:NamedTuple}
+Columns(x) = Columns(Tables.columntable(x))
 
 Columns(x; kw...) = Columns(Tables.columntable(x); kw...)
 
@@ -14,7 +15,7 @@ Tables.columnaccess(c::TableColumns) = true
 Tables.columns(c::TableColumns) = c.columns
 # Tables.schema already defined for NamedTuple of Vectors (c.columns)
 
-#-----------------------------------------------------------------------# IndexedTable/NDSparse
+#-----------------------------------------------------------------------# IndexedTable
 Tables.istable(::Type{IndexedTable{C}}) where {C<:TableColumns} = true
 Tables.materializer(t::IndexedTable) = table
 for f in [:rowaccess, :rows, :columnaccess, :columns, :schema]

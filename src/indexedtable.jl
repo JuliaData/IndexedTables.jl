@@ -49,7 +49,9 @@ Construct a table from a vector of tuples. See [`rows`](@ref) and [`Columns`](@r
 
 Copy a Table or NDSparse to create a new table. The same primary keys as the input are used.
 
-    table(iter; kw...)
+    table(x; kw...)
+
+Create an `IndexedTable` from any object `x` that follows the `Tables.jl` interface.
 
 
 # Keyword Argument Options:
