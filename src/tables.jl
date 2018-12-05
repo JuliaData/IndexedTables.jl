@@ -1,6 +1,8 @@
 #-----------------------------------------------------------------------# Columns 
 const TableColumns = Columns{T} where {T<:NamedTuple}
 
+Columns(x; kw...) = Columns(Tables.columntable(x); kw...)
+
 Tables.istable(::Type{<:TableColumns}) = true
 Tables.materializer(c::TableColumns) = Columns
 
@@ -14,13 +16,15 @@ Tables.columns(c::TableColumns) = c.columns
 
 #-----------------------------------------------------------------------# IndexedTable/NDSparse
 Tables.istable(::Type{IndexedTable{C}}) where {C<:TableColumns} = true
-Tables.istable(::Type{NDSparse{T,D,C,V}}) where {T,D,C<:TableColumns,V<:TableColumns} = true
-
 Tables.materializer(t::IndexedTable) = table
-Tables.materializer(t::NDSparse) = ndpsarse
-
 for f in [:rowaccess, :rows, :columnaccess, :columns, :schema]
-    @eval Tables.$f(t::Dataset) = Tables.$f(Columns(columns(t)))
+    @eval Tables.$f(t::IndexedTable) = Tables.$f(Columns(columns(t)))
 end
+
+#-----------------------------------------------------------------------# NDSparse
+# Tables.istable(::Type{NDSparse{T,D,C,V}}) where {T,D,C<:TableColumns,V<:TableColumns} = true
+# Tables.materializer(t::NDSparse) = ndpsarse
+
+
 
 
