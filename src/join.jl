@@ -102,7 +102,7 @@ function _join!(::Val{typ}, ::Val{grp}, ::Val{keepkeys}, f, I, data, ks, lout, r
                             # optimized push! method for concat_tup
                             _push!(Val{:both}(), f, data,
                                    lout, rout, ldata, rdata,
-                                   lperm[x], rperm[y], NA, NA)
+                                   lperm[x], rperm[y], missing, missing)
                         end
                     end
                 else
@@ -167,9 +167,9 @@ function _join!(::Val{typ}, ::Val{grp}, ::Val{keepkeys}, f, I, data, ks, lout, r
     lnull_idx, rnull_idx
 end
 
-nullrow(::Type{T}) where {T <: Tuple} = Tuple(fieldtype(T, i)() for i = 1:fieldcount(T))
-nullrow(::Type{NamedTuple{names, T}}) where {names, T} = NamedTuple{names, T}(Tuple(fieldtype(T, i)() for i = 1:fieldcount(T)))
-nullrow(t::Type{<:DataValue}) = t()
+nullrow(t::Type{<:Tuple}) = Tuple(map(x->missing, fieldtypes(t)))
+nullrow(t::Type{<:NamedTuple}) = t(Tuple(map(x->missing, fieldtypes(t))))
+nullrow(t) = missing
 
 function init_join_output(typ, grp, f, ldata, rdata, left, keepkeys, lkey, rkey, init_group, accumulate)
     lnull = nothing
@@ -181,7 +181,8 @@ function init_join_output(typ, grp, f, ldata, rdata, left, keepkeys, lkey, rkey,
 
         left_type = eltype(ldata)
         if !isa(typ, Union{Val{:left}, Val{:inner}, Val{:anti}})
-            null_left_type = map_params(x->DataValue{x}, eltype(ldata))
+            # null_left_type = map_params(x->DataValue{x}, eltype(ldata))
+            null_left_type = map_params(x -> Union{Missing, x}, eltype(ldata))
             lnull = nullrow(null_left_type)
         else
             null_left_type = left_type
@@ -189,7 +190,8 @@ function init_join_output(typ, grp, f, ldata, rdata, left, keepkeys, lkey, rkey,
 
         right_type = eltype(rdata)
         if !isa(typ, Val{:inner})
-            null_right_type = map_params(x->DataValue{x}, eltype(rdata))
+            # null_right_type = map_params(x->DataValue{x}, eltype(rdata))
+            null_right_type = map_params(x->Union{Missing, x}, eltype(rdata))
             rnull = nullrow(null_right_type)
         else
             null_right_type = right_type
@@ -343,18 +345,24 @@ function Base.join(f, left::Dataset, right::Dataset;
         lnulls[lnull_idx] .= true
         lout = if lout isa Columns
             Columns(map(lout.columns) do col
-                        if col isa DataValueArray
-                            col.isna[lnull_idx] .= true
-                        else
-                            DataValueArray(col, lnulls)
-                        end
-                    end)
+                        # if col isa DataValueArray
+                        #     col.isna[lnull_idx] .= true
+                        # else
+                        #     DataValueArray(col, lnulls)
+                        # end
+                v = Vector{Union{Missing,eltype(col)}}(col)
+                v[lnull_idx] .= missing
+                v
+            end)
         else
-            if lout isa DataValueArray
-                lout.isna[lnull_idx] .= true
-            else
-                DataValueArray(lout, lnulls)
-            end
+            v = Vector{Union{Missing, eltype(lout)}}(lout)
+            v[lnull_idx] .= missing
+            v
+            # if lout isa DataValueArray
+            #     lout.isna[lnull_idx] .= true
+            # else
+            #     DataValueArray(lout, lnulls)
+            # end
         end
         data = concat_cols(lout, rout)
     end
@@ -364,18 +372,24 @@ function Base.join(f, left::Dataset, right::Dataset;
         rnulls[rnull_idx] .= true
         rout = if rout isa Columns
             Columns(map(rout.columns) do col
-                        if col isa DataValueArray
-                            col.isna[rnull_idx] .= true
-                        else
-                            DataValueArray(col, rnulls)
-                        end
-                    end)
+                        # if col isa DataValueArray
+                        #     col.isna[rnull_idx] .= true
+                        # else
+                        #     DataValueArray(col, rnulls)
+                        # end
+                v = Vector{Union{Missing,eltype(col)}}(col)
+                v[rnull_idx] .= missing
+                v
+            end)
         else
-            if rout isa DataValueArray
-                rout.isna[rnull_idx] .= true
-            else
-                DataValueArray(rout, rnulls)
-            end
+            v = Vector{Union{Missing,eltype(rout)}}(rout)
+            v[rnull_idx] .= missing
+            v
+            # if rout isa DataValueArray
+            #     rout.isna[rnull_idx] .= true
+            # else
+            #     DataValueArray(rout, rnulls)
+            # end
         end
         data = concat_cols(lout, rout)
     end

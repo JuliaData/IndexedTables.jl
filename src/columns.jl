@@ -178,12 +178,13 @@ resize!(I::Columns, n::Int) = (foreach(c->resize!(c,n), I.columns); I)
 _sizehint!(c::Columns, n::Integer) = (foreach(c->_sizehint!(c,n), c.columns); c)
 
 function ==(x::Columns, y::Columns)
-    nc = length(x.columns)
-    length(y.columns) == nc || return false
+    length(y.columns) == length(x.columns) || return false
     fieldnames(eltype(x)) == fieldnames(eltype(y)) || return false
     length(y) == length(x) || return false
     for (xi, yi) in zip(x.columns, y.columns)
-        all(r -> r[1] === r[2] || r[1] == r[2], zip(xi, yi)) || return false
+        allequal = (xi == yi) 
+        ismissing(allequal) && return false
+        allequal || return false
     end
     return true
 end

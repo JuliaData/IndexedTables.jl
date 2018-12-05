@@ -4,8 +4,6 @@ using PooledArrays, SparseArrays, Statistics, WeakRefStrings, TableTraits,
     TableTraitsUtils, IteratorInterfaceExtensions
 
 using OnlineStatsBase: OnlineStat, fit!
-using DataValues: DataValues, DataValue, NA, isna, DataValueArray
-# import DataValues: dropna
 import Tables
 
 import Base:

@@ -12,3 +12,9 @@
 - **(feature)** - `collect_columns` function to collect an iterator of tuples to `Columns` object. (#135)
 - **(bugfix)** use `collect_columns` to implement `map`, `groupreduce` and `groupjoin` (#150) to not depend on type inference. Works in many more cases.
 - **(feature)** - `view` works with logical indexes now (#134)
+
+
+## v0.9.0
+
+- **(breaking)** Switch from DataValues to Missing.  Related: `dropna` has been changed to `dropmissing`.
+- **(breaking)** Depend on OnlineStatsBase rather than OnlineStats. 
