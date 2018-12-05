@@ -49,13 +49,14 @@ function unstack(t::D, by = pkeynames(t); variable = :variable, value = :value) 
     S = eltype(colnames(t))
     cols = S.(union(columns(t, variable)))
     T = eltype(columns(t, value))
-    _unstack(D, T, pkeys(tgrp), columns(tgrp, value), cols)
+    _unstack(D, Missing <: T ? nonmissing(T) : T, pkeys(tgrp), columns(tgrp, value), cols)
 end
 
 function _unstack(::Type{D}, ::Type{T}, key, val, cols::AbstractVector{S}) where {D <:Dataset, T, S}
-    dest_val = Columns((Vector{T}(undef, length(val)) for i in cols)...; names=cols)
+    dest_val = Columns((Array{Union{T, Missing}}(undef, length(val)) for i in cols)...; names = cols)
     for (i, el) in enumerate(val)
         for (k, v) in el
+            ismissing(columns(dest_val, S(k))[i]) || error("Repeated values with same label are not allowed")
             columns(dest_val, S(k))[i] = v
         end
     end

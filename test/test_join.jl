@@ -17,7 +17,7 @@
     end
     @testset "how = :outer" begin 
         x_outer = union(1:10, 1:2:20)
-        y_outer = vcat(y, fill(nothing, 5))
+        y_outer = vcat(y, fill(missing, 5))
         z_left = Union{Float64,Missing}[missing for i in 1:10]
         z_left[1:2:9] = z[1:5]
         z_outer = vcat(z_left, z[6:10])

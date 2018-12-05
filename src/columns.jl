@@ -182,9 +182,15 @@ function ==(x::Columns, y::Columns)
     fieldnames(eltype(x)) == fieldnames(eltype(y)) || return false
     length(y) == length(x) || return false
     for (xi, yi) in zip(x.columns, y.columns)
-        allequal = (xi == yi) 
-        ismissing(allequal) && return false
-        allequal || return false
+        for (xij, yij) in zip(xi, yi)
+            eq = xij == yij
+            if ismissing(eq)
+                ismissing(xij) && ismissing(yij) || return false
+            else
+
+                eq || return false
+            end
+        end
     end
     return true
 end
