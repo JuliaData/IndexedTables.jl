@@ -93,7 +93,7 @@ available selection options and syntax.
 """
 function columns end
 
-columns(c) = error("no columns defined for $(typeof(c))")
+# columns(c) = error("no columns defined for $(typeof(c))")
 columns(c::Columns) = c.columns
 
 # Array-like API
@@ -177,27 +177,7 @@ resize!(I::Columns, n::Int) = (foreach(c->resize!(c,n), I.columns); I)
 
 _sizehint!(c::Columns, n::Integer) = (foreach(c->_sizehint!(c,n), c.columns); c)
 
-function ==(x::Columns, y::Columns)
-    length(y.columns) == length(x.columns) || return false
-    fieldnames(eltype(x)) == fieldnames(eltype(y)) || return false
-    length(y) == length(x) || return false
-    for (xi, yi) in zip(x.columns, y.columns)
-        for (xij, yij) in zip(xi, yi)
-            eq = xij == yij
-            if ismissing(eq)
-                ismissing(xij) && ismissing(yij) || return false
-            else
-
-                eq || return false
-            end
-        end
-    end
-    return true
-end
-
-==(x::Columns{<:Pair}, y::Columns) = false
-==(x::Columns, y::Columns{<:Pair}) = false
-==(x::Columns{<:Pair}, y::Columns{<:Pair}) = (x.columns.first == y.columns.first) && (x.columns.second == y.columns.second)
+==(x::Columns, y::Columns) = isequal(x, y)
 
 function _strip_pair(c::Columns{<:Pair})
     f, s = map(columns, c.columns)
@@ -367,7 +347,7 @@ end
 # map
 
 """
-`map_rows(f, c...)`
+    map_rows(f, c...)
 
 Transform collection `c` by applying `f` to each element. For multiple collection arguments, apply `f`
 elementwise. Collect output as `Columns` if `f` returns

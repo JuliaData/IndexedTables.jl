@@ -1,5 +1,3 @@
-using IndexedTables: collect_columns_flattened
-
 @testset "collectnamedtuples" begin
     v = [(a = 1, b = 2), (a = 1, b = 3)]
     @test collect_columns(v) == Columns((a = Int[1, 1], b = Int[2, 3]))
@@ -95,9 +93,9 @@ end
     tuple_itr = (exp(i) for i in itr)
     @test collect_columns(tuple_itr) == Float64[]
 
-    # t = collect_columns((a = i,) for i in (1, DataValue{Int}(), 3))
-    # @test columns(t, 1) isa DataValueArray
-    # @test isequal(columns(t, 1), DataValueArray([1, DataValue{Int}(), 3]))
+    t = collect_columns((a = i,) for i in (1, missing, 3))
+    @test columns(t, 1) isa Vector{Union{Missing, Int}}
+    @test isequal(columns(t, 1), [1, missing, 3])
 end
 
 @testset "collectpairs" begin

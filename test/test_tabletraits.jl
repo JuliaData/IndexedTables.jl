@@ -1,7 +1,3 @@
-using IndexedTables
-using TableTraits, IteratorInterfaceExtensions
-using Test
-
 @testset "TableTraits" begin
 
 source_nds = NDSparse(Columns(a=[1,2,3]), Columns(b=[1.,2.,3.], c=["A","B","C"]))

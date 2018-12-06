@@ -1,5 +1,4 @@
-using Test, Random, Dates, IndexedTables, PooledArrays, SparseArrays, WeakRefStrings, LinearAlgebra, Statistics
-import IndexedTables: update!, pkeynames, pkeys, excludecols, sortpermby, primaryperm, best_perm_estimate, hascolumns, select
+
 
     c = Columns([1,1,1,2,2], [1,2,4,3,5])
     d = Columns([1,1,2,2,2], [1,3,1,4,5])
@@ -147,7 +146,7 @@ end
     @test collect(Base.pairs(a)) == [(1,1)=>10, (2,2)=>9, (2,3)=>8, (2,4)=>7]
     @test first(Base.pairs(a[:, 3])) == ((2,)=>8)
 
-    update!(x->x+10, a, 2, :)
+    IndexedTables.update!(x->x+10, a, 2, :)
     @test a == NDSparse([1,2,2,2], [1,2,3,4], [10,19,18,17])
 
     a[2,2:3] = 77
