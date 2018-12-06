@@ -124,8 +124,8 @@ end
     @test collect_columns(v) == Columns(Columns((a = Int[],))=>Columns((b = String[],)))
     @test eltype(collect_columns(v)) == Pair{NamedTuple{(:a,), Tuple{Int}}, NamedTuple{(:b,), Tuple{String}}}
 
-    # t = table(collect_columns((b = 1,) => (a = i,) for i in (2, DataValue{Int}(), 3)))
-    # @test t == table((b = [1,1,1], a = [2, DataValue{Int}(), 3]), pkey = :b)
+    t = table(collect_columns((b = 1,) => (a = i,) for i in (2, missing, 3)))
+    @test t == table((b = [1,1,1], a = [2, missing, 3]), pkey = :b)
 end
 
 @testset "issubtype" begin
