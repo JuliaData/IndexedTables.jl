@@ -23,7 +23,7 @@ export
     Keys, NDSparse, NextTable, Not,
     # functions
     aggregate!, antijoin, asofjoin, collect_columns, colnames,
-    column, columns, convertdim, dimlabels, dropna, flatten, flush!, groupby, groupjoin,
+    column, columns, convertdim, dimlabels, flatten, flush!, groupby, groupjoin,
     groupreduce, innerjoin, insertafter!, insertbefore!, insertcol, insertcolafter, 
     insertcolbefore, leftgroupjoin, leftjoin, map_rows, naturalgroupjoin, naturaljoin,
     ncols, ndsparse, outergroupjoin, outerjoin, pkeynames, pkeys, popcol, pushcol,
