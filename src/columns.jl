@@ -93,7 +93,6 @@ available selection options and syntax.
 """
 function columns end
 
-# columns(c) = error("no columns defined for $(typeof(c))")
 columns(c::Columns) = c.columns
 
 # Array-like API

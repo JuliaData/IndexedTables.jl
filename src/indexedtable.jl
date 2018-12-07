@@ -371,8 +371,9 @@ Names of all columns in `itr` except `cols`. `itr` can be any of
 """
 excludecols(t, cols) = excludecols(t, (cols,))
 excludecols(t, cols::SpecialSelector) = excludecols(t, lowerselection(t, cols))
-excludecols(t, cols::Tuple) = Tuple(setdiff(1:length(colnames(t)), colindex.(Ref(t), cols)))
-
+function excludecols(t, cols::Tuple) 
+    Tuple(setdiff(1:length(colnames(t)), map(x -> colindex(t, x), cols)))
+end
 
 """
     convert(IndexedTable, pkeys, vals; kwargs...)
