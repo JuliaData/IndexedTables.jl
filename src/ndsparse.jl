@@ -189,7 +189,7 @@ end
 
 function (==)(a::NDSparse, b::NDSparse)
     flush!(a); flush!(b)
-    return a.index == b.index && a.data == b.data
+    return isequal(a.index, b.index) && isequal(a.data, b.data)
 end
 
 function Base.isequal(a::NDSparse, b::NDSparse)

@@ -759,6 +759,8 @@ end
     @test select(t, Between(:x, :z)) == select(t, (:x, :y, :z))
     @test select(t, i -> i == :y) == select(t, (:y,))
     @test select(t, r"x|z") == select(t, (:x, :z))
+    @test select(t, Int) == select(t, (:x, :z))
+    @test select(t, String) == select(t, (:y,))
 
     @test rows(t, Keys()) == rows(t, (:x,))
     @test rows(t, (Keys(), :y)) == rows(t, ((:x,), :y))

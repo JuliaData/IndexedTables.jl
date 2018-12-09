@@ -427,7 +427,7 @@ struct Between{T1 <: Union{Int, Symbol}, T2 <: Union{Int, Symbol}}
     last::T2
 end
 
-const SpecialSelector = Union{Not, All, Keys, Between, Function, Regex}
+const SpecialSelector = Union{Not, All, Keys, Between, Function, Regex, Type}
 
 hascolumns(t, s) = true
 hascolumns(t, s::Symbol) = s in colnames(t)
@@ -436,6 +436,7 @@ hascolumns(t, s::Tuple) = all(hascolumns(t, x) for x in s)
 hascolumns(t, s::Not) = hascolumns(t, s.cols)
 hascolumns(t, s::Between) = hascolumns(t, s.first) && hascolumns(t, s.last)
 hascolumns(t, s::All) = all(hascolumns(t, x) for x in s.cols)
+hascolumns(t, s::Type) = any(x -> eltype(x) <: s, columns(t))
 
 lowerselection(t, s)                     = s
 lowerselection(t, s::Union{Int, Symbol}) = colindex(t, s)
@@ -445,6 +446,7 @@ lowerselection(t, s::Keys)               = lowerselection(t, IndexedTables.pkeyn
 lowerselection(t, s::Between)            = Tuple(colindex(t, s.first):colindex(t, s.last))
 lowerselection(t, s::Function)           = colindex(t, Tuple(filter(s, collect(colnames(t)))))
 lowerselection(t, s::Regex)              = lowerselection(t, x -> occursin(s, string(x)))
+lowerselection(t, s::Type)               = Tuple(findall(x -> eltype(x) <: s, columns(t)))
 
 function lowerselection(t, s::All)
     s.cols == () && return lowerselection(t, valuenames(t))
