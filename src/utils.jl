@@ -329,8 +329,6 @@ end
 compact_mem(x) = x
 compact_mem(x::StringArray{String}) = convert(StringArray{WeakRefString{UInt8}}, x)
 
-nonmissing(::Type{Union{Missing, T}}) where T = T
-
 function getsubfields(n::NamedTuple, fields)
     fns = fieldnames(typeof(n))
     NamedTuple{(fns[fields]...,)}(n)

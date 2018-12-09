@@ -141,7 +141,7 @@ function _non_missing(t::Union{Columns, IndexedTable}, sel=(colnames(t)...,))
         x = rows(t, c)
         if Missing <: eltype(x)
             filt_by_col!(!ismissing, x, indxs)
-            y = Vector{nonmissing(eltype(x))}(undef, length(x))
+            y = Vector{Base.nonmissingtype(eltype(x))}(undef, length(x))
             y[indxs] = x[indxs]
             d[key] = y
         else
