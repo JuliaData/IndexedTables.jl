@@ -28,7 +28,7 @@ export
     insertcolbefore, leftgroupjoin, leftjoin, map_rows, naturalgroupjoin, naturaljoin,
     ncols, ndsparse, outergroupjoin, outerjoin, pkeynames, pkeys, popcol, pushcol,
     reducedim_vec, reindex, renamecol, rows, select, selectkeys, selectvalues, setcol,
-    stack, summarize, table, unstack, update!, where, dropmissing
+    stack, summarize, table, unstack, update!, where, dropmissing, dropna
 
 const Tup = Union{Tuple,NamedTuple}
 const DimName = Union{Int,Symbol}
