@@ -170,7 +170,6 @@ to `Array{Int}`.
 function dropmissing(t::Dataset, by=colnames(t))
     subtable(_non_missing(t, by)...)
 end
-dropmissing(v::AbstractVector{Union{T,Missing}}) where {T} = Vector{T}(filter(!ismissing, v))
 
 @deprecate dropna dropmissing
 
