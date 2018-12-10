@@ -176,7 +176,7 @@ resize!(I::Columns, n::Int) = (foreach(c->resize!(c,n), I.columns); I)
 
 _sizehint!(c::Columns, n::Integer) = (foreach(c->_sizehint!(c,n), c.columns); c)
 
-==(x::Columns, y::Columns) = isequal(x, y)
+==(x::Columns, y::Columns) = x.columns == y.columns
 
 function _strip_pair(c::Columns{<:Pair})
     f, s = map(columns, c.columns)

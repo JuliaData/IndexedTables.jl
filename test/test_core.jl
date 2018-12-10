@@ -637,11 +637,18 @@ end
     @test map(t -> (1,2), table(Int[])) == table(Int[], Int[])
 end
 
+@testset "Original Join Testset" begin
     l = table([1, 1, 2, 2], [1, 2, 1, 2], [1, 2, 3, 4], names=[:a, :b, :c], pkey=(:a, :b))
     r = table([0, 1, 1, 3], [1, 1, 2, 2], [1, 2, 3, 4], names=[:a, :b, :d], pkey=(:a, :b))
     @test join(l, r) == table([1, 1], [1, 2], [1, 2], [2, 3], names=Symbol[:a, :b, :c, :d])
-    @test join(l, r, how=:left) == table([1, 1, 2, 2], [1, 2, 1, 2], [1, 2, 3, 4], [2, 3, missing, missing], names=Symbol[:a, :b, :c, :d])
-    @test isequal(join(l, r, how=:outer), table([0, 1, 1, 2, 2, 3], [1, 1, 2, 1, 2, 2], [missing, 1, 2, 3, 4, missing], [1, 2, 3, missing, missing, 4], names=Symbol[:a, :b, :c, :d]))
+    @test isequal(
+        join(l, r, how=:left),
+        table((a=[1, 1, 2, 2], b=[1, 2, 1, 2], c=[1, 2, 3, 4], d=[2, 3, missing, missing]))
+    )
+    @test isequal(
+        join(l, r, how=:outer), 
+        table((a=[0, 1, 1, 2, 2, 3], b=[1, 1, 2, 1, 2, 2], c=[missing, 1, 2, 3, 4, missing], d=[1, 2, 3, missing, missing, 4]))
+    )
     a = table([1],[2], names=[:x,:y])
     b = table([1],[3], names=[:a,:b])
     @test join(a, b, lkey=:x,rkey=:a) == table([1],[2],[3], names=[:x,:y,:b]) # issue JuliaDB.jl#105
@@ -654,7 +661,7 @@ end
 
 
     t = table(["a","b","c","a"], [1,2,3,4]); t1 = table(["a","b"], [1,2])
-    @test leftjoin(t,t1,lkey=1,rkey=1) == table(["a","a","b","c"], [1,4,2,3], [1,1,2,missing])
+    @test isequal(leftjoin(t,t1,lkey=1,rkey=1), table(["a","a","b","c"], [1,4,2,3], [1,1,2,missing]))
 
     t1 = table([1,2,3,4], [5,6,7,8], pkey=[1])
     t2 = table([0,3,4,5], [5,6,7,8], pkey=[1])
@@ -684,7 +691,10 @@ end
     )
 
     # null instead of missing row
-    @test isequal(leftjoin(+, t1, t2, lselect=2, rselect=2), table([1,2,3,4], [missing, missing, 13, 15]))
+    @test isequal(
+        leftjoin(+, t1, t2, lselect=2, rselect=2), 
+        table([1,2,3,4], [missing, missing, 13, 15])
+    )
 
     @test isequal(leftjoin(t1, t2), table([1,2,3,4], [5,6,7,8], [missing, missing, 6,7]))
     @test isequal(leftjoin(+, t1, t3, lselect=2, rselect=2), table([1,2,3,4,4],[missing,missing,13,15,16]))
@@ -708,7 +718,7 @@ end
     @test isequal(outerjoin(t1, t2), table([0,1,2,3,4,5], [missing, 5,6,7,8,missing], [5,missing,missing,6,7,8]))
     @test isequal(outerjoin(+, t1, t3, lselect=2, rselect=2), table([0,1,2,3,4,4],[missing,missing,missing,13,15,16]))
     @test isequal(outerjoin(+, t3, t4, lselect=2, rselect=2), table([0,1,3,4,4,4,4], [missing, missing, 12,14,15,15,16]))
-
+end
 @testset "groupjoin" begin
     l = table([1, 1, 1, 2], [1, 2, 2, 1], [1, 2, 3, 4], names=[:a, :b, :c], pkey=(:a, :b))
     r = table([0, 1, 1, 2], [1, 2, 2, 1], [1, 2, 3, 4], names=[:a, :b, :d], pkey=(:a, :b))
@@ -798,13 +808,12 @@ end
     @test hascolumns(t, i -> i == :y)
     @test hascolumns(t, r"x|z")
 end
-
+@testset "dropmissing" begin
     t = table([0.1, 0.5, missing, 0.7], [2, missing, 4, 5], [missing, 6, missing, 7], names=[:t, :x, :y])
     @test dropmissing(t) == table([0.7], [5], [7], names=Symbol[:t, :x, :y])
     @test isequal(dropmissing(t, :y), table([0.5, 0.7], [missing, 5], [6, 7], names=Symbol[:t, :x, :y]))
-    t1 = dropmissing(t, (:t, :x))
     @test typeof(column(dropmissing(t, :x), :x)) == Array{Int,1}
-
+end
 @testset "filter" begin
     t = table(["a", "b", "c"], [0.01, 0.05, 0.07], [2, 1, 0], names=[:n, :t, :x])
     @test filter((p->p.x / p.t < 100), t) == table(["b", "c"], [0.05, 0.07], [1, 0], names=Symbol[:n, :t, :x])
