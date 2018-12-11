@@ -343,12 +343,12 @@ function Base.join(f, left::Dataset, right::Dataset;
         lnulls[lnull_idx] .= true
         lout = if lout isa Columns
             Columns(map(lout.columns) do col
-                v = Vector{Union{Missing,eltype(col)}}(col)
+                v = convert(Vector{Union{Missing, eltype(col)}}, col)
                 v[lnull_idx] .= missing
                 v
             end)
         else
-            v = Vector{Union{Missing, eltype(lout)}}(lout)
+            v = convert(Vector{Union{Missing, eltype(lout)}}, lout)
             v[lnull_idx] .= missing
             v
         end
@@ -360,12 +360,12 @@ function Base.join(f, left::Dataset, right::Dataset;
         rnulls[rnull_idx] .= true
         rout = if rout isa Columns
             Columns(map(rout.columns) do col
-                v = Vector{Union{Missing,eltype(col)}}(col)
+                v = convert(Vector{Union{Missing, eltype(col)}}, col)
                 v[rnull_idx] .= missing
                 v
             end)
         else
-            v = Vector{Union{Missing,eltype(rout)}}(rout)
+            v = convert(Vector{Union{Missing, eltype(rout)}}, rout)
             v[rnull_idx] .= missing
             v
         end
