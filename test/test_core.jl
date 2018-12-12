@@ -872,6 +872,9 @@ end
 @testset "broadcast" begin
     a = ndsparse(([1, 1, 2, 2], [1, 2, 1, 2]), [1, 2, 3, 4])
     b = ndsparse([1, 2], [1 / 1, 1 / 2])
+    @test broadcast(identity, a) == a
+    @test broadcast(sqrt, a) == ndsparse(([1, 1, 2, 2], [1, 2, 1, 2]), [1.0, √2, √3, √4])
+    @test broadcast(sqrt, b) == ndsparse([1, 2], [1.0, √(1/2)])
     @test broadcast(*, a, b) == ndsparse(([1, 1, 2, 2], [1, 2, 1, 2]), [1.0, 2.0, 1.5, 2.0])
     @test a .* b == ndsparse(([1, 1, 2, 2], [1, 2, 1, 2]), [1.0, 2.0, 1.5, 2.0])
     @test broadcast(*, a, b, dimmap=(0, 1)) == ndsparse(([1, 1, 2, 2], [1, 2, 1, 2]), [1.0, 1.0, 3.0, 2.0])

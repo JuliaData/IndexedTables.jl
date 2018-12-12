@@ -849,9 +849,11 @@ function broadcast(f::Function, A::NDSparse, B::NDSparse; dimmap=nothing)
     end
 end
 
+broadcast(f::Function, x::NDSparse) = NDSparse(x.index, broadcast(f, x.data), presorted=true)
 broadcast(f::Function, x::NDSparse, y) = NDSparse(x.index, broadcast(f, x.data, y), presorted=true)
 broadcast(f::Function, y, x::NDSparse) = NDSparse(x.index, broadcast(f, y, x.data), presorted=true)
 
+Broadcast.broadcasted(f::Function, A::NDSparse) = broadcast(f, A)
 Broadcast.broadcasted(f::Function, A::NDSparse, B::NDSparse) = broadcast(f, A, B)
 Broadcast.broadcasted(f::Function, A, B::NDSparse) = broadcast(f, A, B)
 Broadcast.broadcasted(f::Function, A::NDSparse, B) = broadcast(f, A, B)
