@@ -1,5 +1,3 @@
-using StructArrays: StructVector, StructArray, foreachfield, fieldarrays, collect_structarray
-
 # to get rid of eventually
 const Columns = StructVector
 # There is a StackOverflow bug in this case in Base.unaliascopy
