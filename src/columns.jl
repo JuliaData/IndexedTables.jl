@@ -1,47 +1,9 @@
-"""
-Wrapper around a (named) tuple of Vectors that acts like a Vector of (named) tuples.
+using StructArrays: StructVector, StructArray, foreachfield, fieldarrays, collect_structarray
 
-# Fields:
-
-- `columns`: a (named) tuple of Vectors. Also `columns(x)`
-"""
-struct Columns{D<:Union{Tup, Pair}, C<:Union{Tup, Pair}} <: AbstractVector{D}
-    columns::C
-
-    function Columns{D,C}(c) where {D<:Tup,C<:Tup}
-        if !isempty(c)
-            n = length(c[1])
-            for i = 2:length(c)
-                length(c[i]) == n || error("all columns must have same length")
-            end
-        end
-        new{D,C}(c)
-    end
-
-    function Columns{D,C}(c::Pair) where {D<:Pair,C<:Pair{<:AbstractVector, <:AbstractVector}}
-        length(c.first) == length(c.second) || error("all columns must have same length")
-        new{D,C}(c)
-    end
-end
-
-function Columns(cols::AbstractVector...; names::Union{Vector,Tuple{Vararg{Any}},Nothing}=nothing)
-    if isa(names, Nothing) || any(x->!(x isa Symbol), names)
-        Columns{eltypes(typeof(cols)),typeof(cols)}(cols)
-    else
-        dt = NamedTuple{(names...,), Tuple{map(eltype, cols)...}}
-        ct = NamedTuple{(names...,), Tuple{map(typeof, cols)...}}
-        Columns{dt,ct}(ct((cols...,)))
-    end
-end
-
-function Columns(; kws...)
-    Columns(values(kws)..., names=collect(keys(kws)))
-end
-
-Columns(c::Union{Tup, Pair}) = Columns{eltypes(typeof(c)),typeof(c)}(c)
-
+# to get rid of eventually
+const Columns = StructVector
 # There is a StackOverflow bug in this case in Base.unaliascopy
-Base.copy(c::Columns{<:Union{NamedTuple{(),Tuple{}}, Tuple{}}}) = c
+Base.copy(c::StructVector{<:Union{NamedTuple{(),Tuple{}}, Tuple{}}}) = c
 
 # IndexedTable-like API
 
@@ -69,8 +31,8 @@ function colnames end
 Base.@pure colnames(t::AbstractVector) = (1,)
 columns(v::AbstractVector) = v
 
-Base.@pure colnames(t::Columns) = fieldnames(eltype(t))
-Base.@pure colnames(t::Columns{<:Pair, <:Pair}) = colnames(t.columns.first) => colnames(t.columns.second)
+Base.@pure colnames(t::StructVector) = fieldnames(eltype(t))
+Base.@pure colnames(t::StructVector{<:Pair, <:Pair}) = colnames(t.first) => colnames(t.second)
 
 """
     columns(itr, select::Selection = All())
@@ -93,16 +55,9 @@ available selection options and syntax.
 """
 function columns end
 
-columns(c::Columns) = c.columns
-
-# Array-like API
-
-eltype(::Type{Columns{D,C}}) where {D,C} = D
-function length(c::Columns)
-    isempty(c.columns) ? 0 : length(c.columns[1])
-end
-length(c::Columns{<:Pair, <:Pair}) = length(c.columns.first)
-ndims(c::Columns) = 1
+columns(c::StructVector{<:Tuple}) = Tuple(fieldarrays(c))
+columns(c::StructVector{<:NamedTuple}) = fieldarrays(c)
+columns(c::StructVector{<:Pair}) = c.first => c.second
 
 """
     ncols(itr)
@@ -115,149 +70,19 @@ Returns the number of columns in `itr`.
     ncols(rows(([1,2,3],[4,5,6]))) == 2
 """
 function ncols end
-ncols(c::Columns) = fieldcount(typeof(c.columns))
-ncols(c::Columns{<:Pair, <:Pair}) = ncols(c.columns.first) => ncols(c.columns.second)
+ncols(c::StructVector) = fieldcount(fieldarrays(c))
+ncols(c::StructVector{<:Pair}) = ncols(c.first) => ncols(c.second)
 ncols(c::AbstractArray) = 1
 
-size(c::Columns) = (length(c),)
-Base.IndexStyle(::Type{<:Columns}) = IndexLinear()
-summary(c::Columns{D}) where {D<:Tuple} = "$(length(c))-element Columns{$D}"
+summary(c::StructVector{D}) where {D<:Tuple} = "$(length(c))-element StructVector{$D}"
 
-empty!(c::Columns) = (foreach(empty!, c.columns); c)
-empty!(c::Columns{<:Pair, <:Pair}) = (foreach(empty!, c.columns.first.columns); foreach(empty!, c.columns.second.columns); c)
+_sizehint!(c::StructVector, n::Integer) = (foreachfield(x->_sizehint!(x,n), c); c)
 
-function similar(c::Columns{D,C}) where {D,C}
-    cols = _map(similar, c.columns)
-    Columns{D,typeof(cols)}(cols)
-end
-
-function similar(c::Columns{D,C}, n::Integer) where {D,C}
-    cols = _map(a->similar(a,n), c.columns)
-    Columns{D,typeof(cols)}(cols)
-end
-
-function Base.similar(::Type{T}, n::Int)::T where {T<:Columns}
-    T_cols = T.parameters[2]
-    if T_cols <: Pair
-        return Columns(similar(T_cols.parameters[1], n) => similar(T_cols.parameters[2], n))
-    end
-    f = T_cols <: Tuple ? tuple : T_cols∘tuple
-    T(f(map(t->similar(t, n), fieldtypes(T_cols))...))
-end
-
-function convert(::Type{Columns}, x::AbstractArray{<:NTuple{N,Any}}) where N
-    eltypes = (eltype(x).parameters...,)
-    copyto!(Columns(map(t->Vector{t}(undef, length(x)), eltypes)), x)
-end
-
-function convert(::Type{Columns}, x::AbstractArray{<:NamedTuple{names, typs}}) where {names,typs}
-    eltypes = typs.parameters
-    copyto!(Columns(map(t->Vector{t}(undef, length(x)), eltypes)..., names=fieldnames(eltype(x))), x)
-end
-
-
-getindex(c::Columns{D}, i::Integer) where {D<:Tuple} = ith_all(i, c.columns)
-getindex(c::Columns{D}, i::Integer) where {D<:NamedTuple} = D(ith_all(i, c.columns))
-getindex(c::Columns{D}, i::Integer) where {D<:Pair} = getindex(c.columns.first, i) => getindex(c.columns.second, i)
-
-getindex(c::Columns, p::AbstractVector) = Columns(_map(c->c[p], c.columns))
-
-view(c::Columns, I) = Columns(_map(a->view(a, I), c.columns))
-
-@inline setindex!(I::Columns, r::Union{Tup, Pair}, i::Integer) = (foreach((c,v)->(c[i]=v), I.columns, r); I)
-
-@inline push!(I::Columns, r::Union{Tup, Pair}) = (foreach(push!, I.columns, r); I)
-
-append!(I::Columns, J::Columns) = (foreach(append!, I.columns, J.columns); I)
-
-copyto!(I::Columns, J::Columns) = (foreach(copyto!, I.columns, J.columns); I)
-
-resize!(I::Columns, n::Int) = (foreach(c->resize!(c,n), I.columns); I)
-
-_sizehint!(c::Columns, n::Integer) = (foreach(c->_sizehint!(c,n), c.columns); c)
-
-==(x::Columns, y::Columns) = x.columns == y.columns
-
-function _strip_pair(c::Columns{<:Pair})
-    f, s = map(columns, c.columns)
+function _strip_pair(c::StructVector{<:Pair})
+    f, s = map(columns, fieldarrays(c))
     (f isa AbstractVector) && (f = (f,))
     (s isa AbstractVector) && (s = (s,))
-    Columns(f..., s...)
-end
-
-function sortperm(c::Columns)
-    cols = c.columns
-    x = cols[1]
-    if (eltype(x) <: AbstractString && !(x isa PooledArray)) || length(cols) > 1
-        pa = PooledArray(compact_mem(x))
-        p = sortperm_fast(pa)
-    else
-        p = sortperm_fast(x)
-    end
-    if length(cols) > 1
-        y = cols[2]
-        refine_perm!(p, cols, 1, compact_mem(x), compact_mem(y), 1, length(x))
-    end
-    return p
-end
-
-sortperm(c::Columns{<:Pair}) = sortperm(_strip_pair(c))
-
-issorted(c::Columns) = issorted(1:length(c), lt=(x,y)->rowless(c, x, y))
-issorted(c::Columns{<:Pair}) = issorted(_strip_pair(c))
-
-# assuming x[p] is sorted, sort by remaining columns where x[p] is constant
-function refine_perm!(p, cols, c, x, y, lo, hi)
-    temp = similar(p, 0)
-    order = Base.Order.By(j->(@inbounds k=y[j]; k))
-    nc = length(cols)
-    i = lo
-    while i < hi
-        i1 = i+1
-        @inbounds while i1 <= hi && roweq(x, p[i1], p[i])
-            i1 += 1
-        end
-        i1 -= 1
-        if i1 > i
-            sort_sub_by!(p, i, i1, y, order, temp)
-            if c < nc-1
-                z = cols[c+2]
-                refine_perm!(p, cols, c+1, compact_mem(y), compact_mem(z), i, i1)
-            end
-        end
-        i = i1+1
-    end
-end
-
-function permute!(c::Columns, p::AbstractVector)
-    for v in c.columns
-        if isa(v, PooledArrays.PooledArray) || isa(v, StringArray{String})
-            permute!(v, p)
-        else
-            copyto!(v, v[p])
-        end
-    end
-    return c
-end
-permute!(c::Columns{<:Pair}, p::AbstractVector) = (permute!(c.columns.first, p); permute!(c.columns.second, p); c)
-sort!(c::Columns) = permute!(c, sortperm(c))
-sort(c::Columns) = c[sortperm(c)]
-
-function Base.vcat(c::Columns, cs::Columns...)
-    fns = map(fieldnames∘typeof, (map(x->x.columns, (c, cs...))))
-    f1 = fns[1]
-    for f2 in fns[2:end]
-        if f1 != f2
-            errfields = join(map(string, fns), ", ", " and ")
-            throw(ArgumentError("Cannot concatenate columns with fields $errfields"))
-        end
-    end
-    Columns(map(vcat, map(x->x.columns, (c,cs...))...))
-end
-
-function Base.vcat(c::Columns{<:Pair}, cs::Columns{<:Pair}...)
-    Columns(vcat(c.columns.first, (x.columns.first for x in cs)...) =>
-            vcat(c.columns.second, (x.columns.second for x in cs)...))
+    StructVector((f..., s...))
 end
 
 # fused indexing operations
@@ -273,18 +98,18 @@ end
 
 # row operations
 
-copyrow!(I::Columns, i, src) = foreach(c->copyelt!(c, i, src), I.columns)
-copyrow!(I::Columns, i, src::Columns, j) = foreach((c1,c2)->copyelt!(c1, i, c2, j), I.columns, src.columns)
+copyrow!(I::StructVector, i, src) = foreachfield(c->copyelt!(c, i, src), I)
+copyrow!(I::StructVector, i, src::StructVector, j) = foreachfield((c1,c2)->copyelt!(c1, i, c2, j), I, src)
 copyrow!(I::AbstractArray, i, src::AbstractArray, j) = (@inbounds I[i] = src[j])
-pushrow!(to::Columns, from::Columns, i) = foreach((a,b)->push!(a, b[i]), to.columns, from.columns)
+pushrow!(to::StructVector, from::StructVector, i) = foreachfield((a,b)->push!(a, b[i]), to, from)
 pushrow!(to::AbstractArray, from::AbstractArray, i) = push!(to, from[i])
 
-@generated function rowless(c::Columns{D,C}, i, j) where {D,C}
+@generated function rowless(c::StructVector{D,C}, i, j) where {D,C}
     N = fieldcount(C)
-    ex = :(cmpelts(getfield(c.columns,$N), i, j) < 0)
+    ex = :(cmpelts(getfield(fieldarrays(c),$N), i, j) < 0)
     for n in N-1:-1:1
         ex = quote
-            let d = cmpelts(getfield(c.columns,$n), i, j)
+            let d = cmpelts(getfield(fieldarrays(c),$n), i, j)
                 (d == 0) ? ($ex) : (d < 0)
             end
         end
@@ -292,11 +117,11 @@ pushrow!(to::AbstractArray, from::AbstractArray, i) = push!(to, from[i])
     ex
 end
 
-@generated function roweq(c::Columns{D,C}, i, j) where {D,C}
+@generated function roweq(c::StructVector{D,C}, i, j) where {D,C}
     N = fieldcount(C)
-    ex = :(cmpelts(getfield(c.columns,1), i, j) == 0)
+    ex = :(cmpelts(getfield(fieldarrays(c),1), i, j) == 0)
     for n in 2:N
-        ex = :(($ex) && (cmpelts(getfield(c.columns,$n), i, j)==0))
+        ex = :(($ex) && (cmpelts(getfield(fieldarrays(c),$n), i, j)==0))
     end
     ex
 end
@@ -305,12 +130,12 @@ end
 
 # uses number of columns from `d`, assuming `c` has more or equal
 # dimensions, for broadcast joins.
-@generated function rowcmp(c::Columns, i, d::Columns{D}, j) where D
+@generated function rowcmp(c::StructVector, i, d::StructVector{D}, j) where D
     N = fieldcount(D)
-    ex = :(cmp(getfield(c.columns,$N)[i], getfield(d.columns,$N)[j]))
+    ex = :(cmp(getfield(fieldarrays(c),$N)[i], getfield(fieldarrays(d),$N)[j]))
     for n in N-1:-1:1
         ex = quote
-            let k = cmp(getfield(c.columns,$n)[i], getfield(d.columns,$n)[j])
+            let k = cmp(getfield(fieldarrays(c),$n)[i], getfield(fieldarrays(d),$n)[j])
                 (k == 0) ? ($ex) : k
             end
         end
@@ -326,18 +151,18 @@ end
 # all columns are equal except left >= right in last column.
 # Could be generalized to some number of trailing columns, but I don't
 # know whether that has applications.
-@generated function row_asof(c::Columns{D,C}, i, d::Columns{D,C}, j) where {D,C}
+@generated function row_asof(c::StructVector{D,C}, i, d::StructVector{D,C}, j) where {D,C}
     N = length(C.parameters)
     if N == 1
-        ex = :(!isless(getfield(c.columns,1)[i], getfield(d.columns,1)[j]))
+        ex = :(!isless(getfield(fieldarrays(c),1)[i], getfield(fieldarrays(d),1)[j]))
     else
-        ex = :(isequal(getfield(c.columns,1)[i], getfield(d.columns,1)[j]))
+        ex = :(isequal(getfield(fieldarrays(c),1)[i], getfield(fieldarrays(d),1)[j]))
     end
     for n in 2:N
         if N == n
-            ex = :(($ex) && !isless(getfield(c.columns,$n)[i], getfield(d.columns,$n)[j]))
+            ex = :(($ex) && !isless(getfield(fieldarrays(c),$n)[i], getfield(fieldarrays(d),$n)[j]))
         else
-            ex = :(($ex) && isequal(getfield(c.columns,$n)[i], getfield(d.columns,$n)[j]))
+            ex = :(($ex) && isequal(getfield(fieldarrays(c),$n)[i], getfield(fieldarrays(d),$n)[j]))
         end
     end
     ex
@@ -357,11 +182,11 @@ elementwise. Collect output as `Columns` if `f` returns
     map_rows(i -> (exp = exp(i), log = log(i)), 1:5)
 """
 function map_rows(f, iters...)
-    collect_columns(f(i...) for i in zip(iters...))
+    collect_structarray(f(i...) for i in zip(iters...))
 end
 
 # 1-arg case
-map_rows(f, iter) = collect_columns(f(i) for i in iter)
+map_rows(f, iter) = collect_structarray(f(i) for i in iter)
 
 ## Special selectors to simplify column selector
 
@@ -496,8 +321,8 @@ end
 column(c, x) = columns(c)[colindex(c, x)]
 
 # optimized method
-@inline function column(c::Columns, x::Union{Int, Symbol})
-    getfield(c.columns, x)
+@inline function column(c::StructVector, x::Union{Int, Symbol})
+    getfield(fieldarrays(c), x)
 end
 
 column(t, a::AbstractArray) = a
@@ -568,11 +393,11 @@ the [`select`](@ref) function for selection options and syntax.
 function rows end
 
 rows(x::AbstractVector) = x
-rows(cols::Tup) = Columns(cols)
+rows(cols::Tup) = StructVector(cols)
 
 rows(t, which...) = rows(columns(t, which...))
 
-_cols_tuple(xs::Columns) = columns(xs)
+_cols_tuple(xs::StructVector) = columns(xs)
 _cols_tuple(xs::AbstractArray) = (xs,)
 concat_cols(xs, ys) = rows(concat_tup(_cols_tuple(xs), _cols_tuple(ys)))
 
@@ -602,8 +427,15 @@ function ColDict(t; copy=nothing)
     ColDict(Int[], t, convert(Array{Any}, collect(cnames)), Any[columns(t)...], copy)
 end
 
-function Base.getindex(d::ColDict{<:Columns})
-    Columns(d.columns...; names=d.names)
+function structvector_columnsnames(cols::AbstractVector...; names = Symbol[])
+    if all(t -> isa(t, Symbol), names) && length(names) == length(cols)
+        StructVector(NamedTuple{Tuple(names)}(cols))
+    else
+        StructVector(cols)
+    end
+end
+function Base.getindex(d::ColDict{<:StructVector})
+    structvector_columnsnames(d.columns; names=d.names)
 end
 
 Base.getindex(d::ColDict, key) = rows(d[], key)
@@ -934,4 +766,4 @@ end
 
 ### utils
 
-compact_mem(x::Columns) = Columns(map(compact_mem, columns(x)))
+compact_mem(x::StructVector) = StructVector(map(compact_mem, columns(x)))
