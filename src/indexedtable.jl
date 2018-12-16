@@ -384,12 +384,12 @@ keyword arguments will be forwarded to [`table`](@ref) constructor.
 # Example
     convert(IndexedTable, Columns(x=[1,2],y=[3,4]), Columns(z=[1,2]), presorted=true)
 """
-function convert(::Type{IndexedTable}, key, val; kwargs...)
+function convert(::Type{IndexedTable}, key, val; pkey = (), kwargs...)
     cs = concat_cols(key, val)
-    table(cs, pkey=[1:ncols(key);]; kwargs...)
+    table(cs; pkey=Tuple(1:ncols(key)), kwargs...)
 end
 
-convert(T::Type{IndexedTable}, c::Columns{<:Pair}; kwargs...) = convert(T, c.columns.first, c.columns.second; kwargs...)
+convert(T::Type{IndexedTable}, c::Columns{<:Pair}; kwargs...) = convert(T, c.first, c.second; kwargs...)
 # showing
 
 global show_compact_when_wide = true

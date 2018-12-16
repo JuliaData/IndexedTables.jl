@@ -68,7 +68,7 @@ Returns the number of columns in `itr`.
     ncols(rows(([1,2,3],[4,5,6]))) == 2
 """
 function ncols end
-ncols(c::StructVector) = fieldcount(fieldarrays(c))
+ncols(c::StructVector{T, C}) where {T, C} = fieldcount(C)
 ncols(c::StructVector{<:Pair}) = ncols(c.first) => ncols(c.second)
 ncols(c::AbstractArray) = 1
 
