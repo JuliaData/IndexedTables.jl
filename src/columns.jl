@@ -1,7 +1,7 @@
 # to get rid of eventually
 const Columns = StructVector
 # There is a StackOverflow bug in this case in Base.unaliascopy
-Base.copy(c::StructVector{<:Union{NamedTuple{(),Tuple{}}, Tuple{}}}) = c
+Base.copy(c::Columns{<:Union{NamedTuple{(),Tuple{}}, Tuple{}}}) = c
 
 # IndexedTable-like API
 
@@ -29,8 +29,8 @@ function colnames end
 Base.@pure colnames(t::AbstractVector) = (1,)
 columns(v::AbstractVector) = v
 
-Base.@pure colnames(t::StructVector) = fieldnames(eltype(t))
-Base.@pure colnames(t::StructVector{<:Pair}) = colnames(t.first) => colnames(t.second)
+Base.@pure colnames(t::Columns) = fieldnames(eltype(t))
+Base.@pure colnames(t::Columns{<:Pair}) = colnames(t.first) => colnames(t.second)
 
 """
     columns(itr, select::Selection = All())
@@ -53,9 +53,9 @@ available selection options and syntax.
 """
 function columns end
 
-columns(c::StructVector{<:Tuple}) = Tuple(fieldarrays(c))
-columns(c::StructVector{<:NamedTuple}) = fieldarrays(c)
-columns(c::StructVector{<:Pair}) = c.first => c.second
+columns(c::Columns{<:Tuple}) = Tuple(fieldarrays(c))
+columns(c::Columns{<:NamedTuple}) = fieldarrays(c)
+columns(c::Columns{<:Pair}) = c.first => c.second
 
 """
     ncols(itr)
@@ -68,19 +68,19 @@ Returns the number of columns in `itr`.
     ncols(rows(([1,2,3],[4,5,6]))) == 2
 """
 function ncols end
-ncols(c::StructVector{T, C}) where {T, C} = fieldcount(C)
-ncols(c::StructVector{<:Pair}) = ncols(c.first) => ncols(c.second)
+ncols(c::Columns{T, C}) where {T, C} = fieldcount(C)
+ncols(c::Columns{<:Pair}) = ncols(c.first) => ncols(c.second)
 ncols(c::AbstractArray) = 1
 
-summary(c::StructVector{D}) where {D<:Tuple} = "$(length(c))-element StructVector{$D}"
+summary(c::Columns{D}) where {D<:Tuple} = "$(length(c))-element Columns{$D}"
 
-_sizehint!(c::StructVector, n::Integer) = (foreachfield(x->_sizehint!(x,n), c); c)
+_sizehint!(c::Columns, n::Integer) = (foreachfield(x->_sizehint!(x,n), c); c)
 
-function _strip_pair(c::StructVector{<:Pair})
+function _strip_pair(c::Columns{<:Pair})
     f, s = map(columns, fieldarrays(c))
     (f isa AbstractVector) && (f = (f,))
     (s isa AbstractVector) && (s = (s,))
-    StructVector((f..., s...))
+    Columns((f..., s...))
 end
 
 # fused indexing operations
@@ -96,13 +96,13 @@ end
 
 # row operations
 
-copyrow!(I::StructVector, i, src) = foreachfield(c->copyelt!(c, i, src), I)
-copyrow!(I::StructVector, i, src::StructVector, j) = foreachfield((c1,c2)->copyelt!(c1, i, c2, j), I, src)
+copyrow!(I::Columns, i, src) = foreachfield(c->copyelt!(c, i, src), I)
+copyrow!(I::Columns, i, src::Columns, j) = foreachfield((c1,c2)->copyelt!(c1, i, c2, j), I, src)
 copyrow!(I::AbstractArray, i, src::AbstractArray, j) = (@inbounds I[i] = src[j])
-pushrow!(to::StructVector, from::StructVector, i) = foreachfield((a,b)->push!(a, b[i]), to, from)
+pushrow!(to::Columns, from::Columns, i) = foreachfield((a,b)->push!(a, b[i]), to, from)
 pushrow!(to::AbstractArray, from::AbstractArray, i) = push!(to, from[i])
 
-@generated function rowless(c::StructVector{D,C}, i, j) where {D,C}
+@generated function rowless(c::Columns{D,C}, i, j) where {D,C}
     N = fieldcount(C)
     ex = :(cmpelts(getfield(fieldarrays(c),$N), i, j) < 0)
     for n in N-1:-1:1
@@ -115,7 +115,7 @@ pushrow!(to::AbstractArray, from::AbstractArray, i) = push!(to, from[i])
     ex
 end
 
-@generated function roweq(c::StructVector{D,C}, i, j) where {D,C}
+@generated function roweq(c::Columns{D,C}, i, j) where {D,C}
     N = fieldcount(C)
     ex = :(cmpelts(getfield(fieldarrays(c),1), i, j) == 0)
     for n in 2:N
@@ -128,7 +128,7 @@ end
 
 # uses number of columns from `d`, assuming `c` has more or equal
 # dimensions, for broadcast joins.
-@generated function rowcmp(c::StructVector, i, d::StructVector{D}, j) where D
+@generated function rowcmp(c::Columns, i, d::Columns{D}, j) where D
     N = fieldcount(D)
     ex = :(cmp(getfield(fieldarrays(c),$N)[i], getfield(fieldarrays(d),$N)[j]))
     for n in N-1:-1:1
@@ -149,7 +149,7 @@ end
 # all columns are equal except left >= right in last column.
 # Could be generalized to some number of trailing columns, but I don't
 # know whether that has applications.
-@generated function row_asof(c::StructVector{D,C}, i, d::StructVector{D,C}, j) where {D,C}
+@generated function row_asof(c::Columns{D,C}, i, d::Columns{D,C}, j) where {D,C}
     N = length(C.parameters)
     if N == 1
         ex = :(!isless(getfield(fieldarrays(c),1)[i], getfield(fieldarrays(d),1)[j]))
@@ -319,7 +319,7 @@ end
 column(c, x) = columns(c)[colindex(c, x)]
 
 # optimized method
-@inline function column(c::StructVector, x::Union{Int, Symbol})
+@inline function column(c::Columns, x::Union{Int, Symbol})
     getfield(fieldarrays(c), x)
 end
 
@@ -391,11 +391,11 @@ the [`select`](@ref) function for selection options and syntax.
 function rows end
 
 rows(x::AbstractVector) = x
-rows(cols::Tup) = StructVector(cols)
+rows(cols::Tup) = Columns(cols)
 
 rows(t, which...) = rows(columns(t, which...))
 
-_cols_tuple(xs::StructVector) = columns(xs)
+_cols_tuple(xs::Columns) = columns(xs)
 _cols_tuple(xs::AbstractArray) = (xs,)
 concat_cols(xs, ys) = rows(concat_tup(_cols_tuple(xs), _cols_tuple(ys)))
 
@@ -425,7 +425,7 @@ function ColDict(t; copy=nothing)
     ColDict(Int[], t, convert(Array{Any}, collect(cnames)), Any[columns(t)...], copy)
 end
 
-function Base.getindex(d::ColDict{<:StructVector})
+function Base.getindex(d::ColDict{<:Columns})
     Columns(d.columns...; names=d.names)
 end
 
@@ -757,4 +757,4 @@ end
 
 ### utils
 
-compact_mem(x::StructVector) = StructVector(map(compact_mem, columns(x)))
+compact_mem(x::Columns) = Columns(map(compact_mem, columns(x)))

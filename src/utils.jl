@@ -168,18 +168,18 @@ Base.@pure function arrayof(S)
     if T == Union{}
         Vector{Union{}}
     elseif T<:Tuple
-        StructVector{T, staticschema(Tuple{map(arrayof, fieldtypes(T))...})}
+        Columns{T, staticschema(Tuple{map(arrayof, fieldtypes(T))...})}
     elseif T<:NamedTuple
         if fieldcount(T) == 0
-            StructVector{NamedTuple{(), Tuple{}}, NamedTuple{(), Tuple{}}}
+            Columns{NamedTuple{(), Tuple{}}, NamedTuple{(), Tuple{}}}
         else
-            StructVector{T,NamedTuple{fieldnames(T), Tuple{map(arrayof, fieldtypes(T))...}}}
+            Columns{T,NamedTuple{fieldnames(T), Tuple{map(arrayof, fieldtypes(T))...}}}
         end
     elseif (T<:Union{Missing,String,WeakRefString} && Missing<:T) ||
         T<:Union{String, WeakRefString}
         StringArray{T, 1}
     elseif T<:Pair
-        StructVector{T, NamedTuple{(:first, :second), Tuple{map(arrayof, T.parameters)...}}}
+        Columns{T, NamedTuple{(:first, :second), Tuple{map(arrayof, T.parameters)...}}}
     else
         Vector{T}
     end
