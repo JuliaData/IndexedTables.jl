@@ -312,7 +312,7 @@ a default key of tuples `(1,):(n,)` is generated.
 """
 function pkeys(t::IndexedTable)
     if isempty(t.pkey)
-        Columns(Base.OneTo(length(t)))
+        Columns((Base.OneTo(length(t)),))
     else
         rows(t, pkeynames(t))
     end

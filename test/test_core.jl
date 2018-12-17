@@ -213,7 +213,7 @@ x = NDSparse(Columns(x = [1,2,3], y = [4,5,6], z = [7,8,9]), [10,11,12])
 
 # test showing
 
-@test repr(ndsparse(Columns([1]), Columns(()))) == """
+@test repr(ndsparse(Columns(([1],)), Columns(()))) == """
 1-d NDSparse with 1 values (0-tuples):
 1 │
 ──┼
@@ -284,7 +284,7 @@ function foo(n, data=ones(Int, 1))
     NDSparse(Columns(t([ones(Int, 1) for i=1:n]...)), data)
 end
 
-let x = Columns([6,5,4,3,2,2,1],[4,4,4,4,4,4,4],[1,2,3,4,5,6,7])
+let x = Columns(([6,5,4,3,2,2,1],[4,4,4,4,4,4,4],[1,2,3,4,5,6,7]))
     @test issorted(x[sortperm(x)])
 end
 
@@ -300,7 +300,7 @@ let hitemps = NDSparse([fill("New York",3); fill("Boston",3)],
                                                      [91,76])
 end
 
-    cs = Columns([1], [2])
+    cs = Columns(([1], [2]))
     t = table(cs)
     @test t.pkey == Int[]
     @test t.columns == [(1,2)]
@@ -309,22 +309,22 @@ end
     @test column(t.columns,1) === columns(cs)[1]
     t = table(cs, copy=false, pkey=[1])
     @test column(t.columns,1) === columns(cs)[1]
-    cs = Columns([2, 1], [3,4])
+    cs = Columns(([2, 1], [3,4]))
     t = table(cs, copy=false, pkey=[1])
     @test t.pkey == Int[1]
-    cs = Columns([2, 1], [3,4])
+    cs = Columns(([2, 1], [3,4]))
     t = table(cs, copy=false, pkey=[1])
     @test column(t.columns,1) === columns(cs)[1]
     @test t.pkey == Int[1]
     @test t.columns == [(1,4), (2,3)]
 
-    cs = Columns(x=[2, 1], y=[3,4])
+    cs = Columns((x=[2, 1], y=[3,4]))
     t = table(cs, copy=false, pkey=:x)
     @test column(t.columns,1) === columns(cs).x
     @test t.pkey == Int[1]
     @test t.columns == [(x=1,y=4), (x=2,y=3)]
 
-    cs = Columns([2, 1], [3,4])
+    cs = Columns(([2, 1], [3,4]))
     t = table(cs, presorted=true, pkey=[1])
     @test t.pkey == Int[1]
     @test t.columns == [(2,3), (1,4)]
@@ -333,7 +333,7 @@ end
     b = table([1, 2, 3], [4, 5, 6], names=[:x, :y])
     @test table(([1, 2, 3], [4, 5, 6])) == a
     @test table((x = [1, 2, 3], y = [4, 5, 6])) == b
-    @test table(Columns([1, 2, 3], [4, 5, 6])) == a
+    @test table(Columns(([1, 2, 3], [4, 5, 6]))) == a
     @test table(Columns(x=[1, 2, 3], y=[4, 5, 6])) == b
     @test b == table(b)
     b = table([2, 3, 1], [4, 5, 6], names=[:x, :y], pkey=:x)
@@ -355,15 +355,15 @@ end
     @test excludecols([1, 2, 3], (1,)) == ()
     @test convert(IndexedTable, Columns(x=[1, 2], y=[3, 4]), Columns(z=[1, 2]), presorted=true) == table([1, 2], [3, 4], [1, 2], names=Symbol[:x, :y, :z])
     @test colnames([1, 2, 3]) == (1,)
-    @test colnames(Columns([1, 2, 3], [3, 4, 5])) == (1, 2)
+    @test colnames(Columns(([1, 2, 3], [3, 4, 5]))) == (1, 2)
     @test colnames(table([1, 2, 3], [3, 4, 5])) == (1, 2)
     @test colnames(Columns(x=[1, 2, 3], y=[3, 4, 5])) == (:x, :y)
     @test colnames(table([1, 2, 3], [3, 4, 5], names=[:x, :y])) == (:x, :y)
     @test colnames(ndsparse(Columns(x=[1, 2, 3]), Columns(y=[3, 4, 5]))) == (:x, :y)
     @test colnames(ndsparse(Columns(x=[1, 2, 3]), [3, 4, 5])) == (:x, 2)
     @test colnames(ndsparse(Columns(x=[1, 2, 3]), [3, 4, 5])) == (:x, 2)
-    @test colnames(ndsparse(Columns([1, 2, 3], [4, 5, 6]), Columns(x=[6, 7, 8]))) == (1, 2, :x)
-    @test colnames(ndsparse(Columns(x=[1, 2, 3]), Columns([3, 4, 5], [6, 7, 8]))) == (:x, 2, 3)
+    @test colnames(ndsparse(Columns(([1, 2, 3], [4, 5, 6])), Columns(x=[6, 7, 8]))) == (1, 2, :x)
+    @test colnames(ndsparse(Columns(x=[1, 2, 3]), Columns(([3, 4, 5], [6, 7, 8])))) == (:x, 2, 3)
 
     x = ndsparse(["a", "b"], [3, 4])
     @test (keytype(x), eltype(x)) == (Tuple{String}, Int)
@@ -381,9 +381,9 @@ end
     x = ndsparse([1, 2], [3, 4])
     @test pkeynames(x) == (1,)
 
-    a = Columns([1,2,1],["foo","bar","baz"])
-    b = Columns([2,1,1],["bar","baz","foo"])
-    c = Columns([1,1,2],["foo","baz","bar"])
+    a = Columns(([1,2,1],["foo","bar","baz"]))
+    b = Columns(([2,1,1],["bar","baz","foo"]))
+    c = Columns(([1,1,2],["foo","baz","bar"]))
     @test a != b
     @test a != c
     @test b != c
@@ -404,16 +404,16 @@ end
     #78
     @test_throws ArgumentError map(x->throw(ArgumentError("x")), a)
     @inferred Columns((c=[1],))
-    @inferred Columns([1])
-    @test_throws ErrorException @inferred Columns(c=[1]) # bad
+    @inferred Columns(([1],))
+    @inferred Columns(c=[1])
     #@inferred NDSparse(Columns(c=[1]), [1])
     #@inferred NDSparse(Columns([1]), [1])
-    c = Columns([1,1,1,2,2], [1,2,4,3,5])
-    d = Columns([1,1,2,2,2], [1,3,1,4,5])
-    e = Columns([1,1,1], sort([rand(),0.5,rand()]))
-    f = Columns([1,1,1], sort([rand(),0.5,rand()]))
-    @test merge(NDSparse(c,ones(5)),NDSparse(d,ones(5))).index == Columns([1,1,1,1,2,2,2,2],[1,2,3,4,1,3,4,5])
-    @test eltype(merge(NDSparse(c,Columns(ones(Int, 5))),NDSparse(d,Columns(ones(Float64, 5)))).data) == Tuple{Float64}
+    c = Columns(([1,1,1,2,2], [1,2,4,3,5]))
+    d = Columns(([1,1,2,2,2], [1,3,1,4,5]))
+    e = Columns(([1,1,1], sort([rand(),0.5,rand()])))
+    f = Columns(([1,1,1], sort([rand(),0.5,rand()])))
+    @test merge(NDSparse(c,ones(5)),NDSparse(d,ones(5))).index == Columns(([1,1,1,1,2,2,2,2],[1,2,3,4,1,3,4,5]))
+    @test eltype(merge(NDSparse(c,Columns((ones(Int, 5),))),NDSparse(d,Columns((ones(Float64, 5),)))).data) == Tuple{Float64}
     @test eltype(merge(NDSparse(c,Columns(x=ones(Int, 5))),NDSparse(d,Columns(x=ones(Float64, 5)))).data) == typeof((x=0.,))
     @test length(merge(NDSparse(e,ones(3)),NDSparse(f,ones(3)))) == 5
     @test vcat(Columns(x=[1]), Columns(x=[1.0])) == Columns(x=[1,1.0])

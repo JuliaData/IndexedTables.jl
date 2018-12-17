@@ -383,7 +383,7 @@ function convert(::Type{NDSparse}, a::AbstractArray{T}) where T
         end
         i += 1
     end
-    NDSparse(Columns(reverse(idxs)...), data, presorted=true)
+    NDSparse(Columns(Tuple(Iterators.reverse(idxs))), data, presorted=true)
 end
 
 # aggregation
