@@ -342,7 +342,7 @@ function Base.reduce(f, x::NDSparse; kws...)
         if dims isa Symbol
             dims = [dims]
         end
-        keep = setdiff([1:ndims(x);], map(d->fieldindex(x.index.columns,d), dims))
+        keep = setdiff([1:ndims(x);], map(d->fieldindex(columns(x.index),d), dims))
         if isempty(keep)
             throw(ArgumentError("to remove all dimensions, use `reduce(f, A)`"))
         end
@@ -363,11 +363,11 @@ Like `reduce`, except uses a function mapping a vector of values to a scalar ins
 of a 2-argument scalar function.
 """
 function reducedim_vec(f, x::NDSparse, dims; with=valuenames(x))
-    keep = setdiff([1:ndims(x);], map(d->fieldindex(x.index.columns,d), dims))
+    keep = setdiff([1:ndims(x);], map(d->fieldindex(columns(x.index),d), dims))
     if isempty(keep)
         throw(ArgumentError("to remove all dimensions, use `reduce(f, A)`"))
     end
-    idxs, d = collect_columns(GroupBy(f, keys(x, (keep...,)), rows(x, with), sortpermby(x, (keep...,)))).columns
+    idxs, d = collect_columns(GroupBy(f, keys(x, (keep...,)), rows(x, with), sortpermby(x, (keep...,)))) |> columns
     NDSparse(idxs, d, presorted=true, copy=false)
 end
 

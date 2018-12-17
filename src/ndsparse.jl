@@ -88,7 +88,7 @@ function ndsparse(::Val{:serial}, ks::Tup, vs::Union{Tup, AbstractVector};
     elseif copy
         if agg !== nothing
             iter = GroupReduce(agg, I, d, Base.OneTo(length(I)))
-            I, d = collect_columns(iter).columns
+            I, d = collect_columns(iter) |> columns
             agg = nothing
         else
             I = Base.copy(I)
@@ -117,7 +117,7 @@ function ndsparse(x::Columns, y::AbstractVector; kwargs...)
 end
 
 ndsparse(c::Columns{<:Pair}; kwargs...) =
-    convert(NDSparse, c.columns.first, c.columns.second; kwargs...)
+    convert(NDSparse, columns(c).first, columns(c).second; kwargs...)
 
 # backwards compat
 NDSparse(idx::Columns, data; kwargs...) = ndsparse(idx, data; kwargs...)
@@ -267,7 +267,7 @@ function permutedims(t::NDSparse, p::AbstractVector)
         throw(ArgumentError("argument to permutedims must be a valid permutation"))
     end
     flush!(t)
-    NDSparse(Columns(t.index.columns[p]), t.data, copy=true)
+    NDSparse(Columns(columns(t.index)[p]), t.data, copy=true)
 end
 
 # showing
@@ -312,7 +312,7 @@ function showmeta(io, t::NDSparse, cnames)
 end
 
 @noinline convert(::Type{NDSparse}, @nospecialize(ks), @nospecialize(vs); kwargs...) = ndsparse(ks, vs; kwargs...)
-@noinline convert(T::Type{NDSparse}, c::Columns{<:Pair}; kwargs...) = convert(T, c.columns.first, c.columns.second; kwargs...)
+@noinline convert(T::Type{NDSparse}, c::Columns{<:Pair}; kwargs...) = convert(T, columns(c).first, columns(c).second; kwargs...)
 
 # map and convert
 
@@ -344,9 +344,9 @@ end
 # Given an NDSparse array with multiple data columns (its data vector is a `Columns` object), return a
 # new array with the specified subset of data columns. Data is shared with the original array.
 # """
-# columns(x::NDSparse, which...) = NDSparse(x.index, Columns(x.data.columns[[which...]]), presorted=true)
+# columns(x::NDSparse, which...) = NDSparse(x.index, Columns(columns(x.data)[[which...]]), presorted=true)
 
-#columns(x::NDSparse, which) = NDSparse(x.index, x.data.columns[which], presorted=true)
+#columns(x::NDSparse, which) = NDSparse(x.index, columns(x.data)[which], presorted=true)
 
 #column(x::NDSparse, which) = columns(x, which)
 
