@@ -1,14 +1,14 @@
 
 
-    c = Columns([1,1,1,2,2], [1,2,4,3,5])
-    d = Columns([1,1,2,2,2], [1,3,1,4,5])
-    e = Columns([1,1,1], sort([rand(),0.5,rand()]))
-    f = Columns([1,1,1], sort([rand(),0.5,rand()]))
-    @test map(+,NDSparse(c,ones(5)),NDSparse(d,ones(5))).index == Columns([1,2],[1,5])
+    c = Columns(([1,1,1,2,2], [1,2,4,3,5]))
+    d = Columns(([1,1,2,2,2], [1,3,1,4,5]))
+    e = Columns(([1,1,1], sort([rand(),0.5,rand()])))
+    f = Columns(([1,1,1], sort([rand(),0.5,rand()])))
+    @test map(+,NDSparse(c,ones(5)),NDSparse(d,ones(5))).index == Columns(([1,2],[1,5]))
     @test length(map(+,NDSparse(e,ones(3)),NDSparse(f,ones(3)))) == 1
     @test eltype(c) == Tuple{Int,Int}
     @test map_rows(i -> (exp = exp(i), log = log(i)), 1:5) == Columns((exp = exp.(1:5), log = log.(1:5)))
-    @test map_rows(tuple, 1:3, ["a","b","c"]) == Columns([1,2,3], ["a","b","c"])
+    @test map_rows(tuple, 1:3, ["a","b","c"]) == Columns(([1,2,3], ["a","b","c"]))
 
  c = Columns(Columns((a=[1,2,3],)) => Columns((b=["a","b","c"],)))
     @test columns(c).first == Columns((a=[1,2,3],))
@@ -33,7 +33,7 @@
     empty!(d)
     @test d == c[Int[]]
     @test c != Columns((a=[1,2,3], b=["a","b","c"]))
-    x = Columns([1], [1.0], WeakRefStrings.StringArray(["a"]))
+    x = Columns(([1], [1.0], WeakRefStrings.StringArray(["a"])))
     @test IndexedTables.arrayof(eltype(x)) == typeof(x)
     @test IndexedTables.arrayof(WeakRefString{UInt8}) == WeakRefStrings.StringArray{WeakRefString{UInt8},1}
     @test typeof(similar(c, 10)) == typeof(similar(typeof(c), 10)) == typeof(c)
@@ -42,10 +42,10 @@
     @test sortperm(c) == [1,2,3]
     permute!(c, [2,3, 1])
     @test c == Columns(Columns((a=[2,3,1],)) => Columns((b=["b","c","a"],)))
-    f = Columns(Columns([1, 1, 2, 2]) => ["b", "a", "c", "d"])
-    @test IndexedTables._strip_pair(f) == Columns([1, 1, 2, 2], ["b", "a", "c", "d"])
+    f = Columns(Columns(([1, 1, 2, 2],)) => ["b", "a", "c", "d"])
+    @test IndexedTables._strip_pair(f) == Columns(([1, 1, 2, 2], ["b", "a", "c", "d"]))
     @test sortperm(f) == [2, 1, 3, 4]
-    @test sort(f) == Columns(Columns([1, 1, 2, 2]) => ["a", "b", "c", "d"])
+    @test sort(f) == Columns(Columns(([1, 1, 2, 2],)) => ["a", "b", "c", "d"])
     @test !issorted(f)
 #end
 
@@ -93,7 +93,7 @@ end
     # Tuple output
     b1 = broadcast((x,y)->(x.a, y.c), t, t1)
     @test isa(b1.data, Columns)
-    @test b1 == NDSparse(idx, Columns([5,6], [4,5]))
+    @test b1 == NDSparse(idx, Columns(([5,6], [4,5])))
 
     b2 = broadcast((x,y)->(m=x.a, n=y.c), t, t1)
     @test b2 == NDSparse(idx, Columns(m=[5,6], n=[4,5]))

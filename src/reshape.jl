@@ -26,7 +26,7 @@ function stack(t::D, by = pkeynames(t); select = isa(t, NDSparse) ? valuenames(t
     labelcol = [label for i in 1:length(t) for label in labels]
 
     bycols = map(arg -> repeat(arg, inner = length(valuecols)), columns(t, by))
-    convert(collectiontype(D), Columns(bycols), Columns(labelcol, valuecol, names = [variable, value]))
+    convert(collectiontype(D), Columns(bycols), Columns((labelcol, valuecol), names = [variable, value]))
 end
 
 """
@@ -53,7 +53,7 @@ function unstack(t::D, by = pkeynames(t); variable = :variable, value = :value) 
 end
 
 function unstack(::Type{D}, ::Type{T}, key, val, cols::AbstractVector{S}) where {D <:Dataset, T, S}
-    dest_val = Columns((Array{Union{T, Missing}}(undef, length(val)) for i in cols)...; names = cols)
+    dest_val = Columns(Tuple(Array{Union{T, Missing}}(undef, length(val)) for i in cols); names = cols)
     for (i, el) in enumerate(val)
         for (k, v) in el
             ismissing(columns(dest_val, S(k))[i]) || error("Repeated values with same label are not allowed")

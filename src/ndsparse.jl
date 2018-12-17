@@ -177,7 +177,7 @@ Construct an NDSparse array from columns. The last argument is the data column, 
 """
 function NDSparse(columns...; names=nothing, rest...)
     keys, data = columns[1:end-1], columns[end]
-    ndsparse(Columns(keys..., names=names), data; rest...)
+    ndsparse(Columns(keys, names=names), data; rest...)
 end
 
 similar(t::NDSparse) = NDSparse(similar(t.index, 0), similar(t.data, 0))

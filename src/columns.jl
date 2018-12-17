@@ -426,7 +426,7 @@ function ColDict(t; copy=nothing)
 end
 
 function Base.getindex(d::ColDict{<:Columns})
-    Columns(d.columns...; names=d.names)
+    Columns(Tuple(d.columns); names=d.names)
 end
 
 Base.getindex(d::ColDict, key) = rows(d[], key)
