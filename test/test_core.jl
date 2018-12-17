@@ -679,11 +679,11 @@ end
     @test c[12,52] == 67
     @test c[32,34] == 160
     @test length(c.index) == 2
-    @test naturaljoin(a, b) == NDSparse([12,32], [52,34], Columns([11,150], [56,10]))
+    @test naturaljoin(a, b) == NDSparse([12,32], [52,34], Columns(([11,150], [56,10])))
 
-    c = NDSparse([12,32], [52,34], Columns([0,1], [2,3]))
-    @test naturaljoin(a, c) == NDSparse([12,32], [52,34], Columns([11,150], [0,1], [2,3]))
-    @test naturaljoin(c, a) == NDSparse([12,32], [52,34], Columns([0,1], [2,3], [11,150]))
+    c = NDSparse([12,32], [52,34], Columns(([0,1], [2,3])))
+    @test naturaljoin(a, c) == NDSparse([12,32], [52,34], Columns(([11,150], [0,1], [2,3])))
+    @test naturaljoin(c, a) == NDSparse([12,32], [52,34], Columns(([0,1], [2,3], [11,150])))
 
     @test isequal(
         leftjoin(t1, t2, lselect=2, rselect=2),
@@ -702,12 +702,12 @@ end
 
     @test isequal(leftjoin(NDSparse([1,1,1,2], [2,3,4,4], [5,6,7,8]),
                    NDSparse([1,1,3],   [2,4,4],   [9,10,12])),
-                  NDSparse([1,1,1,2], [2,3,4,4], Columns([5, 6, 7, 8], [9, missing, 10, missing])))
+                  NDSparse([1,1,1,2], [2,3,4,4], Columns(([5, 6, 7, 8], [9, missing, 10, missing]))))
 
     @test isequal(
                   leftjoin(NDSparse([1,1,1,2], [2,3,4,4], [5,6,7,8]),
                    NDSparse([1,1,2],   [2,4,4],   [9,10,12])),
-                  NDSparse([1,1,1,2], [2,3,4,4], Columns([5, 6, 7, 8], [9, missing, 10, 12])))
+                  NDSparse([1,1,1,2], [2,3,4,4], Columns(([5, 6, 7, 8], [9, missing, 10, 12]))))
 
 
     @test isequal(outerjoin(t1, t2, lselect=2, rselect=2), table([0,1,2,3,4,5], [missing, 5,6,7,8,missing], [5,missing,missing,6,7,8]))
@@ -1093,7 +1093,7 @@ end
     A = [1]
     # shouldn't mutate input
     mapslices(x, [:a]) do slice
-        NDSparse(Columns(A), A)
+        NDSparse(Columns((A,)), A)
     end
     @test A == [1]
 
@@ -1115,15 +1115,15 @@ end
     @test t==NDSparse(Columns(a_1=[1], a_2=[2], c=[2]), Columns(d=[1]))
 
     # signleton slices
-    x=NDSparse(Columns([1,2]),Columns([1,2]))
+    x=NDSparse(Columns(([1,2],)),Columns(([1,2],)))
     @test_throws ErrorException mapslices(x,()) do slice
         true
     end
     t = mapslices(x,()) do slice
-        @test slice == NDSparse(Columns([1]), Columns([1])) || slice == NDSparse(Columns([2]), Columns([2]))
-        NDSparse(Columns([1]), ([1]))
+        @test slice == NDSparse(Columns(([1],)), Columns(([1],))) || slice == NDSparse(Columns(([2],)), Columns(([2],)))
+        NDSparse(Columns(([1],)), ([1]))
     end
-    @test t == NDSparse(Columns([1,2], [1,1]), [1,1])
+    @test t == NDSparse(Columns(([1,2], [1,1])), [1,1])
 
     x = NDSparse([1,1,1,2,2,2,3,3],[1,2,3,4,5,6,7,8],rand(8));
     y = mapslices(t -> (1, 2), x, 2)

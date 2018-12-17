@@ -251,14 +251,14 @@ init_func(ac::ApplyColwise{<:Tuple}, t::AbstractVector) =
     Tuple(Symbol(n) => f for (f, n) in zip(ac.functions, ac.names))
 function init_func(ac::ApplyColwise{<:Tuple}, t::Columns)
     if ac.stack
-        dd -> Columns(collect(colnames(t)), ([f(x) for x in columns(dd)] for f in ac.functions)...; names = vcat(ac.variable, ac.names))
+        dd -> Columns((collect(colnames(t)), ([f(x) for x in columns(dd)] for f in ac.functions)...); names = vcat(ac.variable, ac.names))
     else
         Tuple(Symbol(s, :_, n) => s => f for s in colnames(t), (f, n) in zip(ac.functions, ac.names))
     end
 end
 
 init_func(ac::ApplyColwise, t::Columns) =
-    ac.stack ? dd -> Columns(collect(colnames(t)), [ac.functions(x) for x in columns(dd)]; names = vcat(ac.variable, ac.names)) :
+    ac.stack ? dd -> Columns((collect(colnames(t)), [ac.functions(x) for x in columns(dd)]); names = vcat(ac.variable, ac.names)) :
         Tuple(s => s => ac.functions for s in colnames(t))
 init_func(ac::ApplyColwise, t::AbstractVector) = ac.functions
 

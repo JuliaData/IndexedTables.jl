@@ -141,7 +141,7 @@ function table(cs::Tup; chunks=nothing, kwargs...)
 end
 
 table(cs::Columns; kwargs...) = table(columns(cs); kwargs...)
-table(c::Columns{<:Pair}; kwargs...) = convert(IndexedTable, c.columns.first, c.columns.second; kwargs...)
+table(c::Columns{<:Pair}; kwargs...) = convert(IndexedTable, columns(c).first, columns(c).second; kwargs...)
 
 function table(cols::AbstractArray...; names=nothing, kwargs...)
     if isa(names, AbstractArray) && all(x->isa(x, Symbol), names)
