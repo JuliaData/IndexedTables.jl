@@ -342,7 +342,7 @@ function Base.join(f, left::Dataset, right::Dataset;
         lnulls = zeros(Bool, length(lout))
         lnulls[lnull_idx] .= true
         lout = if lout isa Columns
-            Columns(map(lout.columns) do col
+            Columns(map(columns(lout)) do col
                 v = convert(Vector{Union{Missing, eltype(col)}}, col)
                 v[lnull_idx] .= missing
                 v
@@ -359,7 +359,7 @@ function Base.join(f, left::Dataset, right::Dataset;
         rnulls = zeros(Bool, length(rout))
         rnulls[rnull_idx] .= true
         rout = if rout isa Columns
-            Columns(map(rout.columns) do col
+            Columns(map(columns(rout)) do col
                 v = convert(Vector{Union{Missing, eltype(col)}}, col)
                 v[rnull_idx] .= missing
                 v
@@ -512,7 +512,7 @@ function count_overlap(I::Columns{D}, J::Columns{D}) where D
 end
 
 function promoted_similar(x::Columns, y::Columns, n)
-    Columns(map((a,b)->promoted_similar(a, b, n), x.columns, y.columns))
+    Columns(map((a,b)->promoted_similar(a, b, n), columns(x), columns(y)))
 end
 
 function promoted_similar(x::AbstractArray, y::AbstractArray, n)
@@ -697,7 +697,7 @@ function find_corresponding(Ap, Bp)
 end
 
 function match_indices(A::NDSparse, B::NDSparse)
-    if isa(A.index.columns, NamedTuple) && isa(B.index.columns, NamedTuple)
+    if isa(columns(A.index), NamedTuple) && isa(columns(B.index), NamedTuple)
         Ap = colnames(A.index)
         Bp = colnames(B.index)
     else
@@ -786,7 +786,7 @@ function _broadcast!(f::Function, A::NDSparse, B::NDSparse, C::NDSparse; dimmap=
     end
     common = filter(i->C_inds[i] > 0, 1:ndims(A))
     C_common = C_inds[common]
-    B_common_cols = Columns(getsubfields(B.index.columns, common))
+    B_common_cols = Columns(getsubfields(columns(B.index), common))
     B_perm = sortperm(B_common_cols)
     if C_common == C_dims
         idx, iperm = _bcast_loop!(f, values(A), B, C, B_common_cols, B_perm)
@@ -797,7 +797,7 @@ function _broadcast!(f::Function, A::NDSparse, B::NDSparse, C::NDSparse; dimmap=
         end
     else
         # TODO
-        #C_perm = sortperm(Columns(C.index.columns[[C_common...]]))
+        #C_perm = sortperm(Columns(columns(C.index)[[C_common...]]))
         error("dimensions of one argument to `broadcast` must be a subset of the dimensions of the other")
     end
     return A

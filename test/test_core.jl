@@ -11,8 +11,8 @@
     @test map_rows(tuple, 1:3, ["a","b","c"]) == Columns([1,2,3], ["a","b","c"])
 
  c = Columns(Columns((a=[1,2,3],)) => Columns((b=["a","b","c"],)))
-    @test c.columns.first == Columns((a=[1,2,3],))
-    @test c.columns.second == Columns((b=["a","b","c"],))
+    @test columns(c).first == Columns((a=[1,2,3],))
+    @test columns(c).second == Columns((b=["a","b","c"],))
     @test colnames(c) == ((:a,) => (:b,))
     @test length(c) == 3
     @test ncols(c) == (1 => 1)
@@ -107,10 +107,10 @@ end
     @test broadcast(*, nd, ndv) == convert(NDSparse, S .* v)
     # test matching dimensions by name
     ndt0 = convert(NDSparse, sparse(S .* (v')))
-    ndt = NDSparse(Columns(a=ndt0.index.columns[1], b=ndt0.index.columns[2]), ndt0.data, presorted=true)
+    ndt = NDSparse(Columns(a=columns(ndt0.index)[1], b=columns(ndt0.index)[2]), ndt0.data, presorted=true)
     @test broadcast(*,
-                    NDSparse(Columns(a=nd.index.columns[1], b=nd.index.columns[2]), nd.data),
-                    NDSparse(Columns(b=ndv.index.columns[1]), ndv.data)) == ndt
+                    NDSparse(Columns(a=columns(nd.index)[1], b=columns(nd.index)[2]), nd.data),
+                    NDSparse(Columns(b=columns(ndv.index)[1]), ndv.data)) == ndt
 
 let a = rand(10), b = rand(10), c = rand(10)
     @test NDSparse(a, b, c) == NDSparse(a, b, c)
@@ -195,7 +195,7 @@ for a in (rand(2,2), rand(3,5))
     end
 end
 
-_colnames(x::NDSparse) = keys(x.index.columns)
+_colnames(x::NDSparse) = keys(columns(x.index))
 
 @test _colnames(NDSparse(ones(2),ones(2),ones(2),names=[:a,:b])) == (:a, :b)
 @test _colnames(NDSparse(Columns(x=ones(2),y=ones(2)), ones(2))) == (:x, :y)
@@ -304,23 +304,23 @@ end
     t = table(cs)
     @test t.pkey == Int[]
     @test t.columns == [(1,2)]
-    @test column(t.columns,1) !== cs.columns[1]
+    @test column(t.columns,1) !== columns(cs)[1]
     t = table(cs, copy=false)
-    @test column(t.columns,1) === cs.columns[1]
+    @test column(t.columns,1) === columns(cs)[1]
     t = table(cs, copy=false, pkey=[1])
-    @test column(t.columns,1) === cs.columns[1]
+    @test column(t.columns,1) === columns(cs)[1]
     cs = Columns([2, 1], [3,4])
     t = table(cs, copy=false, pkey=[1])
     @test t.pkey == Int[1]
     cs = Columns([2, 1], [3,4])
     t = table(cs, copy=false, pkey=[1])
-    @test column(t.columns,1) === cs.columns[1]
+    @test column(t.columns,1) === columns(cs)[1]
     @test t.pkey == Int[1]
     @test t.columns == [(1,4), (2,3)]
 
     cs = Columns(x=[2, 1], y=[3,4])
     t = table(cs, copy=false, pkey=:x)
-    @test column(t.columns,1) === cs.columns.x
+    @test column(t.columns,1) === columns(cs).x
     @test t.pkey == Int[1]
     @test t.columns == [(x=1,y=4), (x=2,y=3)]
 
@@ -614,7 +614,7 @@ end
 
     t2 = map(x->(x.x,x.x^2), t)
     @test isa(t2.data, Columns)
-    @test isa(t2.data.columns, Tuple{Vector{Int}, Vector{Int}})
+    @test isa(columns(t2.data), Tuple{Vector{Int}, Vector{Int}})
 
     t3 = map(x->ntuple(identity, x.x), t)
     @test isa(t3.data, Vector)
@@ -1054,10 +1054,10 @@ end
     C = rand(3,3)
     nA = convert(NDSparse, A)
     nB = convert(NDSparse, B)
-    nB.index.columns[1][:] .+= 3
+    columns(nB.index)[1][:] .+= 3
     @test merge(nA,nB) == convert(NDSparse, vcat(A,B))
     nC = convert(NDSparse, C)
-    nC.index.columns[1][:] .+= 6
+    columns(nC.index)[1][:] .+= 6
     @test merge(nA,nB,nC) == merge(nA,nC,nB) == convert(NDSparse, vcat(A,B,C))
     merge!(nA,nB)
     @test nA == convert(NDSparse, vcat(A,B))
