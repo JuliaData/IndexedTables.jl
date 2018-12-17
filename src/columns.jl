@@ -30,7 +30,7 @@ Base.@pure colnames(t::AbstractVector) = (1,)
 columns(v::AbstractVector) = v
 
 Base.@pure colnames(t::StructVector) = fieldnames(eltype(t))
-Base.@pure colnames(t::StructVector{<:Pair, <:Pair}) = colnames(t.first) => colnames(t.second)
+Base.@pure colnames(t::StructVector{<:Pair}) = colnames(t.first) => colnames(t.second)
 
 """
     columns(itr, select::Selection = All())
@@ -425,15 +425,8 @@ function ColDict(t; copy=nothing)
     ColDict(Int[], t, convert(Array{Any}, collect(cnames)), Any[columns(t)...], copy)
 end
 
-function structvector_columnsnames(cols::AbstractVector...; names = Symbol[])
-    if all(t -> isa(t, Symbol), names) && length(names) == length(cols)
-        StructVector(NamedTuple{Tuple(names)}(cols))
-    else
-        StructVector(cols)
-    end
-end
 function Base.getindex(d::ColDict{<:StructVector})
-    structvector_columnsnames(d.columns; names=d.names)
+    Columns(d.columns...; names=d.names)
 end
 
 Base.getindex(d::ColDict, key) = rows(d[], key)
