@@ -42,19 +42,19 @@ isconstrange(col::AbstractVector{T}, idx::T) where {T} = true
 isconstrange(col, idx::AbstractArray) = isequal(first(idx), last(idx))
 
 function range_estimate(I::Columns, idxs)
-    r = range_estimate(I.columns[1], idxs[1])
+    r = range_estimate(columns(I)[1], idxs[1])
     i = 1; n = length(idxs)
-    while i < n && isconstrange(I.columns[i], idxs[i])
+    while i < n && isconstrange(columns(I)[i], idxs[i])
         i += 1
-        r = intersect(r, range_estimate(I.columns[i], idxs[i], first(r), last(r)))
+        r = intersect(r, range_estimate(columns(I)[i], idxs[i], first(r), last(r)))
     end
     return r
 end
 
 function _getindex(t::NDSparse, idxs)
     I = t.index
-    cs = astuple(I.columns)
-    if fieldcount(typeof(idxs)) !== fieldcount(typeof(I.columns))
+    cs = astuple(columns(I))
+    if fieldcount(typeof(idxs)) !== fieldcount(typeof(columns(I)))
         error("wrong number of indices")
     end
     for idx in idxs
@@ -63,7 +63,7 @@ function _getindex(t::NDSparse, idxs)
     out = convert(Vector{Int32}, range_estimate(I, idxs))
     filter!(i->row_in(cs, i, idxs), out)
     keepdims = filter(i->eltype(columns(t.index)[i]) != typeof(idxs[i]), 1:length(idxs))
-    NDSparse(Columns(map(x->x[out], getsubfields(I.columns, keepdims))), t.data[out], presorted=true)
+    NDSparse(Columns(map(x->x[out], getsubfields(columns(I), keepdims))), t.data[out], presorted=true)
 end
 
 # iterators over indices - lazy getindex
@@ -76,7 +76,7 @@ same index arguments as `getindex`.
 """
 function where(d::NDSparse, idxs::Vararg{Any,N}) where N
     I = d.index
-    cs = astuple(I.columns)
+    cs = astuple(columns(I))
     data = d.data
     rng = range_estimate(I, idxs)
     (data[i] for i in Iterators.Filter(r->row_in(cs, r, idxs), rng))
@@ -90,7 +90,7 @@ indices.
 """
 function update!(f::Union{Function,Type}, d::NDSparse, idxs::Vararg{Any,N}) where N
     I = d.index
-    cs = astuple(I.columns)
+    cs = astuple(columns(I))
     data = d.data
     rng = range_estimate(I, idxs)
     for r in rng
@@ -111,7 +111,7 @@ Similar to `where`, but returns an iterator giving `index=>value` pairs.
 """
 function pairs(d::NDSparse, idxs::Vararg{Any,N}) where N
     I = d.index
-    cs = astuple(I.columns)
+    cs = astuple(columns(I))
     data = d.data
     rng = range_estimate(I, idxs)
     (I[i]=>data[i] for i in Compat.Iterators.Filter(r->row_in(cs, r, idxs), rng))
@@ -190,7 +190,7 @@ function _setindex!(d::NDSparse{T,D}, rhs, idxs) where {T,D}
     end
     flush!(d)
     I = d.index
-    cs = astuple(I.columns)
+    cs = astuple(columns(I))
     data = d.data
     rng = range_estimate(I, idxs)
     for r in rng

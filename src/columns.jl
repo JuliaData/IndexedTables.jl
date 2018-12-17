@@ -180,11 +180,11 @@ elementwise. Collect output as `Columns` if `f` returns
     map_rows(i -> (exp = exp(i), log = log(i)), 1:5)
 """
 function map_rows(f, iters...)
-    collect_structarray(f(i...) for i in zip(iters...))
+    collect_columns(f(i...) for i in zip(iters...))
 end
 
 # 1-arg case
-map_rows(f, iter) = collect_structarray(f(i) for i in iter)
+map_rows(f, iter) = collect_columns(f(i) for i in iter)
 
 ## Special selectors to simplify column selector
 
