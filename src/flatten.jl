@@ -16,10 +16,10 @@ function dedup_names(ns)
 end
 
 function mapslices(f, x::NDSparse, dims; name = nothing)
-    iterdims = setdiff([1:ndims(x);], map(d->fieldindex(x.index.columns,d), dims))
-    idx = Any[Colon() for v in x.index.columns]
+    iterdims = setdiff([1:ndims(x);], map(d->fieldindex(columns(x.index),d), dims))
+    idx = Any[Colon() for v in columns(x.index)]
 
-    iter = Columns(astuple(x.index.columns)[[iterdims...]])
+    iter = Columns(astuple(columns(x.index))[[iterdims...]])
     if !isempty(dims) || !issorted(iter)
         iter = sort(iter)
     end
@@ -48,7 +48,7 @@ function mapslices(f, x::NDSparse, dims; name = nothing)
         for j=1:n
             @inbounds index_first[j] = iter[1]
         end
-        index = Columns(index_first.columns..., astuple(copy(y.index).columns)...; names=ns)
+        index = Columns((columns(index_first)..., astuple(columns(copy(y.index)))...); names=ns)
         data = copy(y.data)
         output = NDSparse(index, data)
         if isempty(dims)
@@ -61,7 +61,7 @@ function mapslices(f, x::NDSparse, dims; name = nothing)
         if !all(x->isa(x, Symbol), ns)
             ns = nothing
         end
-        index = Columns(iter[1:1].columns...; names=ns)
+        index = Columns(Tuple(columns(iter[1:1])); names=ns)
         if isa(y, Tup)
             vec = convert(Columns, [y])
         else
@@ -70,7 +70,7 @@ function mapslices(f, x::NDSparse, dims; name = nothing)
         if name === nothing
             output = NDSparse(index, vec)
         else
-            output = NDSparse(index, Columns(vec, names=[name]))
+            output = NDSparse(index, Columns(Tuple(columns(vec)), names=[name]))
         end
         if isempty(dims)
             error("calling mapslices with no dimensions and scalar return value -- use map instead")
@@ -81,7 +81,7 @@ function mapslices(f, x::NDSparse, dims; name = nothing)
 end
 
 function _mapslices_scalar!(f, output, x, iter, iterdims, start, coerce)
-    idx = Any[Colon() for v in x.index.columns]
+    idx = Any[Colon() for v in columns(x.index)]
 
     for i = start:length(iter)
         if i != 1 && roweq(iter, i-1, i) # We've already visited this slice
@@ -105,15 +105,15 @@ function _mapslices_itable_singleton!(f, output, x, start)
     I = output.index
     D = output.data
 
-    I1 = Columns(I.columns[1:ndims(x)])
-    I2 = Columns(I.columns[ndims(x)+1:end])
+    I1 = Columns(columns(I)[1:ndims(x)])
+    I2 = Columns(columns(I)[ndims(x)+1:end])
     i = start
     for i in start:length(x)
         k = x.index[i]
         y = f(NDSparse(x.index[i:i], x.data[i:i]))
         n = length(y)
 
-        foreach((x,y)->append_n!(x,y,n), I1.columns, k)
+        foreach((x,y)->append_n!(x,y,n), columns(I1), k)
         append!(I2, y.index)
         append!(D, y.data)
     end
@@ -121,13 +121,13 @@ function _mapslices_itable_singleton!(f, output, x, start)
 end
 
 function _mapslices_itable!(f, output, x, iter, iterdims, start)
-    idx = Any[Colon() for v in x.index.columns]
+    idx = Any[Colon() for v in columns(x.index)]
     I = output.index
     D = output.data
     initdims = length(iterdims)
 
-    I1 = Columns(getsubfields(I.columns, 1:initdims)) # filled from existing table
-    I2 = Columns(getsubfields(I.columns, initdims+1:fieldcount(typeof(I.columns)))) # filled from output tables
+    I1 = Columns(getsubfields(columns(I), 1:initdims)) # filled from existing table
+    I2 = Columns(getsubfields(columns(I), initdims+1:fieldcount(typeof(columns(I))))) # filled from output tables
 
     for i = start:length(iter)
         if i != 1 && roweq(iter, i-1, i) # We've already visited this slice
@@ -144,7 +144,7 @@ function _mapslices_itable!(f, output, x, iter, iterdims, start)
         y = f(subtable)
         n = length(y)
 
-        foreach((x,y)->append_n!(x,y,n), I1.columns, iter[i])
+        foreach((x,y)->append_n!(x,y,n), columns(I1), iter[i])
         append!(I2, y.index)
         append!(D, y.data)
     end
