@@ -1,10 +1,7 @@
 #-----------------------------------------------------------------------# Columns 
 const TableColumns = Columns{T} where {T<:NamedTuple}
 
-# Columns(x; kw...) = Columns(Tables.columntable(x); kw...)
-
 Tables.istable(::Type{<:TableColumns}) = true
-Tables.materializer(c::TableColumns) = Columns
 
 Tables.rowaccess(c::TableColumns) = true
 Tables.rows(c::TableColumns) = c

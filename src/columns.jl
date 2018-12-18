@@ -1,7 +1,5 @@
 # to get rid of eventually
 const Columns = StructVector
-# There is a StackOverflow bug in this case in Base.unaliascopy
-Base.copy(c::Columns{<:Union{NamedTuple{(),Tuple{}}, Tuple{}}}) = c
 
 # IndexedTable-like API
 
