@@ -51,8 +51,8 @@ available selection options and syntax.
 """
 function columns end
 
+columns(c::Columns) = fieldarrays(c)
 columns(c::Columns{<:Tuple}) = Tuple(fieldarrays(c))
-columns(c::Columns{<:NamedTuple}) = fieldarrays(c)
 columns(c::Columns{<:Pair}) = c.first => c.second
 
 """

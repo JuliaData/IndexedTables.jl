@@ -1,18 +1,5 @@
-#-----------------------------------------------------------------------# Columns 
-const TableColumns = Columns{T} where {T<:NamedTuple}
-
-Tables.istable(::Type{<:TableColumns}) = true
-
-Tables.rowaccess(c::TableColumns) = true
-Tables.rows(c::TableColumns) = c
-Tables.schema(c::TableColumns) = Tables.Schema(colnames(c), Tuple(map(eltype, c.columns)))
-
-Tables.columnaccess(c::TableColumns) = true
-Tables.columns(c::TableColumns) = c.columns
-# Tables.schema already defined for NamedTuple of Vectors (c.columns)
-
 #-----------------------------------------------------------------------# IndexedTable
-Tables.istable(::Type{IndexedTable{C}}) where {C<:TableColumns} = true
+Tables.istable(::Type{IndexedTable{C}}) where {C<:Columns} = Tables.istable(C)
 Tables.materializer(t::IndexedTable) = table
 for f in [:rowaccess, :rows, :columnaccess, :columns, :schema]
     @eval Tables.$f(t::IndexedTable) = Tables.$f(Columns(columns(t)))
