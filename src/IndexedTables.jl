@@ -14,8 +14,8 @@ import Base:
     tuple_type_cons, tuple_type_head, tuple_type_tail, in, convert
 
 
-using StructArrays: StructVector, StructArray, foreachfield, fieldarrays, collect_structarray, staticschema,
-                    refine_perm!
+using StructArrays: StructVector, StructArray, foreachfield, fieldarrays, collect_structarray, staticschema, ArrayInitializer,
+                    refine_perm!, collect_structarray, collect_empty_structarray, grow_to_structarray!, collect_to_structarray! 
 
 #-----------------------------------------------------------------------# exports
 export 

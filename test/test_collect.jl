@@ -10,16 +10,16 @@
     @inferred IndexedTables.collect_to_columns!(dest, itr, 2, st)
 
     v = [(a = 1, b = 2), (a = 1.2, b = 3)]
-    @test collect_columns(v) == Columns((a = [1, 1.2], b = Int[2, 3]))
-    @test typeof(collect_columns(v)) == typeof(Columns((a = [1, 1.2], b = Int[2, 3])))
+    @test collect_columns(v) == Columns((a = Real[1, 1.2], b = Int[2, 3]))
+    @test typeof(collect_columns(v)) == typeof(Columns((a = Real[1, 1.2], b = Int[2, 3])))
 
     v = [(a = 1, b = 2), (a = 1.2, b = "3")]
-    @test collect_columns(v) == Columns((a = [1, 1.2], b = Any[2, "3"]))
-    @test typeof(collect_columns(v)) == typeof(Columns((a = [1, 1.2], b = Any[2, "3"])))
+    @test collect_columns(v) == Columns((a = Real[1, 1.2], b = Any[2, "3"]))
+    @test typeof(collect_columns(v)) == typeof(Columns((a = Real[1, 1.2], b = Any[2, "3"])))
 
     v = [(a = 1, b = 2), (a = 1.2, b = 2), (a = 1, b = "3")]
-    @test collect_columns(v) == Columns((a = [1, 1.2, 1], b = Any[2, 2, "3"]))
-    @test typeof(collect_columns(v)) == typeof(Columns((a = [1, 1.2, 1], b = Any[2, 2, "3"])))
+    @test collect_columns(v) == Columns((a = Real[1, 1.2, 1], b = Any[2, 2, "3"]))
+    @test typeof(collect_columns(v)) == typeof(Columns((a = Real[1, 1.2, 1], b = Any[2, 2, "3"])))
 
     # length unknown
     itr = Iterators.filter(isodd, 1:8)
@@ -44,21 +44,21 @@ end
     @inferred collect_columns(v)
 
     v = [(1, 2), (1.2, 3)]
-    @test collect_columns(v) == Columns(([1, 1.2], Int[2, 3]))
+    @test collect_columns(v) == Columns((Real[1, 1.2], Int[2, 3]))
 
     v = [(1, 2), (1.2, "3")]
-    @test collect_columns(v) == Columns(([1, 1.2], Any[2, "3"]))
-    @test typeof(collect_columns(v)) == typeof(Columns(([1, 1.2], Any[2, "3"])))
+    @test collect_columns(v) == Columns((Real[1, 1.2], Any[2, "3"]))
+    @test typeof(collect_columns(v)) == typeof(Columns((Real[1, 1.2], Any[2, "3"])))
 
     v = [(1, 2), (1.2, 2), (1, "3")]
-    @test collect_columns(v) == Columns(([1, 1.2, 1], Any[2, 2, "3"]))
+    @test collect_columns(v) == Columns((Real[1, 1.2, 1], Any[2, 2, "3"]))
     # length unknown
     itr = Iterators.filter(isodd, 1:8)
     tuple_itr = ((i+1, i-1) for i in itr)
     @test collect_columns(tuple_itr) == Columns(([2, 4, 6, 8], [0, 2, 4, 6]))
     tuple_itr_real = (i == 1 ? (1.2, i-1) : (i+1, i-1) for i in itr)
-    @test collect_columns(tuple_itr_real) == Columns(([1.2, 4, 6, 8], [0, 2, 4, 6]))
-    @test typeof(collect_columns(tuple_itr_real)) == typeof(Columns(([1.2, 4, 6, 8], [0, 2, 4, 6])))
+    @test collect_columns(tuple_itr_real) == Columns((Real[1.2, 4, 6, 8], [0, 2, 4, 6]))
+    @test typeof(collect_columns(tuple_itr_real)) == typeof(Columns((Real[1.2, 4, 6, 8], [0, 2, 4, 6])))
 
     # empty
     itr = Iterators.filter(t -> t > 10, 1:8)
@@ -82,7 +82,7 @@ end
     @test collect_columns(itr) == collect(itr)
     real_itr = (i == 1 ? 1.5 : i for i in itr)
     @test collect_columns(real_itr) == collect(real_itr)
-    @test eltype(collect_columns(real_itr)) == Float64
+    @test eltype(collect_columns(real_itr)) == Real
 
     #empty
     itr = Iterators.filter(t -> t > 10, 1:8)
@@ -104,8 +104,8 @@ end
     @test eltype(collect_columns(v)) == Pair{Int, Int}
 
     v = (i == 1 ? (1.2 => i+1) : (i => i+1) for i in 1:3)
-    @test collect_columns(v) == Columns([1.2,2,3]=>[2,3,4])
-    @test eltype(collect_columns(v)) == Pair{Float64, Int}
+    @test collect_columns(v) == Columns(Real[1.2,2,3]=>[2,3,4])
+    @test eltype(collect_columns(v)) == Pair{Real, Int}
 
     v = ((a=i,) => (b="a$i",) for i in 1:3)
     @test collect_columns(v) == Columns(Columns((a = [1,2,3],))=>Columns((b = ["a1","a2","a3"],)))
@@ -128,21 +128,12 @@ end
     @test isequal(t, table((b = [1,1,1], a = [2, missing, 3]), pkey = :b))
 end
 
-@testset "issubtype" begin
-    @test IndexedTables._is_subtype(Int, Int)
-    @test IndexedTables._is_subtype(Int, Union{Missing, Int})
-    @test !IndexedTables._is_subtype(Union{Missing, Int}, Int)
-    @test IndexedTables._is_subtype(Union{Missing, Int}, Union{Missing, Int})
-    @test !IndexedTables._is_subtype(Union{Missing, Int}, Union{Missing,String})
-    @test !IndexedTables._is_subtype(Int, String)
-end
-
 @testset "collectflattened" begin
     t = [(:a => [1, 2]), (:b => [1, 3])]
     @test collect_columns_flattened(t) == Columns([:a, :a, :b, :b] => [1, 2, 1, 3])
     t = ([(a = 1,), (a = 2,)], [(a = 1.1,), (a = 2.2,)])
-    @test collect_columns_flattened(t) == Columns(a = [1, 2, 1.1, 2.2])
-    @test eltype(collect_columns_flattened(t)) == typeof((a=1.1,))
+    @test collect_columns_flattened(t) == Columns(a = Real[1, 2, 1.1, 2.2])
+    @test eltype(collect_columns_flattened(t)) == NamedTuple{(:a,), Tuple{Real}}
     t = [(:a => table(1:2, ["a", "b"])), (:b => table(3:4, ["c", "d"]))]
     @test table(collect_columns_flattened(t)) == table([:a, :a, :b, :b], 1:4, ["a", "b", "c", "d"], pkey = 1)
 end
