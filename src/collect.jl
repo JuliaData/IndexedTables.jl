@@ -98,7 +98,7 @@ function collect_columns_flattened(itr, el::Pair, st)
 end
 
 function collect_columns_flattened!(dest::Columns{<:Pair}, itr, el::Pair, st)
-    dest_key, dest_data = dest.columns
+    dest_key, dest_data = columns(dest)
     while true
         elem = iterate(itr, st)
         elem === nothing && break
@@ -178,7 +178,7 @@ function widencolumns(dest, i, el::S, ::Type{T}) where{S, T}
 end
 
 function widencolumns(dest::Columns{<:Pair}, i, el::Pair, ::Type{Pair{T1, T2}}) where{T1, T2}
-    dest1 = fieldwise_isa(el.first, T1) ? dest.columns.first : widencolumns(dest.columns.first, i, el.first, T1)
-    dest2 = fieldwise_isa(el.second, T2) ? dest.columns.second : widencolumns(dest.columns.second, i, el.second, T2)
+    dest1 = fieldwise_isa(el.first, T1) ? columns(dest).first : widencolumns(columns(dest).first, i, el.first, T1)
+    dest2 = fieldwise_isa(el.second, T2) ? columns(dest).second : widencolumns(columns(dest).second, i, el.second, T2)
     Columns(dest1 => dest2)
 end

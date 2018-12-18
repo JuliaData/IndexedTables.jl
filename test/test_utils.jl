@@ -13,9 +13,9 @@ let a = [1:10;]
     @test IndexedTables._sizehint!(a, 20) === a
 end
 
-@test Columns([1,2], [3,4]) == Columns([1,2], [3.0,4.0])
-@test Columns([1,2], [3,4]) != Columns([1,2], [3.0,4.1])
-@test Columns([1,2], [3,4]) != Columns(a=[1,2], b=[3,4])
+@test Columns(([1,2], [3,4])) == Columns(([1,2], [3.0,4.0]))
+@test Columns(([1,2], [3,4])) != Columns(([1,2], [3.0,4.1]))
+@test Columns(([1,2], [3,4])) != Columns((a=[1,2], b=[3,4]))
 
 function roundtrips(x)
     b = IOBuffer()
@@ -24,13 +24,13 @@ function roundtrips(x)
     return deserialize(b) == x
 end
 
-@test roundtrips(Columns(rand(5), rand(5)))
+@test roundtrips(Columns((rand(5), rand(5))))
 @test roundtrips(Columns(c1 = rand(5), c2 = rand(5)))
 @test roundtrips(convert(NDSparse, rand(3,3)))
 @test roundtrips(NDSparse(Columns(y=rand(3), x=rand(3)), rand(3)))
 
 let x = rand(3), y = rand(3), v = rand(3), w = rand(3)
-    @test vcat(Columns(x,y), Columns(v,w)) == Columns(vcat(x,v), vcat(y,w))
+    @test vcat((Columns((x,y))), Columns((v,w))) == Columns((vcat(x,v), vcat(y,w)))
     @test vcat(Columns(x=x,y=y), Columns(x=v,y=w)) == Columns(x=vcat(x,v), y=vcat(y,w))
 end
 
@@ -60,5 +60,5 @@ let
 
     # 97
     x = ndsparse((t=[0.01, 0.05],), (x=[1,2], y=[3,4],))
-    @test map(p->(r = sum(p),), x).data == Columns([4,6], names=[:r])
+    @test map(p->(r = sum(p),), x).data == Columns(([4,6],), names=[:r])
 end

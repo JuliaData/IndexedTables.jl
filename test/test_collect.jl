@@ -63,11 +63,11 @@ end
     # empty
     itr = Iterators.filter(t -> t > 10, 1:8)
     tuple_itr = ((i+1, i-1) for i in itr)
-    @test collect_columns(tuple_itr) == Columns(Int[], Int[])
+    @test collect_columns(tuple_itr) == Columns((Int[], Int[]))
 
     itr = (i for i in 0:-1)
     tuple_itr = ((i+1, i-1) for i in itr)
-    @test collect_columns(tuple_itr) == Columns(Int[], Int[])
+    @test collect_columns(tuple_itr) == Columns((Int[], Int[]))
 end
 
 @testset "collectscalars" begin
