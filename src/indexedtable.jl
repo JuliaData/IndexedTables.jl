@@ -101,10 +101,10 @@ function table(::Val{:serial}, cols::Tup;
                 cs = permute!(cs, perm)
             end
         elseif copy
-            cs = Base.copy(cs)
+            cs = copyto!(similar(cs), cs)
         end
     elseif copy
-        cs = Base.copy(cs)
+        cs = copyto!(similar(cs), cs)
     end
 
     intpkey = map(k->colindex(cs, k), pkey)

@@ -91,8 +91,8 @@ function ndsparse(::Val{:serial}, ks::Tup, vs::Union{Tup, AbstractVector};
             I, d = collect_columns(iter) |> columns
             agg = nothing
         else
-            I = Base.copy(I)
-            d = Base.copy(d)
+            I = copyto!(similar(I), I)
+            d = copyto!(similar(d), d)
         end
     end
     stripnames(x) = isa(x, Columns) ? rows(astuple(columns(x))) : rows((x,))
