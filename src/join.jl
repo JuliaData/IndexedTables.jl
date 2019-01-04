@@ -50,7 +50,7 @@ end
 end
 
 function _join!(::Val{typ}, ::Val{grp}, ::Val{keepkeys}, f, I, data, ks, lout, rout,
-      lnull, rnull, lkey, rkey, ldata, rdata, lperm, rperm, init_group, accumulate) where {typ, grp, keepkeys}
+      lnull, rnull, lkey, rkey, ldata, rdata, lperm, rperm, init_group, accumulate, missingtype) where {typ, grp, keepkeys}
 
     ll, rr = length(lkey), length(rkey)
 
@@ -102,7 +102,8 @@ function _join!(::Val{typ}, ::Val{grp}, ::Val{keepkeys}, f, I, data, ks, lout, r
                             # optimized push! method for concat_tup
                             _push!(Val{:both}(), f, data,
                                    lout, rout, ldata, rdata,
-                                   lperm[x], rperm[y], missing, missing)
+                                   lperm[x], rperm[y], 
+                                   missing_instance(missingtype), missing_instance(missingtype))
                         end
                     end
                 else
@@ -167,11 +168,36 @@ function _join!(::Val{typ}, ::Val{grp}, ::Val{keepkeys}, f, I, data, ks, lout, r
     lnull_idx, rnull_idx
 end
 
-nullrow(t::Type{<:Tuple}) = Tuple(map(x->missing, fieldtypes(t)))
-nullrow(t::Type{<:NamedTuple}) = t(Tuple(map(x->missing, fieldtypes(t))))
-nullrow(t) = missing
 
-function init_join_output(typ, grp, f, ldata, rdata, left, keepkeys, lkey, rkey, init_group, accumulate)
+# Missing
+nullrow(t::Type{<:Tuple}, ::Type{Missing}) = Tuple(map(x->missing, fieldtypes(t)))
+nullrow(t::Type{<:NamedTuple}, ::Type{Missing}) = t(Tuple(map(x->missing, fieldtypes(t))))
+nullrow(t, ::Type{Missing}) = missing
+function outvec(col, idxs, ::Type{Missing})
+    v = convert(Vector{Union{Missing, eltype(col)}}, col)
+    v[idxs] .= missing
+    v
+end
+
+
+# DataValue
+nullrow(::Type{T}, ::Type{DataValue}) where {T <: Tuple} = Tuple(fieldtype(T, i)() for i = 1:fieldcount(T))
+function nullrow(::Type{NamedTuple{names, T}}, ::Type{DataValue}) where {names, T} 
+    NamedTuple{names, T}(Tuple(fieldtype(T, i)() for i = 1:fieldcount(T)))
+end
+nullrow(t, ::Type{DataValue}) = DataValue()
+nullrow(t::DataValue, ::Type{DataValue}) = t()
+function outvec(col, idxs, ::Type{DataValue})
+    nulls = zeros(Bool, length(col))
+    nulls[idxs] .= true
+    if col isa DataValueArray
+        col.isna[idxs] .= true
+    else
+        DataValueArray(col, nulls)
+    end
+end
+
+function init_join_output(typ, grp, f, ldata, rdata, left, keepkeys, lkey, rkey, init_group, accumulate, missingtype)
     lnull = nothing
     rnull = nothing
     loutput = nothing
@@ -181,16 +207,16 @@ function init_join_output(typ, grp, f, ldata, rdata, left, keepkeys, lkey, rkey,
 
         left_type = eltype(ldata)
         if !isa(typ, Union{Val{:left}, Val{:inner}, Val{:anti}})
-            null_left_type = map_params(x -> Union{Missing, x}, eltype(ldata))
-            lnull = nullrow(null_left_type)
+            null_left_type = map_params(x -> type2missingtype(x, missingtype), eltype(ldata))
+            lnull = nullrow(null_left_type, missingtype)
         else
             null_left_type = left_type
         end
 
         right_type = eltype(rdata)
         if !isa(typ, Val{:inner})
-            null_right_type = map_params(x->Union{Missing, x}, eltype(rdata))
-            rnull = nullrow(null_right_type)
+            null_right_type = map_params(x -> type2missingtype(x, missingtype), eltype(rdata))
+            rnull = nullrow(null_right_type, missingtype)
         else
             null_right_type = right_type
         end
@@ -258,6 +284,7 @@ with each `right` row, resulting in `n_occurrences_left * n_occurrences_right` o
 - `rkey = pkeys(right)` -- fields from `right` to match on
 - `lselect = Not(lkey)` -- output columns from `left` (see [`Not`](@ref))
 - `rselect = Not(rkey)` -- output columns from `right`
+- `missingtype = Missing` -- type of missing values (other supported option is `DataValue`)
 
 ## Join methods (`how = :inner`)
 
@@ -289,7 +316,8 @@ function Base.join(f, left::Dataset, right::Dataset;
                    keepkeys=false, # defaults to keeping the keys for only the joined columns
                    init_group=nothing,
                    accumulate=nothing,
-                   cache=true)
+                   cache=true,
+                   missingtype=Missing)
 
     if !(how in [:inner, :left, :outer, :anti])
         error("Invalid how: supported join types are :inner, :left, :outer, and :anti")
@@ -331,26 +359,18 @@ function Base.join(f, left::Dataset, right::Dataset;
     I, data, ks, lout, rout, lnull, rnull, init_group, accumulate =
         init_join_output(typ, grp, f, ldata, rdata,
                          left, keepkeys, lkey, rkey,
-                         init_group, accumulate)
+                         init_group, accumulate, missingtype)
 
     lnull_idx, rnull_idx = _join!(typ, grp, Val{keepkeys}(), f, I,
                                   data, ks, lout, rout, lnull, rnull,
                                   lkey, rkey, ldata, rdata, lperm,
-                                  rperm, init_group, accumulate)
+                                  rperm, init_group, accumulate, missingtype)
 
     if !isempty(lnull_idx) && lout !== nothing
-        lnulls = zeros(Bool, length(lout))
-        lnulls[lnull_idx] .= true
         lout = if lout isa Columns
-            Columns(map(columns(lout)) do col
-                v = convert(Vector{Union{Missing, eltype(col)}}, col)
-                v[lnull_idx] .= missing
-                v
-            end)
+            Columns(map(col -> outvec(col, lnull_idx, missingtype), columns(lout)))
         else
-            v = convert(Vector{Union{Missing, eltype(lout)}}, lout)
-            v[lnull_idx] .= missing
-            v
+            outvec(col, lnull_idx, missingtype)
         end
         data = concat_cols(lout, rout)
     end
@@ -359,15 +379,9 @@ function Base.join(f, left::Dataset, right::Dataset;
         rnulls = zeros(Bool, length(rout))
         rnulls[rnull_idx] .= true
         rout = if rout isa Columns
-            Columns(map(columns(rout)) do col
-                v = convert(Vector{Union{Missing, eltype(col)}}, col)
-                v[rnull_idx] .= missing
-                v
-            end)
+            Columns(map(col -> outvec(col, rnull_idx, missingtype), columns(rout)))
         else
-            v = convert(Vector{Union{Missing, eltype(rout)}}, rout)
-            v[rnull_idx] .= missing
-            v
+            outvec(col, rnull_idx, missingtype)
         end
         data = concat_cols(lout, rout)
     end

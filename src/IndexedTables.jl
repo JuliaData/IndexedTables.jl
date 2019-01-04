@@ -1,10 +1,10 @@
 module IndexedTables
 
-using PooledArrays, SparseArrays, Statistics, WeakRefStrings, TableTraits, 
-    TableTraitsUtils, IteratorInterfaceExtensions
+using PooledArrays, SparseArrays, Statistics, WeakRefStrings
 
 using OnlineStatsBase: OnlineStat, fit!
 import Tables
+import DataValues: DataValue, DataValueArray, dropna
 
 import Base:
     show, eltype, length, getindex, setindex!, ndims, map, convert, keys, values,
@@ -77,9 +77,6 @@ include("reduce.jl")
 include("flatten.jl")
 include("join.jl")
 include("reshape.jl")
-
-# TableTraits/Tables integration
-include("tabletraits.jl")
 include("tables.jl")
 
 end # module
