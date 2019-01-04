@@ -122,7 +122,7 @@ Returns a new table if `f` returns a tuple or named tuple.  If not, returns a ve
 function map(f, t::AbstractIndexedTable; select=nothing) end
 
 function map(f, t::Dataset; select=nothing, copy=false, kwargs...)
-    if isa(f, Tup) && select===nothing
+    if isa(f, Tup) && select === nothing
         select = colnames(t)
     elseif select === nothing
         select = valuenames(t)

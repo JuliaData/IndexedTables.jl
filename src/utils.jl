@@ -1,3 +1,13 @@
+#-----------------------------------------------------------------------# Missing/DataValue
+missing_instance(::Type{Missing}) = missing 
+missing_instance(::Type{DataValue}) = DataValue()
+
+type2missingtype(T, ::Type{Missing}) = Union{T, Missing} 
+type2missingtype(T, ::Type{DataValue}) = DataValue{T}
+type2missingtype(T::Type{<:DataValue}, ::Type{DataValue}) = T
+
+
+#-----------------------------------------------------------------------# other
 (T::Type{<:StringArray})(::typeof(undef), args...) = T(args...)
 
 fastmap(f, xs...) = map(f, xs...)
