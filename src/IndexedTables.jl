@@ -5,6 +5,8 @@ using PooledArrays, SparseArrays, Statistics, WeakRefStrings
 using OnlineStatsBase: OnlineStat, fit!
 import Tables
 import DataValues: DataValue, DataValueArray, dropna
+import TableTraits
+import IteratorInterfaceExtensions
 
 import Base:
     show, eltype, length, getindex, setindex!, ndims, map, convert, keys, values,
@@ -78,5 +80,6 @@ include("flatten.jl")
 include("join.jl")
 include("reshape.jl")
 include("tables.jl")
+include("tabletraits.jl")
 
 end # module
