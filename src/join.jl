@@ -279,12 +279,19 @@ with each `right` row, resulting in `n_occurrences_left * n_occurrences_right` o
 
 # Options (keyword arguments)
 
-- `how = :inner` -- join method to use. Described below.
-- `lkey = pkeys(left)` -- fields from `left` to match on (see [`pkeys`](@ref))
-- `rkey = pkeys(right)` -- fields from `right` to match on
-- `lselect = Not(lkey)` -- output columns from `left` (see [`Not`](@ref))
-- `rselect = Not(rkey)` -- output columns from `right`
-- `missingtype = Missing` -- type of missing values (other supported option is `DataValue`)
+- `how = :inner` 
+    - Join method to use. Described below.
+- `lkey = pkeys(left)` 
+    - Fields from `left` to match on (see [`pkeys`](@ref)).
+- `rkey = pkeys(right)` 
+    - Fields from `right` to match on.
+- `lselect = Not(lkey)` 
+    - Output columns from `left` (see [`Not`](@ref))
+- `rselect = Not(rkey)`
+    - Output columns from `right`.
+- `missingtype = Missing` 
+    - Type of missing values that can be created through `:left` and `:outer` joins.
+    - Other supported option is `DataValue`.
 
 ## Join methods (`how = :inner`)
 

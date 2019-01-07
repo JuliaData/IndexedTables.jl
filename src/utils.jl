@@ -6,7 +6,6 @@ type2missingtype(T, ::Type{Missing}) = Union{T, Missing}
 type2missingtype(T, ::Type{DataValue}) = DataValue{T}
 type2missingtype(T::Type{<:DataValue}, ::Type{DataValue}) = T
 
-
 #-----------------------------------------------------------------------# other
 (T::Type{<:StringArray})(::typeof(undef), args...) = T(args...)
 
