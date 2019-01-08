@@ -132,17 +132,20 @@ function map(f, t::Dataset; select=nothing, copy=false, kwargs...)
     isa(x, Columns) ? table(x; copy=false, kwargs...) : x
 end
 
-function _non_missing(t::Union{Columns, IndexedTable}, sel=(colnames(t)...,))
+
+
+function _non_missing(t::Union{Columns, IndexedTable}, sel=(colnames(t)...,), missingtype=Missing)
     indxs = collect(1:length(t))
     by = isa(sel, Tuple) ? sel : (sel,)
     bycols = columns(t, by)
     d = ColDict(t)
     for (key, c) in zip(by, bycols)
         x = rows(t, c)
-        if Missing <: eltype(x)
-            filt_by_col!(!ismissing, x, indxs)
-            y = Vector{Base.nonmissingtype(eltype(x))}(undef, length(x))
-            y[indxs] = x[indxs]
+        T = eltype(x)
+        if T == type2missingtype(T, missingtype)
+            filt_by_col!(!_ismissing, x, indxs)
+            y = Vector{missingtype2type(T)}(undef, length(x))
+            y[indxs] = T <: DataValue ? get.(x[indxs]) : x[indxs]
             d[key] = y
         else
             d[key] = x
@@ -152,14 +155,15 @@ function _non_missing(t::Union{Columns, IndexedTable}, sel=(colnames(t)...,))
 end
 
 """
-    dropmissing(t)
-    dropmissing(t, select)
+    dropmissing(t        ; missingtype = Missing)
+    dropmissing(t, select; missingtype = Missing)
 
-Drop rows of table `t` which contain `missing` values, optionally only 
-using the columns in `select`.  
-
-Column types will be converted to non-`Missing` types.  E.g. `Array{Union{Int, Missing}}` 
+Drop rows of table `t` which contain missing values, optionally only using the columns 
+in `select`.  Column types will be converted to non-`Missing` types.  E.g. `Array{Union{Int, Missing}}` 
 to `Array{Int}`.
+
+- With `missingtype = Missing`, rows are dropped that contain `ismissing` values.
+- With `missingtype = DataValue`, rows are dropped that contain `DataValues.isna` values.
 
 # Example
 
@@ -167,11 +171,11 @@ to `Array{Int}`.
     dropmissing(t)
     dropmissing(t, (:t, :x))
 """
-function dropmissing(t::Dataset, by=colnames(t))
-    subtable(_non_missing(t, by)...)
+function dropmissing(t::Dataset, by=colnames(t); missingtype=Missing)
+    subtable(_non_missing(t, by, missingtype)...)
 end
 
-@deprecate dropna dropmissing
+Base.@deprecate dropna(t::Dataset) dropmissing(t::Dataset)
 
 filt_by_col!(f, col, indxs) = filter!(i->f(col[i]), indxs)
 

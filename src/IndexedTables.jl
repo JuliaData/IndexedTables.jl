@@ -3,10 +3,13 @@ module IndexedTables
 using PooledArrays, SparseArrays, Statistics, WeakRefStrings
 
 using OnlineStatsBase: OnlineStat, fit!
-import Tables
-import DataValues: DataValue, DataValueArray, dropna
-import TableTraits
-import IteratorInterfaceExtensions
+using StructArrays: StructVector, StructArray, foreachfield, fieldarrays, 
+    collect_structarray, staticschema, ArrayInitializer, refine_perm!, collect_structarray, 
+    collect_empty_structarray, grow_to_structarray!, collect_to_structarray! 
+
+import Tables, TableTraits, IteratorInterfaceExtensions
+
+import DataValues: DataValue, DataValueArray, dropna, isna
 
 import Base:
     show, eltype, length, getindex, setindex!, ndims, map, convert, keys, values,
@@ -15,9 +18,6 @@ import Base:
     sortperm, summary, resize!, vcat, append!, copyto!, view, tail,
     tuple_type_cons, tuple_type_head, tuple_type_tail, in, convert
 
-
-using StructArrays: StructVector, StructArray, foreachfield, fieldarrays, collect_structarray, staticschema, ArrayInitializer,
-                    refine_perm!, collect_structarray, collect_empty_structarray, grow_to_structarray!, collect_to_structarray! 
 
 #-----------------------------------------------------------------------# exports
 export 

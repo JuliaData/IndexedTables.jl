@@ -11,3 +11,15 @@
         @test isequal(t, unstack(stack(t)))
     end
 end
+
+@testset "dropmissing" begin 
+    a = table([[rand(Bool) ? missing : rand() for i in 1:30] for i in 1:3]...)
+    a2 = dropmissing(a)
+    @test all(!ismissing, a2)
+    @test all(x -> eltype(x) == Float64, columns(a2))
+
+    b = table([DataValueArray(rand(30), rand(Bool, 30)) for i in 1:3]...)
+    b2 = dropmissing(b, missingtype=DataValue)
+    @test all(!isna, b2)
+    @test all(x -> eltype(x) == Float64, columns(b2))
+end
