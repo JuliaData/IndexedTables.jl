@@ -9,6 +9,11 @@ type2missingtype(T::Type{<:DataValue}, ::Type{DataValue}) = T
 missingtype2type(T) = Base.nonmissingtype(T)
 missingtype2type(::Type{DataValue{T}}) where {T} = T
 
+unwrap(x) = x
+unwrap(x::DataValue) = get(x)
+
+ismissingtype(T, ::Type{Missing}) = Missing <: T 
+ismissingtype(T, ::Type{DataValue}) = T <: DataValue
 
 _ismissing(x) = ismissing(x)
 _ismissing(x::DataValue) = isna(x)

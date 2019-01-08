@@ -423,6 +423,9 @@ function ColDict(t; copy=nothing)
     ColDict(Int[], t, convert(Array{Any}, collect(cnames)), Any[columns(t)...], copy)
 end
 
+Base.keys(d::ColDict) = d.names
+Base.values(d::ColDict) = d.columns
+
 function Base.getindex(d::ColDict{<:Columns})
     Columns(Tuple(d.columns); names=d.names)
 end

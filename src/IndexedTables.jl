@@ -9,7 +9,7 @@ using StructArrays: StructVector, StructArray, foreachfield, fieldarrays,
 
 import Tables, TableTraits, IteratorInterfaceExtensions
 
-import DataValues: DataValue, DataValueArray, dropna, isna
+import DataValues: DataValue, DataValueArray, isna
 
 import Base:
     show, eltype, length, getindex, setindex!, ndims, map, convert, keys, values,
