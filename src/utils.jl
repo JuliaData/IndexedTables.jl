@@ -6,6 +6,13 @@ type2missingtype(T, ::Type{Missing}) = Union{T, Missing}
 type2missingtype(T, ::Type{DataValue}) = DataValue{T}
 type2missingtype(T::Type{<:DataValue}, ::Type{DataValue}) = T
 
+missingtype2type(T) = Base.nonmissingtype(T)
+missingtype2type(::Type{DataValue{T}}) where {T} = T
+
+
+_ismissing(x) = ismissing(x)
+_ismissing(x::DataValue) = isna(x)
+
 #-----------------------------------------------------------------------# other
 (T::Type{<:StringArray})(::typeof(undef), args...) = T(args...)
 
