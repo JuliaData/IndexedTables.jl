@@ -39,4 +39,8 @@ end
     cm = IndexedTables.convertmissing
     @test isequal(a, cm(cm(a, DataValue), Missing))
     @test isequal(b, cm(cm(b, DataValue), Missing))
+
+    c = table([1, missing, 3], DataValueArray(1:3, [true, false, false]))
+    @test isequal(cm(c, DataValue), table([1,NA,3],[NA,2,3]))
+    @test isequal(cm(c, Missing), table([1,missing,3], [missing,2,3]))
 end

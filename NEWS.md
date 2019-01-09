@@ -18,3 +18,8 @@
 
 - **(breaking)** Switch from DataValues to Missing.  Related: `dropna` has been changed to `dropmissing`.
 - **(breaking)** Depend on OnlineStatsBase rather than OnlineStats. 
+
+## v0.10.0
+
+- **(breaking)** Support for both DataValues and Missing (default).  When `join` generates missing values, use the keyword argument `missingtype` to set the type (`Missing` or `DataValue`)
+- Use `IndexedTables.convertmissing(tbl, T)` to convert the missing values in `tbl` to be of type `T`
