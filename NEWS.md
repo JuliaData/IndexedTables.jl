@@ -22,4 +22,4 @@
 ## v0.10.0
 
 - **(breaking)** Support for both DataValues and Missing (default).  When `join` generates missing values, use the keyword argument `missingtype` to set the type (`Missing` or `DataValue`)
-- Use `IndexedTables.convertmissing(tbl, T)` to convert the missing values in `tbl` to be of type `T`
+- Use `IndexedTables.convertmissing(tbl, T)` to convert the missing values in `tbl` to be of type `T`.
