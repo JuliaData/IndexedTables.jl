@@ -35,8 +35,7 @@ function ndsparse(x; idxcols=nothing, datacols=nothing, copy=false, kwargs...)
     end
 end
 
-# For backward compatibility
-NDSparse(x; kwargs...) = ndsparse(x; kwargs...)
+@deprecate NDSparse(x; kwargs...) ndsparse(x; kwargs...)
 
 function table(rows::AbstractArray{T}; copy=false, kwargs...) where {T<:Union{Tup, Pair}}
     table(collect_columns(rows); copy=false, kwargs...)
