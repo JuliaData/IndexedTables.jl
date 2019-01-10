@@ -196,11 +196,12 @@ Base.@pure function arrayof(S)
         else
             Columns{T,NamedTuple{fieldnames(T), Tuple{map(arrayof, fieldtypes(T))...}}}
         end
-    elseif (T<:Union{Missing,String,WeakRefString} && Missing<:T) ||
-        T<:Union{String, WeakRefString}
+    elseif (T<:Union{Missing,String,WeakRefString} && Missing<:T) || T<:Union{String, WeakRefString}
         StringArray{T, 1}
     elseif T<:Pair
         Columns{T, NamedTuple{(:first, :second), Tuple{map(arrayof, T.parameters)...}}}
+    elseif T <: DataValue
+        DataValueArray{eltype(T)}
     else
         Vector{T}
     end
