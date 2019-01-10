@@ -131,12 +131,9 @@ _impl(impl::Val) = impl
 _impl(impl::Val, x::AbstractArray, z...) = _impl(impl, z...)
 _impl(x::AbstractArray...) = _impl(Val{:serial}(), x...)
 
+# table methods go through here
 function table(cs::Tup; chunks=nothing, kwargs...)
-    if chunks !== nothing
-        impl = Val{:distributed}()
-    else
-        impl = _impl(astuple(cs)...)
-    end
+    impl = chunks !== nothing ? Val(:distributed) : _impl(astuple(cs)...)
     table(impl, cs; chunks=chunks, kwargs...)
 end
 
