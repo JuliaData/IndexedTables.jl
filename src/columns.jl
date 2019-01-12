@@ -671,9 +671,13 @@ renamecol(t, args...) = @cols rename!(t, args...)
 ## Utilities for mapping and reduction with many functions / OnlineStats
 
 @inline _apply(f::OnlineStat, g, x) = (fit!(g, x); g)
-@inline _apply(f::Tup, y::Tup, x::Tup) = map(_apply, f, y, x)
+@inline _apply(f::Tup, y::Tup, x::Tup) = _apply(astuple(f), astuple(y), astuple(x))
+@inline _apply(f::Tuple, y::Tuple, x::Tuple) = map(_apply, f, y, x)
+@inline _apply(f::NamedTuple, y::NamedTuple, x::NamedTuple) = map(_apply, f, y, x)
 @inline _apply(f, y, x) = f(y, x)
-@inline _apply(f::Tup, x::Tup) = map(_apply, f, x)
+@inline _apply(f::Tup, x::Tup) = _apply(astuple(f), astuple(x)) 
+@inline _apply(f::NamedTuple, x::NamedTuple) = map(_apply, f, x)
+@inline _apply(f::Tuple, x::Tuple) = map(_apply, f, x)
 @inline _apply(f, x) = f(x)
 
 @inline init_first(f, x) = x
