@@ -147,8 +147,9 @@ end
     dropmissing(t        )
     dropmissing(t, select)
 
-Drop rows of table `t` which contain missing values, optionally only using the columns 
-in `select`.  Column types will be converted to non-missing types.  For example:
+Drop rows of table `t` which contain missing values (either `Missing` or `DataValue`), 
+optionally only using the columns in `select`.  Column types will be converted to 
+non-missing types.  For example:
 
 - `Vector{Union{Int, Missing}}` -> `Vector{Int}`
 - `DataValueArray{Int}` -> Vector{Int}
