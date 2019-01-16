@@ -18,6 +18,8 @@ ismissingtype(T, ::Type{DataValue}) = T <: DataValue
 _ismissing(x) = ismissing(x)
 _ismissing(x::DataValue) = isna(x)
 
+Base.similar(T::Type{DataValueArray{S}}, n::Int) where {S} = DataValueArray(Vector{S}(undef, n))
+
 #-----------------------------------------------------------------------# other
 (T::Type{<:StringArray})(::typeof(undef), args...) = T(args...)
 
