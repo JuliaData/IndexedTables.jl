@@ -1,4 +1,4 @@
-const default_initializer = ArrayInitializer(t -> t<:Union{Tuple, NamedTuple, Pair})
+const default_initializer = ArrayInitializer(t -> t<:Union{Tuple, NamedTuple, Pair}, (T, sz) -> similar(arrayof(T), sz))
 
 """
     collect_columns(itr)
