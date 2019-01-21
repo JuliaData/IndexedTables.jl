@@ -19,7 +19,6 @@ _ismissing(x) = ismissing(x)
 _ismissing(x::DataValue) = isna(x)
 
 #-----------------------------------------------------------------------# other
-(T::Type{<:StringArray})(::typeof(undef), args...) = T(args...)
 
 fastmap(f, xs...) = map(f, xs...)
 @generated function fastmap(f, xs::NTuple{N}...) where N
