@@ -87,14 +87,12 @@ end
 
 @inline copyelt!(a, i, j) = (@inbounds a[i] = a[j])
 @inline copyelt!(a, i, b, j) = (@inbounds a[i] = b[j])
-
-
 @inline copyelt!(a::PooledArray, i, j) = (a.refs[i] = a.refs[j])
 
 # row operations
 
 @inline roweq(x::AbstractVector, i, j) = (@inbounds eq=x[i] == x[j]; eq)
-@inline roweq(a::PooledArray, i, j) = (@inbounds x=cmp(a.refs[i],a.refs[j]); x)
+@inline roweq(a::PooledArray, i, j) = (@inbounds x=a.refs[i] == a.refs[j]; x)
 
 copyrow!(I::Columns, i, src) = foreachfield(c->copyelt!(c, i, src), I)
 copyrow!(I::Columns, i, src::Columns, j) = foreachfield((c1,c2)->copyelt!(c1, i, c2, j), I, src)
