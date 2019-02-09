@@ -83,15 +83,15 @@ function _join!(::Val{typ}, ::Val{grp}, ::Val{keepkeys}, f, I, data, ks, lout, r
                 # While grouping with keepkeys we want to make sure we create
                 # one group for every unique key in the output index. Hence we may
                 # need to join on smaller groups
-                while i1 < ll && rowcmp(ks, lperm[i1], ks, lperm[i1+1]) == 0
+                while i1 < ll && roweq(ks, lperm[i1], lperm[i1+1])
                     i1 += 1
                 end
             else
-                while i1 < ll && rowcmp(lkey, lperm[i1], lkey, lperm[i1+1]) == 0
+                while i1 < ll && roweq(lkey, lperm[i1], lperm[i1+1])
                     i1 += 1
                 end
             end
-            while j1 < rr && rowcmp(rkey, rperm[j1], rkey, rperm[j1+1]) == 0
+            while j1 < rr && roweq(rkey, rperm[j1], rperm[j1+1])
                 j1 += 1
             end
             if typ !== :anti
@@ -115,7 +115,7 @@ function _join!(::Val{typ}, ::Val{grp}, ::Val{keepkeys}, f, I, data, ks, lout, r
                         end
                     end
                     push!(data, group)
-                    if keepkeys && i1+1 <= ll && rowcmp(lkey, lperm[i1], lkey, lperm[i1+1]) == 0
+                    if keepkeys && i1+1 <= ll && roweq(lkey, lperm[i1], lperm[i1+1])
                         # This means that the next key on the left is equal in the lkey sense
                         # but different in the unique-key sense, so we start to make a new block again
                         i = i1 + 1
