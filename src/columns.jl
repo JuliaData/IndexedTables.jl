@@ -85,14 +85,16 @@ end
 # these can be implemented for custom vector types like PooledVector where
 # you can get big speedups by doing indexing and an operation in one step.
 
-@inline cmpelts(a, i, j) = (@inbounds x=cmp(a[i], a[j]); x)
 @inline copyelt!(a, i, j) = (@inbounds a[i] = a[j])
 @inline copyelt!(a, i, b, j) = (@inbounds a[i] = b[j])
 
-@inline cmpelts(a::PooledArray, i, j) = (x=cmp(a.refs[i],a.refs[j]); x)
+
 @inline copyelt!(a::PooledArray, i, j) = (a.refs[i] = a.refs[j])
 
 # row operations
+
+@inline roweq(x::AbstractVector, i, j) = (@inbounds eq=x[i] == x[j]; eq)
+@inline roweq(a::PooledArray, i, j) = (@inbounds x=cmp(a.refs[i],a.refs[j]); x)
 
 copyrow!(I::Columns, i, src) = foreachfield(c->copyelt!(c, i, src), I)
 copyrow!(I::Columns, i, src::Columns, j) = foreachfield((c1,c2)->copyelt!(c1, i, c2, j), I, src)
@@ -100,29 +102,14 @@ copyrow!(I::AbstractArray, i, src::AbstractArray, j) = (@inbounds I[i] = src[j])
 pushrow!(to::Columns, from::Columns, i) = foreachfield((a,b)->push!(a, b[i]), to, from)
 pushrow!(to::AbstractArray, from::AbstractArray, i) = push!(to, from[i])
 
-@generated function rowless(c::Columns{D,C}, i, j) where {D,C}
-    N = fieldcount(C)
-    ex = :(cmpelts(getfield(fieldarrays(c),$N), i, j) < 0)
-    for n in N-1:-1:1
-        ex = quote
-            let d = cmpelts(getfield(fieldarrays(c),$n), i, j)
-                (d == 0) ? ($ex) : (d < 0)
-            end
-        end
-    end
-    ex
-end
-
 @generated function roweq(c::Columns{D,C}, i, j) where {D,C}
     N = fieldcount(C)
-    ex = :(cmpelts(getfield(fieldarrays(c),1), i, j) == 0)
+    ex = :(roweq(getfield(fieldarrays(c),1), i, j))
     for n in 2:N
-        ex = :(($ex) && (cmpelts(getfield(fieldarrays(c),$n), i, j)==0))
+        ex = :(($ex) && (roweq(getfield(fieldarrays(c),$n), i, j)))
     end
     ex
 end
-
-@inline roweq(x::AbstractVector, i, j) = x[i] == x[j]
 
 # uses number of columns from `d`, assuming `c` has more or equal
 # dimensions, for broadcast joins.
