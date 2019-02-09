@@ -91,7 +91,7 @@ end
 
 # row operations
 
-@inline roweq(x::AbstractVector, i, j) = (@inbounds eq=x[i] == x[j]; eq)
+@inline roweq(x::AbstractVector, i, j) = (@inbounds eq=isequal(x[i], x[j]); eq)
 @inline roweq(a::PooledArray, i, j) = (@inbounds x=a.refs[i] == a.refs[j]; x)
 
 copyrow!(I::Columns, i, src) = foreachfield(c->copyelt!(c, i, src), I)
