@@ -4,6 +4,10 @@ function IteratorInterfaceExtensions.getiterator(source::NDSparse)
     return rows(source)
 end
 
+function IteratorInterfaceExtensions.getiterator(source::IndexedTable)
+    return TableTraitsUtils.create_tableiterator(values(columns(source)), collect(keys(columns(source))))
+end
+
 function ndsparse(x; idxcols=nothing, datacols=nothing, copy=false, kwargs...)
     if TableTraits.isiterable(x)
         source_data = collect_columns(IteratorInterfaceExtensions.getiterator(x))

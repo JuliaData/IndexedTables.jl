@@ -3,33 +3,33 @@ module IndexedTables
 using PooledArrays, SparseArrays, Statistics, WeakRefStrings
 
 using OnlineStatsBase: OnlineStat, fit!
-using StructArrays: StructVector, StructArray, foreachfield, fieldarrays, 
-    collect_structarray, staticschema, ArrayInitializer, refine_perm!, collect_structarray, 
-    collect_empty_structarray, grow_to_structarray!, collect_to_structarray! 
+using StructArrays: StructVector, StructArray, foreachfield, fieldarrays,
+    collect_structarray, staticschema, ArrayInitializer, refine_perm!, collect_structarray,
+    collect_empty_structarray, grow_to_structarray!, collect_to_structarray!
 
-import Tables, TableTraits, IteratorInterfaceExtensions
+import Tables, TableTraits, IteratorInterfaceExtensions, TableTraitsUtils
 
 import DataValues: DataValue, DataValueArray, isna
 
 import Base:
     show, eltype, length, getindex, setindex!, ndims, map, convert, keys, values,
     ==, broadcast, empty!, copy, similar, sum, merge, merge!, mapslices,
-    permutedims, sort, sort!, iterate, pairs, reduce, push!, size, permute!, issorted, 
+    permutedims, sort, sort!, iterate, pairs, reduce, push!, size, permute!, issorted,
     sortperm, summary, resize!, vcat, append!, copyto!, view, tail,
     tuple_type_cons, tuple_type_head, tuple_type_tail, in, convert
 
 
 #-----------------------------------------------------------------------# exports
-export 
+export
     # macros
-    @cols, 
+    @cols,
     # types
     AbstractNDSparse, All, ApplyColwise, Between, ColDict, Columns, IndexedTable,
     Keys, NDSparse, NextTable, Not,
     # functions
     aggregate!, antijoin, asofjoin, collect_columns, colnames,
     column, columns, convertdim, dimlabels, flatten, flush!, groupby, groupjoin,
-    groupreduce, innerjoin, insertafter!, insertbefore!, insertcol, insertcolafter, 
+    groupreduce, innerjoin, insertafter!, insertbefore!, insertcol, insertcolafter,
     insertcolbefore, leftgroupjoin, leftjoin, map_rows, naturalgroupjoin, naturaljoin,
     ncols, ndsparse, outergroupjoin, outerjoin, pkeynames, pkeys, popcol, pushcol,
     reducedim_vec, reindex, renamecol, rows, select, selectkeys, selectvalues, setcol,

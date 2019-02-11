@@ -51,6 +51,14 @@ it4 = table(source_array, copy=true)
 @test it4[2] == (a=2,b=2.,c="B")
 @test it4[3] == (a=3,b=3.,c="C")
 
+source_nt_with_missing = table([1,missing], [missing,2.], names=[:a,:b])
+target_array_nt_with_missing = collect(getiterator(source_nt_with_missing))
+@test target_array_nt_with_missing == [(a=DataValue(1),b=DataValue{Float64}()),(a=DataValue{Int}(),b=DataValue(2.))]
+
+source_nt_with_datavalue = table([1,NA], [NA,2.], names=[:a,:b])
+target_array_nt_with_datavalue = collect(getiterator(source_nt_with_datavalue))
+@test target_array_nt_with_datavalue == [(a=DataValue(1),b=DataValue{Float64}()),(a=DataValue{Int}(),b=DataValue(2.))]
+
 # Use a Set to really hit the iterator constructor
 as_set = Set(source_array)
 it4 = table(as_set, copy=true)
