@@ -93,6 +93,10 @@ end
 
 @inline roweq(x::AbstractVector, i, j) = (@inbounds eq=isequal(x[i], x[j]); eq)
 @inline roweq(a::PooledArray, i, j) = (@inbounds x=a.refs[i] == a.refs[j]; x)
+@inline function roweq(a::StringArray{String}, i, j)
+    weaksa = convert(StringArray{WeakRefString{UInt8}}, a)
+    @inbounds isequal(weaksa[i], weaksa[j])
+end
 
 copyrow!(I::Columns, i, src) = foreachfield(c->copyelt!(c, i, src), I)
 copyrow!(I::Columns, i, src::Columns, j) = foreachfield((c1,c2)->copyelt!(c1, i, c2, j), I, src)
