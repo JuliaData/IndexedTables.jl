@@ -120,7 +120,7 @@ end
     ex = :(cmp(getfield(fieldarrays(c),$N)[i], getfield(fieldarrays(d),$N)[j]))
     for n in N-1:-1:1
         ex = quote
-            let k = cmp(getfield(fieldarrays(c),$n)[i], getfield(fieldarrays(d),$n)[j])
+            let k = rowcmp(getfield(fieldarrays(c),$n), i, getfield(fieldarrays(d),$n), j)
                 (k == 0) ? ($ex) : k
             end
         end
@@ -130,6 +130,12 @@ end
 
 @inline function rowcmp(c::AbstractVector, i, d::AbstractVector, j)
     cmp(c[i], d[j])
+end
+
+@inline function rowcmp(c::StringArray{String}, i, d::StringArray{String}, j)
+    wc = convert(StringArray{WeakRefString{UInt8}}, c)
+    wd = convert(StringArray{WeakRefString{UInt8}}, d)
+    cmp(wc[i], wd[j])
 end
 
 # test that the row on the right is "as of" the row on the left, i.e.

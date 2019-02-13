@@ -1,7 +1,7 @@
 julia 0.7
 OnlineStatsBase 0.9.1
 PooledArrays 0.4.1
-WeakRefStrings 0.5.4
+WeakRefStrings 0.5.7
 IteratorInterfaceExtensions 0.1.0
 TableTraits
 Tables
