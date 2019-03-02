@@ -1,8 +1,8 @@
 #-----------------------------------------------------------------------# Missing/DataValue
-missing_instance(::Type{Missing}) = missing 
+missing_instance(::Type{Missing}) = missing
 missing_instance(::Type{DataValue}) = DataValue()
 
-type2missingtype(T, ::Type{Missing}) = Union{T, Missing} 
+type2missingtype(T, ::Type{Missing}) = Union{T, Missing}
 type2missingtype(T, ::Type{DataValue}) = DataValue{T}
 type2missingtype(T::Type{<:DataValue}, ::Type{DataValue}) = T
 
@@ -12,7 +12,7 @@ missingtype2type(::Type{DataValue{T}}) where {T} = T
 unwrap(x) = x
 unwrap(x::DataValue) = get(x)
 
-ismissingtype(T, ::Type{Missing}) = Missing <: T 
+ismissingtype(T, ::Type{Missing}) = Missing <: T
 ismissingtype(T, ::Type{DataValue}) = T <: DataValue
 
 _ismissing(x) = ismissing(x)
@@ -66,98 +66,6 @@ astuple(n::NamedTuple) = Tuple(n)
 
 sortperm_fast(x) = sortperm(x)
 sortperm_fast(x::StringVector) = sortperm(convert(StringVector{WeakRefString{UInt8}}, x))
-
-function sortperm_fast(v::Vector{T}) where T<:Integer
-    n = length(v)
-    if n > 1
-        min, max = extrema(v)
-        rangelen = max - min + 1
-        if rangelen < div(n,2)
-            return sortperm_int_range(v, rangelen, min)
-        end
-    end
-    return sortperm(v, alg=MergeSort)
-end
-
-function sortperm_int_range(x::Vector{T}, rangelen, minval) where T<:Integer
-    offs = 1 - minval
-    n = length(x)
-
-    where = fill(0, rangelen+1)
-    where[1] = 1
-    @inbounds for i = 1:n
-        where[x[i] + offs + 1] += 1
-    end
-    cumsum!(where, where)
-
-    P = Vector{Int}(undef, n)
-    @inbounds for i = 1:n
-        label = x[i] + offs
-        wl = where[label]
-        P[wl] = i
-        where[label] = wl+1
-    end
-
-    return P
-end
-
-# sort the values in v[i0:i1] in place, by array `by`
-Base.@noinline function sort_sub_by!(v, i0, i1, by, order, temp)
-    empty!(temp)
-    sort!(v, i0, i1, MergeSort, order, temp)
-end
-
-Base.@noinline function sort_sub_by!(v, i0, i1, by::PooledArray, order, temp)
-    empty!(temp)
-    sort!(v, i0, i1, MergeSort, order, temp)
-end
-
-Base.@noinline function sort_sub_by!(v, i0, i1, by::Vector{T}, order, temp) where T<:Integer
-    min = max = by[v[i0]]
-    @inbounds for i = i0+1:i1
-        val = by[v[i]]
-        if val < min
-            min = val
-        elseif val > max
-            max = val
-        end
-    end
-    rangelen = max-min+1
-    n = i1-i0+1
-    if rangelen <= n
-        sort_int_range_sub_by!(v, i0-1, n, by, rangelen, min, temp)
-    else
-        empty!(temp)
-        sort!(v, i0, i1, MergeSort, order, temp)
-    end
-    v
-end
-
-# in-place counting sort of x[ioffs+1:ioffs+n] by values in `by`
-function sort_int_range_sub_by!(x, ioffs, n, by, rangelen, minval, temp)
-    offs = 1 - minval
-
-    where = fill(0, rangelen+1)
-    where[1] = 1
-    @inbounds for i = 1:n
-        where[by[x[i+ioffs]] + offs + 1] += 1
-    end
-    cumsum!(where, where)
-
-    length(temp) < n && resize!(temp, n)
-    @inbounds for i = 1:n
-        xi = x[i+ioffs]
-        label = by[xi] + offs
-        wl = where[label]
-        temp[wl] = xi
-        where[label] = wl+1
-    end
-
-    @inbounds for i = 1:n
-        x[i+ioffs] = temp[i]
-    end
-    x
-end
 
 function append_n!(X, val, n)
     l = length(X)
