@@ -179,7 +179,7 @@ function nullrow(::Type{NamedTuple{names, T}}, ::Type{DataValue}) where {names, 
     NamedTuple{names, T}(Tuple(fieldtype(T, i)() for i = 1:fieldcount(T)))
 end
 
-nullrow(T, M) = missing_instance(T)
+nullrow(T, M) = missing_instance(M)
 
 # a joined column with missing values at `idxs`
 function outvec(col, idxs, ::Type{T}) where {T}
@@ -190,7 +190,7 @@ function outvec(col, idxs, ::Type{T}) where {T}
     v
 end
 
-# Get StringArray and DataValue to play nice together
+# Ge StringArray and DataValue to play nice together
 function outvec(col::StringArray{T}, idxs, ::Type{DataValue}) where {T}
     mask = [i in idxs for i in 1:length(col)]
     for i in idxs
