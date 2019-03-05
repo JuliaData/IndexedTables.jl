@@ -14,7 +14,7 @@ end
 abstract type AbstractIndexedTable end
 
 """
-A tabular data structure that extends [`Columns`](@ref).  Create an `IndexedTable` with the 
+A tabular data structure that extends [`Columns`](@ref).  Create an `IndexedTable` with the
 [`table`](@ref) function.
 """
 struct IndexedTable{C<:Columns} <: AbstractIndexedTable
@@ -57,7 +57,7 @@ Create an `IndexedTable` from any object `x` that follows the `Tables.jl` interf
 # Keyword Argument Options:
 
 - `pkey`: select columns to sort by and be the primary key.
-- `presorted = false`: is the data pre-sorted by primary key columns? 
+- `presorted = false`: is the data pre-sorted by primary key columns?
 - `copy = true`: creates a copy of the input vectors if `true`. Irrelevant if `chunks` is specified.
 - `chunks::Integer`: distribute the table.  Options are:
     - `Int` -- (number of chunks) a safe bet is `nworkers()` after `using Distributed`.
@@ -141,7 +141,7 @@ table(cs::Columns; kwargs...) = table(columns(cs); kwargs...)
 table(c::Columns{<:Pair}; kwargs...) = convert(IndexedTable, columns(c).first, columns(c).second; kwargs...)
 
 function table(cols::AbstractArray...; names=nothing, kwargs...)
-    if isa(names, AbstractArray) && all(x->isa(x, Symbol), names)
+    if !isnothing(names) && all(x -> isa(x, Symbol), names)
         cs = namedtuple(names...)(cols)
     else
         cs = cols
@@ -368,7 +368,7 @@ Names of all columns in `itr` except `cols`. `itr` can be any of
 """
 excludecols(t, cols) = excludecols(t, (cols,))
 excludecols(t, cols::SpecialSelector) = excludecols(t, lowerselection(t, cols))
-function excludecols(t, cols::Tuple) 
+function excludecols(t, cols::Tuple)
     Tuple(setdiff(1:length(colnames(t)), map(x -> colindex(t, x), cols)))
 end
 
