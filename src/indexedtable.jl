@@ -141,7 +141,7 @@ table(cs::Columns; kwargs...) = table(columns(cs); kwargs...)
 table(c::Columns{<:Pair}; kwargs...) = convert(IndexedTable, columns(c).first, columns(c).second; kwargs...)
 
 function table(cols::AbstractArray...; names=nothing, kwargs...)
-    if !isnothing(names) && all(x -> isa(x, Symbol), names)
+    if names !== nothing && all(x -> isa(x, Symbol), names)
         cs = namedtuple(names...)(cols)
     else
         cs = cols
