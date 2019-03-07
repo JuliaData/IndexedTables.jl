@@ -19,7 +19,7 @@ convert(::Type{IndexedTable}, nd::NDSparse) = IndexedTable(nd)
 """
     ndsparse(keys, values; kw...)
 
-Construct an NDSparse array with the given `keys` and `values` columns. On construction, 
+Construct an NDSparse array with the given `keys` and `values` columns. On construction,
 the keys and data are sorted in lexicographic order of the `keys`.
 
 # Keyword Argument Options:
@@ -38,7 +38,7 @@ the keys and data are sorted in lexicographic order of the `keys`.
     values(x)
     x["a"]
 
-    # Dimensions are named if constructed with a named tuple of columns 
+    # Dimensions are named if constructed with a named tuple of columns
     x = ndsparse((index = 1:10,), rand(10))
     x[1]
 
