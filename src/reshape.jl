@@ -2,7 +2,7 @@
     stack(t, by = pkeynames(t); select = Not(by), variable = :variable, value = :value)`
 
 Reshape a table from the wide to the long format. Columns in `by` are kept as indexing columns.
-Columns in `select` are stacked. In addition to the id columns, two additional columns labeled 
+Columns in `select` are stacked. In addition to the id columns, two additional columns labeled
 `variable` and `value` are added, containing the column identifier and the stacked columns.
 See also [`unstack`](@ref).
 
@@ -53,7 +53,9 @@ function unstack(t::D, by = pkeynames(t); variable = :variable, value = :value) 
 end
 
 function unstack(::Type{D}, ::Type{T}, key, val, cols::AbstractVector{S}) where {D <:Dataset, T, S}
-    dest_val = Columns(Tuple(Array{Union{T, Missing}}(undef, length(val)) for i in cols); names = cols)
+    nulltype = Union{T, Missing}
+    n = length(val)
+    dest_val = Columns(Tuple(fill!(similar(arrayof(nulltype), n), missing) for i in cols); names = cols)
     for (i, el) in enumerate(val)
         for (k, v) in el
             ismissing(columns(dest_val, S(k))[i]) || error("Repeated values with same label are not allowed")

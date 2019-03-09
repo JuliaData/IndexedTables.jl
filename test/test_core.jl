@@ -646,7 +646,7 @@ end
         table((a=[1, 1, 2, 2], b=[1, 2, 1, 2], c=[1, 2, 3, 4], d=[2, 3, missing, missing]))
     )
     @test isequal(
-        join(l, r, how=:outer), 
+        join(l, r, how=:outer),
         table((a=[0, 1, 1, 2, 2, 3], b=[1, 1, 2, 1, 2, 2], c=[missing, 1, 2, 3, 4, missing], d=[1, 2, 3, missing, missing, 4]))
     )
     a = table([1],[2], names=[:x,:y])
@@ -692,7 +692,7 @@ end
 
     # null instead of missing row
     @test isequal(
-        leftjoin(+, t1, t2, lselect=2, rselect=2), 
+        leftjoin(+, t1, t2, lselect=2, rselect=2),
         table([1,2,3,4], [missing, missing, 13, 15])
     )
 
@@ -1031,6 +1031,12 @@ end
                   [1, 1, 4, 8, 9, 27, 16, 64];
                   names = [:x, :var, :val], pkey = :x)
     res = table(1:4, [1, 4, 9, 16], [1, 8, 27, 64], names = [:x, Symbol(2), Symbol(3)], pkey = :x)
+    @test unstack(long2; variable = :var, value = :val) == res
+    long3 = table([1, 1, 2, 2, 3, 3, 4, 4],
+                  [2, 3, 2, 3, 2, 3, 2, 3],
+                  string.([1, 1, 4, 8, 9, 27, 16, 64]);
+                  names = [:x, :var, :val], pkey = :x)
+    res = table(1:4, string.([1, 4, 9, 16]), string.([1, 8, 27, 64]), names = [:x, Symbol(2), Symbol(3)], pkey = :x)
     @test unstack(long2; variable = :var, value = :val) == res
 end
 
