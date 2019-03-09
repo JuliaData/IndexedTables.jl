@@ -1037,7 +1037,7 @@ end
                   string.([1, 1, 4, 8, 9, 27, 16, 64]);
                   names = [:x, :var, :val], pkey = :x)
     res = table(1:4, string.([1, 4, 9, 16]), string.([1, 8, 27, 64]), names = [:x, Symbol(2), Symbol(3)], pkey = :x)
-    @test unstack(long2; variable = :var, value = :val) == res
+    @test unstack(long3; variable = :var, value = :val) == res
 end
 
 @testset "select" begin
