@@ -38,7 +38,7 @@ function sortpermby(t, by; cache=false)
         return partial_perm
     end
 
-    bycols = columns(t, by)
+    bycols = map(fast_sortable, columns(t, by))
     perm = if matched_cols > 0
         nxtcol = bycols[matched_cols+1]
         p = convert(Array{UInt32}, partial_perm)

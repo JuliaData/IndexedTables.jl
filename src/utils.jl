@@ -74,10 +74,14 @@ astuple(t::Tuple) = t
 
 astuple(n::NamedTuple) = Tuple(n)
 
-# sortperm with counting sort
+# optimized sortperm
 
-sortperm_fast(x) = sortperm(x)
-sortperm_fast(x::StringVector) = sortperm(convert(StringVector{WeakRefString{UInt8}}, x))
+sortperm_fast(x) = sortperm(fast_sortable(x))
+
+fast_sortable(y) = y
+fast_sortable(y::PooledArray) = PooledArrays.fast_sortable(y)
+fast_sortable(y::StringArray) = fast_sortable(PooledArray(y))
+fast_sortable(y::StringArray{String}) = fast_sortable(convert(StringArray{WeakRefString{UInt8}}, y))
 
 function append_n!(X, val, n)
     l = length(X)
