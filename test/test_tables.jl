@@ -1,7 +1,7 @@
 
 
 
-@testset "Tables Interface" begin 
+@testset "Tables Interface" begin
     n = 1000
     x, y, z = 1:n, rand(Bool, n), randn(n)
 
@@ -11,4 +11,5 @@
     # @test t == table(Tables.rowtable((x=x,y=y,z=z)))
     @test Tables.istable(columns(t))
     @test Tables.istable(Columns(columns(t)))
+    @test Tables.schema(t) == Tables.Schema((:x, :y, :z), (Int, Bool, Float64))
 end
