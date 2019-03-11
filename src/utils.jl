@@ -74,14 +74,9 @@ astuple(t::Tuple) = t
 
 astuple(n::NamedTuple) = Tuple(n)
 
-# optimized sortperm: replace string arrays by pooled version before calling sortperm_fast or sortperm_by
+# optimized sortperm: improve storage before calling sortperm_fast or sortperm_by
 
-sortperm_fast(x) = sortperm(poolstrings(x))
-
-poolstrings(y) = y
-poolstrings(y::StringArray) = PooledArray(y)
-poolstrings(y::StringArray{String}) = poolstrings(convert(StringArray{WeakRefString{UInt8}}, y))
-poolstrings(y::StructVector{<:Union{Tuple, NamedTuple}}) = StructVector(map(poolstrings, columns(y)))
+sortperm_fast(x) = sortperm(compact_mem(x))
 
 function append_n!(X, val, n)
     l = length(X)
@@ -272,7 +267,8 @@ function isshared(x)
 end
 
 compact_mem(x) = x
-compact_mem(x::StringArray{String}) = convert(StringArray{WeakRefString{UInt8}}, x)
+compact_mem(x::StringArray) = PooledArray(x)
+compact_mem(x::StringArray{String}) = compact_mem(convert(StringArray{WeakRefString{UInt8}}, x))
 
 function getsubfields(n::NamedTuple, fields)
     fns = fieldnames(typeof(n))
