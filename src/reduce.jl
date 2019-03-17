@@ -1,7 +1,7 @@
 """
     reduce(f, t::IndexedTable; select::Selection)
 
-Apply reducer function `f` pair-wise to the selection `select` in `t`.  The reducer `f` 
+Apply reducer function `f` pair-wise to the selection `select` in `t`.  The reducer `f`
 can be:
 
 1. A function
@@ -86,7 +86,7 @@ end
 """
     groupreduce(f, t, by = pkeynames(t); select)
 
-Calculate a [`reduce`](@ref) operation `f` over table `t` on groups defined by the values 
+Calculate a [`reduce`](@ref) operation `f` over table `t` on groups defined by the values
 in selection `by`.  The result is put in a table keyed by the unique `by` values.
 
 # Examples
@@ -99,7 +99,7 @@ in selection `by`.  The result is put in a table keyed by the unique `by` values
     groupreduce(+, t2, (:x, :y), select = :z)
 
     # different reducers for different columns
-    groupreduce((sumy = :y => +, sumz = :z => +), t2, :x)  
+    groupreduce((sumy = :y => +, sumz = :z => +), t2, :x)
 """
 function groupreduce(f, t::Dataset, by=pkeynames(t);
                      select = t isa AbstractIndexedTable ? Not(by) : valuenames(t),
@@ -121,8 +121,7 @@ function groupreduce(f, t::Dataset, by=pkeynames(t);
     if !isa(by, Tuple)
         by=(by,)
     end
-    key  = rows(t, by)
-    perm = sortpermby(t, by, cache=cache)
+    perm, key = sortpermby(t, by, cache=cache, return_rows=true)
 
     fs, input, T = init_inputs(f, data, reduced_type, false)
 
@@ -180,8 +179,8 @@ collectiontype(t::Dataset) = collectiontype(typeof(t))
 """
     groupby(f, t, by = pkeynames(t); select, flatten=false)
 
-Apply `f` to the `select`-ed columns (see [`select`](@ref)) in groups defined by the 
-unique values of `by`. 
+Apply `f` to the `select`-ed columns (see [`select`](@ref)) in groups defined by the
+unique values of `by`.
 
 If `f` returns a vector, split it into multiple columns with `flatten = true`.
 
@@ -215,17 +214,16 @@ function groupby(f, t::Dataset, by=pkeynames(t);
         by = (by,)
     end
 
-    key = by == () ? fill((), length(t)) : rows(t, by)
-
     fs, input, S = init_inputs(f, data, reduced_type, true)
 
     if by == ()
+        key = fill((), length(t))
         res = usekey ? _apply_with_key(fs, (), input, identity) : _apply_with_key(fs, input, identity)
         res_tup = addname(res, namedtuple(nicename(f)))
         return flatten ? res_tup[end] : res_tup
     end
 
-    perm = sortpermby(t, by)
+    perm, key = sortpermby(t, by, return_rows=true)
     # Note: we're not using S here, we'll let _groupby figure it out
     name = isa(t, IndexedTable) ? namedtuple(nicename(f)) : nothing
     iter = GroupBy(fs, key, input, perm, usekey = usekey, name = name)
@@ -266,7 +264,7 @@ init_func(ac::ApplyColwise, t::AbstractVector) = ac.functions
     summarize(f, t, by = pkeynames(t); select = Not(by), stack = false, variable = :variable)
 
 Apply summary functions column-wise to a table. Return a `NamedTuple` in the non-grouped case
-and a table in the grouped case. Use `stack=true` to stack results of the same summary function 
+and a table in the grouped case. Use `stack=true` to stack results of the same summary function
 for different columns.
 
 # Examples
@@ -329,7 +327,7 @@ Drop the `dims` dimension(s) and aggregate values with `f`.
     x = ndsparse((x=[1,1,1,2,2,2],
                   y=[1,2,2,1,2,2],
                   z=[1,1,2,1,1,2]), [1,2,3,4,5,6])
-                  
+
     reduce(+, x; dims=1)
     reduce(+, x; dims=(1,3))
 """
