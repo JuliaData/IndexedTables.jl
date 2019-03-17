@@ -757,4 +757,4 @@ end
 
 ### utils
 
-compact_mem(x::Columns{<:Union{Tuple, NamedTuple}}) = Columns(map(compact_mem, columns(x)))
+compact_mem(x::Columns) = Columns(map(compact_mem, columns(x)))	

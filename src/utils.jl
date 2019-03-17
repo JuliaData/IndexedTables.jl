@@ -74,9 +74,9 @@ astuple(t::Tuple) = t
 
 astuple(n::NamedTuple) = Tuple(n)
 
-# optimized sortperm: improve storage before calling sortperm_fast or sortperm_by
+# optimized sortperm: pool non isbits types before calling sortperm_fast or sortperm_by
 
-sortperm_fast(x) = sortperm(compact_mem(x))
+sortperm_fast(x) = sortperm(StructArrays.pool(x))
 
 function append_n!(X, val, n)
     l = length(X)
@@ -267,8 +267,7 @@ function isshared(x)
 end
 
 compact_mem(x) = x
-compact_mem(x::StringArray) = PooledArray(x)
-compact_mem(x::StringArray{String}) = compact_mem(convert(StringArray{WeakRefString{UInt8}}, x))
+compact_mem(x::StringArray{String}) = convert(StringArray{WeakRefString{UInt8}}, x)
 
 function getsubfields(n::NamedTuple, fields)
     fns = fieldnames(typeof(n))
