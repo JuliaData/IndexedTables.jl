@@ -44,7 +44,7 @@ function sortpermby(t, by; cache=false)
         nxtcol = bycols[matched_cols+1]
         p = convert(Array{UInt32}, partial_perm)
         refine_perm!(p, bycols, matched_cols,
-                     rows(byrows, canonorder[1:matched_cols]),
+                     rows(byrows, Tuple(1:matched_cols)),
                      nxtcol, 1, length(t))
         p
     else
