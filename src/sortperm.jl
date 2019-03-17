@@ -38,16 +38,17 @@ function sortpermby(t, by; cache=false)
         return partial_perm
     end
 
-    bycols = map(StructArrays.pool, columns(t, by))
+    byrows = pool(rows(t, by))
+    bycols = columns(byrows)
     perm = if matched_cols > 0
         nxtcol = bycols[matched_cols+1]
         p = convert(Array{UInt32}, partial_perm)
         refine_perm!(p, bycols, matched_cols,
-                     rows(t, canonorder[1:matched_cols]),
+                     rows(byrows, canonorder[1:matched_cols]),
                      nxtcol, 1, length(t))
         p
     else
-        sortperm(rows(bycols))
+        sortperm(byrows)
     end
 
     if cache

@@ -76,7 +76,7 @@ astuple(n::NamedTuple) = Tuple(n)
 
 # optimized sortperm: pool non isbits types before calling sortperm_fast or sortperm_by
 
-sortperm_fast(x) = sortperm(StructArrays.pool(x))
+sortperm_fast(x) = sortperm(pool(x))
 
 function append_n!(X, val, n)
     l = length(X)
