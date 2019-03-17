@@ -217,7 +217,6 @@ function groupby(f, t::Dataset, by=pkeynames(t);
     fs, input, S = init_inputs(f, data, reduced_type, true)
 
     if by == ()
-        key = fill((), length(t))
         res = usekey ? _apply_with_key(fs, (), input, identity) : _apply_with_key(fs, input, identity)
         res_tup = addname(res, namedtuple(nicename(f)))
         return flatten ? res_tup[end] : res_tup
