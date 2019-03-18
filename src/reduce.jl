@@ -105,12 +105,12 @@ function groupreduce(f, t::Dataset, by=pkeynames(t);
     if !isa(by, Tuple)
         by=(by,)
     end
-    perm, keys = sortpermby(t, by, cache=cache, return_keys=true)
+    perm, key = sortpermby(t, by, cache=cache, return_keys=true)
 
     fs, input, T = init_inputs(f, data, reduced_type, false)
 
     name = isa(t, IndexedTable) ? namedtuple(nicename(f)) : nothing
-    iter = groupreduce_iter(fs, keys, input, perm; name=name)
+    iter = groupreduce_iter(fs, key, input, perm, name=name)
     convert(collectiontype(t), collect_columns(iter),
             presorted=true, copy=false)
 end
