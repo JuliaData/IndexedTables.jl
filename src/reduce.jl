@@ -83,6 +83,16 @@ function Base.iterate(iter::GroupReduce, i1=1)
     (key[perm[i1]] => addname(val, name)), i
 end
 
+function groupreduce_iter(f, keys, data, perm, name)
+    iter = lazygroupmap(keys, perm) do key, perm, idxs
+        val = init_first(f, data[perm[first(idxs)]])
+        for i in idxs[2:end]
+            val = _apply(f, val, data[perm[i]])
+        end
+        key => addname(val, name)
+    end
+end
+
 """
     groupreduce(f, t, by = pkeynames(t); select)
 
@@ -121,12 +131,12 @@ function groupreduce(f, t::Dataset, by=pkeynames(t);
     if !isa(by, Tuple)
         by=(by,)
     end
-    perm, key = sortpermby(t, by, cache=cache, return_keys=true)
+    perm, keys = sortpermby(t, by, cache=cache, return_keys=true)
 
     fs, input, T = init_inputs(f, data, reduced_type, false)
 
     name = isa(t, IndexedTable) ? namedtuple(nicename(f)) : nothing
-    iter = GroupReduce(fs, key, input, perm, name=name)
+    iter = groupreduce_iter(fs, keys, input, perm, name)
     convert(collectiontype(t), collect_columns(iter),
             presorted=true, copy=false)
 end
