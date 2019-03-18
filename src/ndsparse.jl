@@ -87,7 +87,7 @@ function ndsparse(::Val{:serial}, ks::Tup, vs::Union{Tup, AbstractVector};
         d = d[p]
     elseif copy
         if agg !== nothing
-            iter = GroupReduce(agg, I, d, Base.OneTo(length(I)))
+            iter = groupreduce_iter(agg, I, d, Base.OneTo(length(I)))
             I, d = collect_columns(iter) |> columns
             agg = nothing
         else

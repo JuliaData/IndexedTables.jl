@@ -57,33 +57,7 @@ addname(v, name) = v
 addname(v::Tup, name::Type{<:NamedTuple}) = v
 addname(v, name::Type{<:NamedTuple}) = name((v,))
 
-struct GroupReduce{F, S, T, P, N}
-    f::F
-    key::S
-    data::T
-    perm::P
-    name::N
-    n::Int
-
-    GroupReduce(f::F, key::S, data::T, perm::P; name::N = nothing) where{F, S, T, P, N} =
-        new{F, S, T, P, N}(f, key, data, perm, name, length(key))
-end
-
-Base.IteratorSize(::Type{<:GroupReduce}) = Base.SizeUnknown()
-
-function Base.iterate(iter::GroupReduce, i1=1)
-    i1 > iter.n && return nothing
-    f, key, data, perm, n, name = iter.f, iter.key, iter.data, iter.perm, iter.n, iter.name
-    val = init_first(f, data[perm[i1]])
-    i = i1+1
-    while i <= n && roweq(key, perm[i], perm[i1])
-        val = _apply(f, val, data[perm[i]])
-        i += 1
-    end
-    (key[perm[i1]] => addname(val, name)), i
-end
-
-function groupreduce_iter(f, keys, data, perm, name)
+function groupreduce_iter(f, keys, data, perm, name=nothing)
     iter = lazygroupmap(keys, perm) do key, perm, idxs
         val = init_first(f, data[perm[first(idxs)]])
         for i in idxs[2:end]
