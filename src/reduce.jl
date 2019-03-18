@@ -121,7 +121,7 @@ function groupreduce(f, t::Dataset, by=pkeynames(t);
     if !isa(by, Tuple)
         by=(by,)
     end
-    perm, key = sortpermby(t, by, cache=cache, return_rows=true)
+    perm, key = sortpermby(t, by, cache=cache, return_keys=true)
 
     fs, input, T = init_inputs(f, data, reduced_type, false)
 
@@ -222,7 +222,7 @@ function groupby(f, t::Dataset, by=pkeynames(t);
         return flatten ? res_tup[end] : res_tup
     end
 
-    perm, key = sortpermby(t, by, return_rows=true)
+    perm, key = sortpermby(t, by, return_keys=true)
     # Note: we're not using S here, we'll let _groupby figure it out
     name = isa(t, IndexedTable) ? namedtuple(nicename(f)) : nothing
     iter = GroupBy(fs, key, input, perm, usekey = usekey, name = name)

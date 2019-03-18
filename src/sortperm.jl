@@ -23,7 +23,7 @@ function best_perm_estimate(perms, cols)
     return (bestmatch, bestperm)
 end
 
-function sortpermby(t, by; cache=false, return_rows=false)
+function sortpermby(t, by; cache=false, return_keys=false)
     by = lowerselection(t, by)
     if !isa(by, Tuple)
         by = (by,)
@@ -35,7 +35,7 @@ function sortpermby(t, by; cache=false, return_rows=false)
 
     if matched_cols == length(by)
         # first n index columns
-        return return_rows ? (partial_perm, pool(rows(t, by))) : partial_perm
+        return return_keys ? (partial_perm, pool(rows(t, by))) : partial_perm
     end
 
     byrows = pool(rows(t, by))
@@ -55,7 +55,7 @@ function sortpermby(t, by; cache=false, return_rows=false)
         cacheperm!(t, Perm(canonorder_vec, perm))
     end
 
-    return return_rows ? (perm, byrows) : perm
+    return return_keys ? (perm, byrows) : perm
 end
 
 function sortpermby(t, by::AbstractArray; cache=true)
