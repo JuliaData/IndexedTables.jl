@@ -58,7 +58,7 @@ addname(v::Tup, name::Type{<:NamedTuple}) = v
 addname(v, name::Type{<:NamedTuple}) = name((v,))
 
 function groupreduce_iter(f, keys, data, perm; name=nothing)
-    iter = lazygroupmap(keys, perm) do key, perm, idxs
+    iter = maptiedindices(keys, perm) do key, idxs
         val = init_first(f, data[perm[first(idxs)]])
         for i in idxs[2:end]
             val = _apply(f, val, data[perm[i]])
@@ -129,7 +129,7 @@ _apply_with_key(f::Tup, key, data, process_data) = _apply_with_key(f, key, colum
 _apply_with_key(f, key, data, process_data) = _apply(f, key, process_data(data))
 
 function groupby_iter(f, keys, data, perm; usekey=false, name=nothing)
-    lazygroupmap(keys, perm) do key, perm, idxs
+    maptiedindices(keys, perm) do key, idxs
         perm_idxs = perm[idxs]
         process_data = t -> view(t, perm_idxs)
         val = usekey ? _apply_with_key(f, key, data, process_data) :
