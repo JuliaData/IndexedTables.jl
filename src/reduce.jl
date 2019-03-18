@@ -57,7 +57,7 @@ addname(v, name) = v
 addname(v::Tup, name::Type{<:NamedTuple}) = v
 addname(v, name::Type{<:NamedTuple}) = name((v,))
 
-function groupreduce_iter(f, keys, data, perm, name=nothing)
+function groupreduce_iter(f, keys, data, perm; name=nothing)
     iter = lazygroupmap(keys, perm) do key, perm, idxs
         val = init_first(f, data[perm[first(idxs)]])
         for i in idxs[2:end]
@@ -110,7 +110,7 @@ function groupreduce(f, t::Dataset, by=pkeynames(t);
     fs, input, T = init_inputs(f, data, reduced_type, false)
 
     name = isa(t, IndexedTable) ? namedtuple(nicename(f)) : nothing
-    iter = groupreduce_iter(fs, keys, input, perm, name)
+    iter = groupreduce_iter(fs, keys, input, perm; name=name)
     convert(collectiontype(t), collect_columns(iter),
             presorted=true, copy=false)
 end
@@ -128,32 +128,14 @@ _apply_with_key(f::Tup, key, data::Tup, process_data) = _apply(f, map(t->key, da
 _apply_with_key(f::Tup, key, data, process_data) = _apply_with_key(f, key, columns(data), process_data)
 _apply_with_key(f, key, data, process_data) = _apply(f, key, process_data(data))
 
-struct GroupBy
-    f
-    key
-    data
-    perm
-    usekey::Bool
-    name
-    n::Int
-
-    GroupBy(f, key, data, perm; usekey = false, name = nothing) =
-        new(f, key, data, perm, usekey, name, length(key))
-end
-
-Base.IteratorSize(::Type{<:GroupBy}) = Base.SizeUnknown()
-
-function Base.iterate(iter::GroupBy, i1=1)
-    i1 > iter.n && return nothing
-    f, key, data, perm, usekey, n, name = iter.f, iter.key, iter.data, iter.perm, iter.usekey, iter.n, iter.name
-    i = i1+1
-    while i <= n && roweq(key, perm[i], perm[i1])
-        i += 1
+function groupby_iter(f, keys, data, perm; usekey=false, name=nothing)
+    lazygroupmap(keys, perm) do key, perm, idxs
+        perm_idxs = perm[idxs]
+        process_data = t -> view(t, perm_idxs)
+        val = usekey ? _apply_with_key(f, key, data, process_data) :
+                       _apply_with_key(f, data, process_data)
+        key => addname(val, name)
     end
-    process_data = t -> view(t, perm[i1:(i-1)])
-    val = usekey ? _apply_with_key(f, key[perm[i1]], data, process_data) :
-                   _apply_with_key(f, data, process_data)
-    (key[perm[i1]] => addname(val, name)), i
 end
 
 collectiontype(::Type{<:NDSparse}) = NDSparse
@@ -209,7 +191,7 @@ function groupby(f, t::Dataset, by=pkeynames(t);
     perm, key = sortpermby(t, by, return_keys=true)
     # Note: we're not using S here, we'll let _groupby figure it out
     name = isa(t, IndexedTable) ? namedtuple(nicename(f)) : nothing
-    iter = GroupBy(fs, key, input, perm, usekey = usekey, name = name)
+    iter = groupby_iter(fs, key, input, perm, usekey = usekey, name = name)
 
     t = convert(collectiontype(t), collect_columns(iter), presorted=true, copy=false)
     t isa IndexedTable && flatten ?
@@ -348,7 +330,7 @@ function reducedim_vec(f, x::NDSparse, dims; with=valuenames(x))
     if isempty(keep)
         throw(ArgumentError("to remove all dimensions, use `reduce(f, A)`"))
     end
-    idxs, d = collect_columns(GroupBy(f, keys(x, (keep...,)), rows(x, with), sortpermby(x, (keep...,)))) |> columns
+    idxs, d = collect_columns(groupby_iter(f, keys(x, (keep...,)), rows(x, with), sortpermby(x, (keep...,)))) |> columns
     NDSparse(idxs, d, presorted=true, copy=false)
 end
 
