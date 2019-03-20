@@ -57,7 +57,7 @@ addname(v, name) = v
 addname(v::Tup, name::Type{<:NamedTuple}) = v
 addname(v, name::Type{<:NamedTuple}) = name((v,))
 
-function groupreduce_iter(f, keys, data, perm; name=nothing)
+function igroupreduce(f, keys, data, perm; name=nothing)
     iter = maptiedindices(keys, perm) do key, idxs
         val = init_first(f, data[perm[first(idxs)]])
         for i in idxs[2:end]
@@ -110,7 +110,7 @@ function groupreduce(f, t::Dataset, by=pkeynames(t);
     fs, input, T = init_inputs(f, data, reduced_type, false)
 
     name = isa(t, IndexedTable) ? namedtuple(nicename(f)) : nothing
-    iter = groupreduce_iter(fs, key, input, perm, name=name)
+    iter = igroupreduce(fs, key, input, perm, name=name)
     convert(collectiontype(t), collect_columns(iter),
             presorted=true, copy=false)
 end
@@ -128,7 +128,7 @@ _apply_with_key(f::Tup, key, data::Tup, process_data) = _apply(f, map(t->key, da
 _apply_with_key(f::Tup, key, data, process_data) = _apply_with_key(f, key, columns(data), process_data)
 _apply_with_key(f, key, data, process_data) = _apply(f, key, process_data(data))
 
-function groupby_iter(f, keys, data, perm; usekey=false, name=nothing)
+function igroupby(f, keys, data, perm; usekey=false, name=nothing)
     maptiedindices(keys, perm) do key, idxs
         perm_idxs = perm[idxs]
         process_data = t -> view(t, perm_idxs)
@@ -191,7 +191,7 @@ function groupby(f, t::Dataset, by=pkeynames(t);
     perm, key = sortpermby(t, by, return_keys=true)
     # Note: we're not using S here, we'll let _groupby figure it out
     name = isa(t, IndexedTable) ? namedtuple(nicename(f)) : nothing
-    iter = groupby_iter(fs, key, input, perm, usekey = usekey, name = name)
+    iter = igroupby(fs, key, input, perm, usekey = usekey, name = name)
 
     t = convert(collectiontype(t), collect_columns(iter), presorted=true, copy=false)
     t isa IndexedTable && flatten ?
@@ -330,7 +330,7 @@ function reducedim_vec(f, x::NDSparse, dims; with=valuenames(x))
     if isempty(keep)
         throw(ArgumentError("to remove all dimensions, use `reduce(f, A)`"))
     end
-    idxs, d = collect_columns(groupby_iter(f, keys(x, (keep...,)), rows(x, with), sortpermby(x, (keep...,)))) |> columns
+    idxs, d = collect_columns(igroupby(f, keys(x, (keep...,)), rows(x, with), sortpermby(x, (keep...,)))) |> columns
     NDSparse(idxs, d, presorted=true, copy=false)
 end
 
