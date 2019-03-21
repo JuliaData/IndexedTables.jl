@@ -58,13 +58,16 @@ addname(v::Tup, name::Type{<:NamedTuple}) = v
 addname(v, name::Type{<:NamedTuple}) = name((v,))
 
 function igroupreduce(f, keys, data, perm; name=nothing)
-    iter = maptiedindices(keys, perm) do key, idxs
-        val = init_first(f, data[perm[first(idxs)]])
+    func = function (idxs)
+        fp = perm[first(idxs)]
+        key = keys[fp]
+        val = init_first(f, data[fp])
         for i in idxs[2:end]
             val = _apply(f, val, data[perm[i]])
         end
         key => addname(val, name)
     end
+    (func(idxs) for idxs in GroupPerm(keys, perm))
 end
 
 """
@@ -129,13 +132,15 @@ _apply_with_key(f::Tup, key, data, process_data) = _apply_with_key(f, key, colum
 _apply_with_key(f, key, data, process_data) = _apply(f, key, process_data(data))
 
 function igroupby(f, keys, data, perm; usekey=false, name=nothing)
-    maptiedindices(keys, perm) do key, idxs
+    func = function (idxs)
         perm_idxs = perm[idxs]
+        key = keys[first(perm_idxs)]
         process_data = t -> view(t, perm_idxs)
         val = usekey ? _apply_with_key(f, key, data, process_data) :
                        _apply_with_key(f, data, process_data)
         key => addname(val, name)
     end
+    (func(idxs) for idxs in GroupPerm(keys, perm))
 end
 
 collectiontype(::Type{<:NDSparse}) = NDSparse

@@ -35,7 +35,7 @@ Base.@pure colnames(t::Columns{<:Pair}) = colnames(t.first) => colnames(t.second
 
 Select one or more columns from an iterable of rows as a tuple of vectors.
 
-`select` specifies which columns to select. Refer to the [`select`](@ref) function for the 
+`select` specifies which columns to select. Refer to the [`select`](@ref) function for the
 available selection options and syntax.
 
 `itr` can be `NDSparse`, `Columns`, `AbstractVector`, or their distributed counterparts.
@@ -91,27 +91,12 @@ end
 
 # row operations
 
-@inline roweq(x::AbstractVector, i, j) = (@inbounds eq=isequal(x[i], x[j]); eq)
-@inline roweq(a::PooledArray, i, j) = (@inbounds x=a.refs[i] == a.refs[j]; x)
-@inline function roweq(a::StringArray{String}, i, j)
-    weaksa = convert(StringArray{WeakRefString{UInt8}}, a)
-    @inbounds isequal(weaksa[i], weaksa[j])
-end
-
 copyrow!(I::Columns, i, src) = foreachfield(c->copyelt!(c, i, src), I)
 copyrow!(I::Columns, i, src::Columns, j) = foreachfield((c1,c2)->copyelt!(c1, i, c2, j), I, src)
 copyrow!(I::AbstractArray, i, src::AbstractArray, j) = (@inbounds I[i] = src[j])
 pushrow!(to::Columns, from::Columns, i) = foreachfield((a,b)->push!(a, b[i]), to, from)
 pushrow!(to::AbstractArray, from::AbstractArray, i) = push!(to, from[i])
 
-@generated function roweq(c::Columns{D,C}, i, j) where {D,C}
-    N = fieldcount(C)
-    ex = :(roweq(getfield(fieldarrays(c),1), i, j))
-    for n in 2:N
-        ex = :(($ex) && (roweq(getfield(fieldarrays(c),$n), i, j)))
-    end
-    ex
-end
 
 # uses number of columns from `d`, assuming `c` has more or equal
 # dimensions, for broadcast joins.
@@ -368,7 +353,7 @@ end
 """
     rows(itr, select = All())
 
-Select one or more fields from an iterable of rows as a vector of their values.  Refer to 
+Select one or more fields from an iterable of rows as a vector of their values.  Refer to
 the [`select`](@ref) function for selection options and syntax.
 
 `itr` can be [`NDSparse`](@ref), `StructArrays.StructVector`, `AbstractVector`, or their distributed counterparts.
@@ -575,7 +560,7 @@ Set many columns at a time.
     setcol(t, 2 => [5,6])
     setcol(t, :y , :y => x -> x + 2)
 
-    # add [5,6] as column :z 
+    # add [5,6] as column :z
     setcol(t, :z => 5:6)
     setcol(t, :z, :y => x -> x + 2)
 
@@ -673,7 +658,7 @@ renamecol(t, args...) = @cols rename!(t, args...)
 @inline _apply(f::Tuple, y::Tuple, x::Tuple) = map(_apply, f, y, x)
 @inline _apply(f::NamedTuple, y::NamedTuple, x::NamedTuple) = map(_apply, f, y, x)
 @inline _apply(f, y, x) = f(y, x)
-@inline _apply(f::Tup, x::Tup) = _apply(astuple(f), astuple(x)) 
+@inline _apply(f::Tup, x::Tup) = _apply(astuple(f), astuple(x))
 @inline _apply(f::NamedTuple, x::NamedTuple) = map(_apply, f, x)
 @inline _apply(f::Tuple, x::Tuple) = map(_apply, f, x)
 @inline _apply(f, x) = f(x)

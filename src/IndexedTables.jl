@@ -6,7 +6,7 @@ using OnlineStatsBase: OnlineStat, fit!
 using StructArrays: StructVector, StructArray, foreachfield, fieldarrays,
     collect_structarray, staticschema, ArrayInitializer, refine_perm!, collect_structarray,
     collect_empty_structarray, grow_to_structarray!, collect_to_structarray!, pool,
-    maptiedindices
+    GroupPerm, roweq
 
 import Tables, TableTraits, IteratorInterfaceExtensions, TableTraitsUtils
 
