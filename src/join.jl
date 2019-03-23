@@ -37,6 +37,9 @@ make_nullable(row::Tup, ::Type{DataValue}) = map(DataValue, row)
 make_nullable(row::DataValue, ::Type{DataValue}) = row
 make_nullable(row, ::Type{DataValue}) = DataValue(row)
 
+_reduce(f, iter, ::Nothing) = reduce(f, iter)
+_reduce(f, iter, init_group) = reduce(f, iter, init = init_group())
+
 function _join(::Val{typ}, ::Val{grp}, f, iter::GroupJoinPerm, ldata::AbstractVector{L}, rdata::AbstractVector{R};
     missingtype=Missing, init_group=nothing, accumulate=nothing) where {typ, grp, L, R}
 
@@ -59,8 +62,8 @@ function _join(::Val{typ}, ::Val{grp}, f, iter::GroupJoinPerm, ldata::AbstractVe
         liter1 = (l for r in riter0, l in liter0)
         riter1 = (r for r in riter0, l in liter0)
         joint_iter = (f(a, b) for (a, b) in zip(liter1, riter1))
-        res = (accumulate === nothing) || !grp ? vec(collect_columns(joint_iter)) :
-            reduce(accumulate, joint_iter, init = init_group())
+        res = (accumulate === nothing) || !grp ? collect_columns(joint_iter) :
+            _reduce(accumulate, joint_iter, init_group)
         key => res
     end
     if grp === true

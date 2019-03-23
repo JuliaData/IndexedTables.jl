@@ -14,7 +14,8 @@ Collect an iterable as a `Columns` object if it iterates `Tuples` or `NamedTuple
     s2 = Iterators.filter(isodd, 1:8)
     collect_columns(s2)
 """
-collect_columns(itr) = collect_structarray(itr, initializer = default_initializer)
+collect_columns(itr) = vec(collect_structarray(itr, initializer = default_initializer))
+collect_columns(s::StructVector) = s
 collect_empty_columns(itr) = collect_empty_structarray(itr, initializer = default_initializer)
 
 grow_to_columns!(args...) = grow_to_structarray!(args...)
@@ -70,4 +71,3 @@ function collect_columns_flattened!(dest::Columns{<:Pair}, itr, el::Pair, st)
     end
     return Columns(dest_key => dest_data)
 end
-
