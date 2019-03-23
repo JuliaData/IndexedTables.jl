@@ -1,11 +1,15 @@
 # Missing
-nullrow(t::Type{<:Tuple}, ::Type{Missing}) = Tuple(map(x->missing, fieldtypes(t)))
-nullrow(t::Type{<:NamedTuple}, ::Type{Missing}) = t(Tuple(map(x->missing, fieldtypes(t))))
+nullrow(::Type{T}, ::Type{Missing}) where {T <: Tuple} = Tuple(map(x->missing, fieldtypes(T)))
+nullrow(::Type{NamedTuple{names, T}}, ::Type{Missing}) where {names, T} =
+    NamedTuple{names}(Tuple(map(x->missing, names)))
+
+to_datavalue(::Type{T}) where {T} = DataValue{T}
+to_datavalue(::Type{T}) where {T} = DataValue{T}
 
 # DataValue
-nullrow(::Type{T}, ::Type{DataValue}) where {T <: Tuple} = Tuple(fieldtype(T, i)() for i = 1:fieldcount(T))
+nullrow(::Type{T}, ::Type{DataValue}) where {T <: Tuple} = Tuple(to_datavalue(fieldtype(T, i))() for i = 1:fieldcount(T))
 function nullrow(::Type{NamedTuple{names, T}}, ::Type{DataValue}) where {names, T}
-    NamedTuple{names, T}(Tuple(fieldtype(T, i)() for i = 1:fieldcount(T)))
+    NamedTuple{names}(Tuple(to_datavalue(fieldtype(T, i))() for i = 1:fieldcount(T)))
 end
 
 nullrow(T, M) = missing_instance(M)
@@ -28,7 +32,12 @@ function outvec(col::StringArray{T}, idxs, ::Type{DataValue}) where {T}
     DataValueArray(col, mask)
 end
 
-function _join(::Val{typ}, ::Val{grp}, f, iter::GroupJoinPerm, ldata::Columns{L}, rdata::Columns{R}) where {typ, grp, L, R}
+make_nullable(row, ::Type{Missing}) = row
+make_nullable(row, ::Type{DataValue}) = map(DataValue, row)
+
+function _join(::Val{typ}, ::Val{grp}, f, iter::GroupJoinPerm, ldata::Columns{L}, rdata::Columns{R};
+    missingtype=Missing) where {typ, grp, L, R}
+
     lkey, rkey = parent(iter.left), parent(iter.right)
     lperm, rperm = sortperm(iter.left), sortperm(iter.right)
     filter_func = if typ === :anti
@@ -40,11 +49,12 @@ function _join(::Val{typ}, ::Val{grp}, f, iter::GroupJoinPerm, ldata::Columns{L}
     elseif typ === :outer
         _ -> true
     end
+    nullable = (typ === :left || typ === :outer) ? make_nullable : (row, _) -> row
     function getkeyiter(idxs)
         lidxs, ridxs = idxs
         key = isempty(lidxs) ? rkey[rperm[ridxs[1]]] : lkey[lperm[lidxs[1]]]
-        liter0 = isempty(lidxs) ? (nullrow(L, Missing),) : (ldata[i] for i in lidxs)
-        riter0 = isempty(ridxs) ? (nullrow(R, Missing),) : (rdata[i] for i in ridxs)
+        liter0 = isempty(lidxs) ? (nullrow(L, missingtype),) : (nullable(ldata[i], missingtype) for i in lidxs)
+        riter0 = isempty(ridxs) ? (nullrow(R, missingtype),) : (nullable(rdata[i], missingtype) for i in ridxs)
         liter1 = (l for l in liter0, r in riter0)
         riter1 = (r for l in liter0, r in riter0)
         key => vec(collect_columns(f(a, b) for (a, b) in zip(liter1, riter1)))
@@ -150,7 +160,7 @@ function Base.join(f, left::Dataset, right::Dataset;
 
     typ, grp = Val{how}(), Val{group}()
     join_iter = GroupJoinPerm(GroupPerm(lkey, lperm), GroupPerm(rkey, rperm))
-    res = _join(typ, grp, f, join_iter, ldata, rdata)
+    res = _join(typ, grp, f, join_iter, ldata, rdata; missingtype=missingtype)
     I, data = res.first, res.second
     if group && left isa IndexedTable && !(data isa Columns)
         data = Columns(groups=data)
