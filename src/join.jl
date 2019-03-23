@@ -55,8 +55,8 @@ function _join(::Val{typ}, ::Val{grp}, f, iter::GroupJoinPerm, ldata::AbstractVe
     function getkeyiter(idxs)
         lidxs, ridxs = idxs
         key = isempty(lidxs) ? rkey[rperm[ridxs[1]]] : lkey[lperm[lidxs[1]]]
-        liter0 = isempty(lidxs) ? (nullrow(L, missingtype),) : (nullable(ldata[i], missingtype) for i in lidxs)
-        riter0 = isempty(ridxs) ? (nullrow(R, missingtype),) : (nullable(rdata[i], missingtype) for i in ridxs)
+        liter0 = isempty(lidxs) ? (nullrow(L, missingtype),) : (nullable(ldata[lperm[i]], missingtype) for i in lidxs)
+        riter0 = isempty(ridxs) ? (nullrow(R, missingtype),) : (nullable(rdata[rperm[i]], missingtype) for i in ridxs)
         liter1 = (l for r in riter0, l in liter0)
         riter1 = (r for r in riter0, l in liter0)
         key => vec(collect_columns(f(a, b) for (a, b) in zip(liter1, riter1)))
