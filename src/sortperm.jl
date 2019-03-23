@@ -35,10 +35,10 @@ function sortpermby(t, by; cache=false, return_keys=false)
 
     if matched_cols == length(by)
         # first n index columns
-        return return_keys ? (partial_perm, pool(rows(t, by))) : partial_perm
+        return return_keys ? (partial_perm, pool(compact_mem(rows(t, by)))) : partial_perm
     end
 
-    byrows = pool(rows(t, by))
+    byrows = pool(compact_mem(rows(t, by)))
     bycols = columns(byrows)
     perm = if matched_cols > 0
         nxtcol = bycols[matched_cols+1]

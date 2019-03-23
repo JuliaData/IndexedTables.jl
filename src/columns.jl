@@ -97,32 +97,6 @@ copyrow!(I::AbstractArray, i, src::AbstractArray, j) = (@inbounds I[i] = src[j])
 pushrow!(to::Columns, from::Columns, i) = foreachfield((a,b)->push!(a, b[i]), to, from)
 pushrow!(to::AbstractArray, from::AbstractArray, i) = push!(to, from[i])
 
-
-# uses number of columns from `d`, assuming `c` has more or equal
-# dimensions, for broadcast joins.
-@generated function rowcmp(c::Columns, i, d::Columns{D}, j) where D
-    N = fieldcount(D)
-    ex = :(cmp(getfield(fieldarrays(c),$N)[i], getfield(fieldarrays(d),$N)[j]))
-    for n in N-1:-1:1
-        ex = quote
-            let k = rowcmp(getfield(fieldarrays(c),$n), i, getfield(fieldarrays(d),$n), j)
-                (k == 0) ? ($ex) : k
-            end
-        end
-    end
-    ex
-end
-
-@inline function rowcmp(c::AbstractVector, i, d::AbstractVector, j)
-    cmp(c[i], d[j])
-end
-
-@inline function rowcmp(c::StringArray{String}, i, d::StringArray{String}, j)
-    wc = convert(StringArray{WeakRefString{UInt8}}, c)
-    wd = convert(StringArray{WeakRefString{UInt8}}, d)
-    cmp(wc[i], wd[j])
-end
-
 # test that the row on the right is "as of" the row on the left, i.e.
 # all columns are equal except left >= right in last column.
 # Could be generalized to some number of trailing columns, but I don't
