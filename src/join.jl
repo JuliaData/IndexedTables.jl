@@ -33,9 +33,11 @@ function outvec(col::StringArray{T}, idxs, ::Type{DataValue}) where {T}
 end
 
 make_nullable(row, ::Type{Missing}) = row
-make_nullable(row, ::Type{DataValue}) = map(DataValue, row)
+make_nullable(row::Tup, ::Type{DataValue}) = map(DataValue, row)
+make_nullable(row::DataValue, ::Type{DataValue}) = row
+make_nullable(row, ::Type{DataValue}) = DataValue(row)
 
-function _join(::Val{typ}, ::Val{grp}, f, iter::GroupJoinPerm, ldata::Columns{L}, rdata::Columns{R};
+function _join(::Val{typ}, ::Val{grp}, f, iter::GroupJoinPerm, ldata::AbstractVector{L}, rdata::AbstractVector{R};
     missingtype=Missing) where {typ, grp, L, R}
 
     lkey, rkey = parent(iter.left), parent(iter.right)
@@ -55,8 +57,8 @@ function _join(::Val{typ}, ::Val{grp}, f, iter::GroupJoinPerm, ldata::Columns{L}
         key = isempty(lidxs) ? rkey[rperm[ridxs[1]]] : lkey[lperm[lidxs[1]]]
         liter0 = isempty(lidxs) ? (nullrow(L, missingtype),) : (nullable(ldata[i], missingtype) for i in lidxs)
         riter0 = isempty(ridxs) ? (nullrow(R, missingtype),) : (nullable(rdata[i], missingtype) for i in ridxs)
-        liter1 = (l for l in liter0, r in riter0)
-        riter1 = (r for l in liter0, r in riter0)
+        liter1 = (l for r in riter0, l in liter0)
+        riter1 = (r for r in riter0, l in liter0)
         key => vec(collect_columns(f(a, b) for (a, b) in zip(liter1, riter1)))
     end
     if grp === true
