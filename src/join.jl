@@ -38,7 +38,7 @@ make_nullable(row::DataValue, ::Type{DataValue}) = row
 make_nullable(row, ::Type{DataValue}) = DataValue(row)
 
 function _join(::Val{typ}, ::Val{grp}, f, iter::GroupJoinPerm, ldata::AbstractVector{L}, rdata::AbstractVector{R};
-    missingtype=Missing) where {typ, grp, L, R}
+    missingtype=Missing, init_group=nothing, accumulate=nothing) where {typ, grp, L, R}
 
     lkey, rkey = parent(iter.left), parent(iter.right)
     lperm, rperm = sortperm(iter.left), sortperm(iter.right)
@@ -51,15 +51,17 @@ function _join(::Val{typ}, ::Val{grp}, f, iter::GroupJoinPerm, ldata::AbstractVe
     elseif typ === :outer
         _ -> true
     end
-    nullable = (typ === :left || typ === :outer) ? make_nullable : (row, _) -> row
-    function getkeyiter(idxs)
-        lidxs, ridxs = idxs
+    nullable = (typ === :left || typ === :outer) && !grp ? make_nullable : (row, _) -> row
+    function getkeyiter((lidxs, ridxs))
         key = isempty(lidxs) ? rkey[rperm[ridxs[1]]] : lkey[lperm[lidxs[1]]]
         liter0 = isempty(lidxs) && !grp ? (nullrow(L, missingtype),) : (nullable(ldata[lperm[i]], missingtype) for i in lidxs)
         riter0 = isempty(ridxs) && !grp ? (nullrow(R, missingtype),) : (nullable(rdata[rperm[i]], missingtype) for i in ridxs)
         liter1 = (l for r in riter0, l in liter0)
         riter1 = (r for r in riter0, l in liter0)
-        key => vec(collect_columns(f(a, b) for (a, b) in zip(liter1, riter1)))
+        joint_iter = (f(a, b) for (a, b) in zip(liter1, riter1))
+        res = (accumulate === nothing) || !grp ? vec(collect_columns(joint_iter)) :
+            reduce(accumulate, joint_iter, init = init_group())
+        key => res
     end
     if grp === true
         return collect_columns(getkeyiter(idxs) for idxs in iter if filter_func(idxs))
@@ -123,10 +125,8 @@ function Base.join(f, left::Dataset, right::Dataset;
                    rselect=isa(right, NDSparse) ?
                        valuenames(right) : excludecols(right, rkey),
                    name = nothing,
-                   init_group=nothing,
-                   accumulate=nothing,
                    cache=true,
-                   missingtype=Missing)
+                   kwargs...)
 
     if !(how in [:inner, :left, :outer, :anti])
         error("Invalid how: supported join types are :inner, :left, :outer, and :anti")
@@ -162,7 +162,7 @@ function Base.join(f, left::Dataset, right::Dataset;
 
     typ, grp = Val{how}(), Val{group}()
     join_iter = GroupJoinPerm(GroupPerm(lkey, lperm), GroupPerm(rkey, rperm))
-    res = _join(typ, grp, f, join_iter, ldata, rdata; missingtype=missingtype)
+    res = _join(typ, grp, f, join_iter, ldata, rdata; kwargs...)
     I, data = res.first, res.second
     if group && left isa IndexedTable && !(data isa Columns)
         data = Columns(groups=data)
