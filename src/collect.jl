@@ -23,7 +23,7 @@ collect_to_columns!(args...) = collect_to_structarray!(args...)
 
 function collect_columns_flattened(itr)
     elem = iterate(itr)
-    @assert elem !== nothing
+    (elem === nothing) && return Columns()
     el, st = elem
     collect_columns_flattened(itr, el, st)
 end

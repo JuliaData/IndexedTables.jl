@@ -10,7 +10,7 @@ end
 
 nullrow(T, M) = missing_instance(M)
 
-nullrowtype(::Type{T}, ::Type{S}) where {T<:Tup, S} = map_types(t -> type2missingtype(t, S), T)
+nullrowtype(::Type{T}, ::Type{S}) where {T<:Tup, S} = map_params(t -> type2missingtype(t, S), T)
 nullrowtype(::Type{T}, ::Type{S}) where {T, S} = type2missingtype(T, S)
 
 nullablerows(s::Columns{C}, ::Type{S}) where {C, S} = Columns{nullrowtype(C, S)}(fieldarrays(s))
@@ -165,9 +165,13 @@ function Base.join(f, left::Dataset, right::Dataset;
     end
 
     typ, grp = Val{how}(), Val{group}()
+    KT = map_params(promote_type, eltype(lkey), eltype(rkey))
+    lkey = Columns{KT}(fieldarrays(lkey))
+    rkey = Columns{KT}(fieldarrays(rkey))
     join_iter = GroupJoinPerm(GroupPerm(lkey, lperm), GroupPerm(rkey, rperm))
     res = _join(typ, grp, f, join_iter, ldata, rdata;
         missingtype=missingtype, init_group=init_group, accumulate=accumulate)
+    isempty(res) && return res
     I, data = res.first, res.second
     if group && left isa IndexedTable && !(data isa Columns)
         data = Columns(groups=data)
