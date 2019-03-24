@@ -1,18 +1,20 @@
 # Missing
-nullrow(::Type{T}, ::Type{Missing}) where {T <: Tuple} = Tuple(map(x->missing, fieldtypes(T)))
-nullrow(::Type{NamedTuple{names, T}}, ::Type{Missing}) where {names, T} =
-    NamedTuple{names}(Tuple(map(x->missing, names)))
-
-to_datavalue(::Type{T}) where {T} = DataValue{T}
-to_datavalue(::Type{T}) where {T<:DataValue} = T
+nullrow(t::Type{<:Tuple}, ::Type{Missing}) = Tuple(map(x->missing, fieldtypes(t)))
+nullrow(t::Type{<:NamedTuple}, ::Type{Missing}) = t(Tuple(map(x->missing, fieldtypes(t))))
 
 # DataValue
-nullrow(::Type{T}, ::Type{DataValue}) where {T <: Tuple} = Tuple(to_datavalue(fieldtype(T, i))() for i = 1:fieldcount(T))
+nullrow(::Type{T}, ::Type{DataValue}) where {T <: Tuple} = Tuple(fieldtype(T, i)() for i = 1:fieldcount(T))
 function nullrow(::Type{NamedTuple{names, T}}, ::Type{DataValue}) where {names, T}
-    NamedTuple{names}(Tuple(to_datavalue(fieldtype(T, i))() for i = 1:fieldcount(T)))
+    NamedTuple{names, T}(Tuple(fieldtype(T, i)() for i = 1:fieldcount(T)))
 end
 
 nullrow(T, M) = missing_instance(M)
+
+nullrowtype(::Type{T}, ::Type{S}) where {T<:Tup, S} = map_types(t -> type2missingtype(t, S), T)
+nullrowtype(::Type{T}, ::Type{S}) where {T, S} = type2missingtype(T, S)
+
+nullablerows(s::Columns{C}, ::Type{S}) where {C, S} = Columns{nullrowtype(C, S)}(fieldarrays(s))
+nullablerows(s::AbstractVector, ::Type{S}) where {S} = vec_missing(s, S)
 
 # a joined column with missing values at `idxs`
 function outvec(col, idxs, ::Type{T}) where {T}
@@ -32,11 +34,6 @@ function outvec(col::StringArray{T}, idxs, ::Type{DataValue}) where {T}
     DataValueArray(col, mask)
 end
 
-make_nullable(row, ::Type{Missing}) = row
-make_nullable(row::Tup, ::Type{DataValue}) = map(DataValue, row)
-make_nullable(row::DataValue, ::Type{DataValue}) = row
-make_nullable(row, ::Type{DataValue}) = DataValue(row)
-
 _reduce(f, iter, ::Nothing) = reduce(f, iter)
 _reduce(f, iter, init_group) = reduce(f, iter, init = init_group())
 
@@ -54,14 +51,11 @@ function _join(::Val{typ}, ::Val{grp}, f, iter::GroupJoinPerm, ldata::AbstractVe
     elseif typ === :outer
         _ -> true
     end
-    nullable = (typ === :left || typ === :outer) && !grp ? make_nullable : (row, _) -> row
     function getkeyiter((lidxs, ridxs))
         key = isempty(lidxs) ? rkey[rperm[ridxs[1]]] : lkey[lperm[lidxs[1]]]
-        liter0 = isempty(lidxs) && !grp ? (nullrow(L, missingtype),) : (nullable(ldata[lperm[i]], missingtype) for i in lidxs)
-        riter0 = isempty(ridxs) && !grp ? (nullrow(R, missingtype),) : (nullable(rdata[rperm[i]], missingtype) for i in ridxs)
-        liter1 = (l for r in riter0, l in liter0)
-        riter1 = (r for r in riter0, l in liter0)
-        joint_iter = (f(a, b) for (a, b) in zip(liter1, riter1))
+        liter = isempty(lidxs) && !grp ? (nullrow(L, missingtype),) : (ldata[lperm[i]] for i in lidxs)
+        riter = isempty(ridxs) && !grp ? (nullrow(R, missingtype),) : (rdata[rperm[i]] for i in ridxs)
+        joint_iter = (f(l, r) for (r, l) in Iterators.product(riter, liter))
         res = (accumulate === nothing) || !grp ? collect_columns(joint_iter) :
             _reduce(accumulate, joint_iter, init_group)
         key => res
@@ -129,7 +123,9 @@ function Base.join(f, left::Dataset, right::Dataset;
                        valuenames(right) : excludecols(right, rkey),
                    name = nothing,
                    cache=true,
-                   kwargs...)
+                   missingtype=Missing,
+                   init_group=nothing,
+                   accumulate=nothing)
 
     if !(how in [:inner, :left, :outer, :anti])
         error("Invalid how: supported join types are :inner, :left, :outer, and :anti")
@@ -163,9 +159,15 @@ function Base.join(f, left::Dataset, right::Dataset;
     ldata = rows(left, lselect)
     rdata = rows(right, rselect)
 
+    if !group
+        (how == :outer) && (ldata = nullablerows(ldata, missingtype))
+        (how == :inner) || (rdata = nullablerows(rdata, missingtype))
+    end
+
     typ, grp = Val{how}(), Val{group}()
     join_iter = GroupJoinPerm(GroupPerm(lkey, lperm), GroupPerm(rkey, rperm))
-    res = _join(typ, grp, f, join_iter, ldata, rdata; kwargs...)
+    res = _join(typ, grp, f, join_iter, ldata, rdata;
+        missingtype=missingtype, init_group=init_group, accumulate=accumulate)
     I, data = res.first, res.second
     if group && left isa IndexedTable && !(data isa Columns)
         data = Columns(groups=data)
