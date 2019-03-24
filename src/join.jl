@@ -16,22 +16,8 @@ nullrowtype(::Type{T}, ::Type{S}) where {T, S} = type2missingtype(T, S)
 nullablerows(s::Columns{C}, ::Type{S}) where {C, S} = Columns{nullrowtype(C, S)}(fieldarrays(s))
 nullablerows(s::AbstractVector, ::Type{S}) where {S} = vec_missing(s, S)
 
-# a joined column with missing values at `idxs`
-function outvec(col, idxs, ::Type{T}) where {T}
-    v = vec_missing(col, T)
-    for i in idxs
-        v[i] = missing_instance(T)
-    end
-    v
-end
-
-# Ge StringArray and DataValue to play nice together
-function outvec(col::StringArray{T}, idxs, ::Type{DataValue}) where {T}
-    mask = [i in idxs for i in 1:length(col)]
-    for i in idxs
-        col[i] = ""
-    end
-    DataValueArray(col, mask)
+function init_key_left_right(key::AbstractVector{K}, ldata::AbstractVector{L}, rdata::AbstractVector{R}) where {K, L, R}
+    similar(arrayof(K), 0), similar(arrayof(L), 0), similar(arrayof(R), 0)
 end
 
 _reduce(f, iter, ::Nothing) = reduce(f, iter)
@@ -39,13 +25,16 @@ _reduce(f, iter, init_group) = reduce(f, iter, init = init_group())
 _reduce(::Nothing, iter, ::Nothing) = collect_columns(iter)
 _reduce(::Nothing, iter, init_group) = collect_columns(iter)
 
-function _join(::Val{typ}, ::Val{grp}, f, iter::GroupJoinPerm, ldata::AbstractVector{L}, rdata::AbstractVector{R};
+# In a plain non group join with f === concat_tup, we avoid creating large structs and prefer to do things in place
+# In every step of the iteration, instead of just iterating we push the values to init
+function _join!(init, ::Val{typ}, ::Val{grp}, f, iter::GroupJoinPerm, ldata::AbstractVector{L}, rdata::AbstractVector{R};
     missingtype=Missing, init_group=nothing, accumulate=nothing) where {typ, grp, L, R}
 
     lkey, rkey = parent(iter.left), parent(iter.right)
     lperm, rperm = sortperm(iter.left), sortperm(iter.right)
     lnullable = grp === false && typ === :outer
     rnullable = grp === false && typ !== :inner
+
     filter_func = if typ === :anti
         ((lidxs, ridxs),) -> !isempty(lidxs) && isempty(ridxs)
     elseif typ === :inner
@@ -55,16 +44,34 @@ function _join(::Val{typ}, ::Val{grp}, f, iter::GroupJoinPerm, ldata::AbstractVe
     elseif typ === :outer
         _ -> true
     end
+
     function getkeyiter((lidxs, ridxs))
         key = isempty(lidxs) ? rkey[rperm[ridxs[1]]] : lkey[lperm[lidxs[1]]]
         liter = lnullable && isempty(lidxs) ? (nullrow(L, missingtype),) : (ldata[lperm[i]] for i in lidxs)
         riter = rnullable && isempty(ridxs) ? (nullrow(R, missingtype),) : (rdata[rperm[i]] for i in ridxs)
-        joint_iter = (f(l, r) for (r, l) in Iterators.product(riter, liter))
-        res = grp ? _reduce(accumulate, joint_iter, init_group) : joint_iter
-        key => res
+        if init === nothing
+            joint_iter = (f(l, r) for (r, l) in Iterators.product(riter, liter))
+            res = grp ? _reduce(accumulate, joint_iter, init_group) : joint_iter
+            return key => res
+        else
+            Base.foreach(Iterators.product(riter, liter)) do (r, l)
+                push!(init[1], key)
+                push!(init[2], l)
+                push!(init[3], r)
+            end
+            return
+        end
     end
-    pair_iter = (getkeyiter(idxs) for idxs in iter if filter_func(idxs))
-    return grp === true ? collect_columns(pair_iter) : collect_columns_flattened(pair_iter)
+    filtered_iter = Iterators.filter(filter_func, iter)
+    if init !== nothing
+        Base.foreach(getkeyiter, filtered_iter)
+        key, left, right = init
+        data = Columns(concat_tup(columns(left), columns(right)))
+        return Columns(key => data)
+    else
+        pair_iter = (getkeyiter(idxs) for idxs in filtered_iter)
+        return grp === true ? collect_columns(pair_iter) : collect_columns_flattened(pair_iter)
+    end
 end
 
 """
@@ -164,12 +171,13 @@ function Base.join(f, left::Dataset, right::Dataset;
         (how == :inner) || (rdata = nullablerows(rdata, missingtype))
     end
 
-    typ, grp = Val{how}(), Val{group}()
     KT = map_params(promote_type, eltype(lkey), eltype(rkey))
     lkey = Columns{KT}(fieldarrays(lkey))
     rkey = Columns{KT}(fieldarrays(rkey))
     join_iter = GroupJoinPerm(GroupPerm(lkey, lperm), GroupPerm(rkey, rperm))
-    res = _join(typ, grp, f, join_iter, ldata, rdata;
+    init = !group && f === concat_tup ? init_key_left_right(lkey, ldata, rdata) : nothing
+    typ, grp = Val{how}(), Val{group}()
+    res = _join!(init, typ, grp, f, join_iter, ldata, rdata;
         missingtype=missingtype, init_group=init_group, accumulate=accumulate)
     isempty(res) && return res
     I, data = res.first, res.second
