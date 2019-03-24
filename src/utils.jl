@@ -227,7 +227,7 @@ Base.@pure function map_params(f, ::Type{T}, ::Type{S}) where {T<:NamedTuple,S<:
 end
 
 @inline function concat_tup(a::NamedTuple, b::NamedTuple)
-    concat_tup_type(typeof(a), typeof(b))((a..., b...))
+    merge(a, b)
 end
 @inline concat_tup(a::Tup, b::Tup) = (a..., b...)
 @inline concat_tup(a::Tup, b) = (a..., b)
