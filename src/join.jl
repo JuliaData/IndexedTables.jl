@@ -36,12 +36,16 @@ end
 
 _reduce(f, iter, ::Nothing) = reduce(f, iter)
 _reduce(f, iter, init_group) = reduce(f, iter, init = init_group())
+_reduce(::Nothing, iter, ::Nothing) = collect_columns(iter)
+_reduce(::Nothing, iter, init_group) = collect_columns(iter)
 
 function _join(::Val{typ}, ::Val{grp}, f, iter::GroupJoinPerm, ldata::AbstractVector{L}, rdata::AbstractVector{R};
     missingtype=Missing, init_group=nothing, accumulate=nothing) where {typ, grp, L, R}
 
     lkey, rkey = parent(iter.left), parent(iter.right)
     lperm, rperm = sortperm(iter.left), sortperm(iter.right)
+    lnullable = grp === false && typ === :outer
+    rnullable = grp === false && typ !== :inner
     filter_func = if typ === :anti
         ((lidxs, ridxs),) -> !isempty(lidxs) && isempty(ridxs)
     elseif typ === :inner
@@ -53,11 +57,10 @@ function _join(::Val{typ}, ::Val{grp}, f, iter::GroupJoinPerm, ldata::AbstractVe
     end
     function getkeyiter((lidxs, ridxs))
         key = isempty(lidxs) ? rkey[rperm[ridxs[1]]] : lkey[lperm[lidxs[1]]]
-        liter = isempty(lidxs) && !grp ? (nullrow(L, missingtype),) : (ldata[lperm[i]] for i in lidxs)
-        riter = isempty(ridxs) && !grp ? (nullrow(R, missingtype),) : (rdata[rperm[i]] for i in ridxs)
+        liter = lnullable && isempty(lidxs) ? (nullrow(L, missingtype),) : (ldata[lperm[i]] for i in lidxs)
+        riter = rnullable && isempty(ridxs) ? (nullrow(R, missingtype),) : (rdata[rperm[i]] for i in ridxs)
         joint_iter = (f(l, r) for (r, l) in Iterators.product(riter, liter))
-        res = (accumulate === nothing) || !grp ? collect_columns(joint_iter) :
-            _reduce(accumulate, joint_iter, init_group)
+        res = grp ? _reduce(accumulate, joint_iter, init_group) : joint_iter
         key => res
     end
     if grp === true
