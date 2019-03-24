@@ -63,10 +63,11 @@ function _join(::Val{typ}, ::Val{grp}, f, iter::GroupJoinPerm, ldata::AbstractVe
         res = grp ? _reduce(accumulate, joint_iter, init_group) : joint_iter
         key => res
     end
+    pair_iter = (getkeyiter(idxs) for idxs in iter if filter_func(idxs))
     if grp === true
-        return collect_columns(getkeyiter(idxs) for idxs in iter if filter_func(idxs))
+        return collect_columns(pair_iter)
     else
-        return collect_columns_flattened(getkeyiter(idxs) for idxs in iter if filter_func(idxs))
+        return collect_columns_flattened(pair_iter)
     end
 end
 
