@@ -519,13 +519,12 @@ end
 # broadcast over trailing dimensions, i.e. C's dimensions are a prefix
 # of B's. this is an easy case since it's just an inner join plus
 # sometimes repeating values from the right argument.
-function _broadcast_trailing(f, B::NDSparse, C::NDSparse)
+function _broadcast_trailing(f, B::NDSparse, C::NDSparse, B_common)
     lI, rI = B.index, C.index
-    lI_short = rows(lI, ntuple(identity, ncols(rI)))
     lD, rD = B.data, C.data
     ll, rr = length(lI), length(rI)
 
-    iter = GroupJoinPerm(GroupPerm(lI_short, Base.OneTo(ll)), GroupPerm(rI, Base.OneTo(rr)))
+    iter = GroupJoinPerm(GroupPerm(B_common, Base.OneTo(ll)), GroupPerm(rI, Base.OneTo(rr)))
     filt = Iterators.filter(((_, ridxs),) -> !isempty(ridxs), iter)
     function step((lidxs, ridxs),)
         @inbounds Ck = rD[first(ridxs)]
@@ -560,7 +559,7 @@ function _broadcast(f::Function, B::NDSparse, C::NDSparse; dimmap=nothing)
     end
     C_dims = ntuple(identity, ndims(C))
     if C_inds[1:ndims(C)] == C_dims
-        return _broadcast_trailing(f, B, C)
+        return _broadcast_trailing(f, B, C, rows(B.index, C_dims))
     end
     common = filter(i->C_inds[i] > 0, 1:ndims(B))
     C_common = C_inds[common]
