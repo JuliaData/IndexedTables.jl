@@ -569,8 +569,8 @@ function _broadcast(f::Function, B::NDSparse, C::NDSparse; dimmap=nothing)
         idx, iperm, vals = _bcast_loop(f, B, C, B_common_cols, B_perm)
         A = NDSparse(idx, vals, copy=false, presorted=true)
         if !issorted(A.index)
-            permute!(A.index, iperm)
-            copyto!(A.data, A.data[iperm])
+            fastpermute!(A.index, iperm)
+            fastpermute!(A.data, A.data[iperm])
         end
     else
         # TODO
