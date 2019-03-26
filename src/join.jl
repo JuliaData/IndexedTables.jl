@@ -45,20 +45,20 @@ function _join!(I, init, ::Val{typ}, ::Val{grp}, f, iter::GroupJoinPerm, ldata::
         _ -> true
     end
 
-    function getkeyiter((lidxs, ridxs))
+    function iterate_value_push_key((lidxs, ridxs))
         key = isempty(lidxs) ? rkey[rperm[ridxs[1]]] : lkey[lperm[lidxs[1]]]
         liter = lnullable && isempty(lidxs) ? (nullrow(L, missingtype),) : (ldata[lperm[i]] for i in lidxs)
         riter = rnullable && isempty(ridxs) ? (nullrow(R, missingtype),) : (rdata[rperm[i]] for i in ridxs)
         if init === nothing
             if grp
                 push!(I, key)
-                joint_iter = (f(l, r) for (r, l) in Iterators.product(riter, liter))
+                joint_iter = (f(l, r) for (l, r) in product(liter, riter))
                 return _reduce(accumulate, joint_iter, init_group)
             else
-                return ((push!(I, key); f(l, r)) for (r, l) in Iterators.product(riter, liter))
+                return ((push!(I, key); f(l, r)) for (l, r) in product(liter, riter))
             end
         else
-            Base.foreach(Iterators.product(riter, liter)) do (r, l)
+            Base.foreach(product(liter, riter)) do (l, r)
                 push!(I, key)
                 push!(init.left, l)
                 push!(init.right, r)
@@ -68,12 +68,12 @@ function _join!(I, init, ::Val{typ}, ::Val{grp}, f, iter::GroupJoinPerm, ldata::
     end
     filtered_iter = Iterators.filter(filter_func, iter)
     if init !== nothing
-        Base.foreach(getkeyiter, filtered_iter)
+        Base.foreach(iterate_value_push_key, filtered_iter)
         left, right = init
         data = Columns(concat_tup(columns(left), columns(right)))
         return Columns(I => data)
     else
-        data_iter = (getkeyiter(idxs) for idxs in filtered_iter)
+        data_iter = (iterate_value_push_key(idxs) for idxs in filtered_iter)
         data = grp ? collect_columns(data_iter) : collect_columns_flattened(data_iter)
         return Columns(I => data)
     end
