@@ -21,9 +21,15 @@ collect_empty_columns(itr) = collect_empty_structarray(itr, initializer = defaul
 grow_to_columns!(args...) = grow_to_structarray!(args...)
 collect_to_columns!(args...) = collect_to_structarray!(args...)
 
-function collect_columns_flattened(itr)
+_first(x) = first(x)
+_first(p::Pair) = p.first => first(p.second)
+
+function collect_columns_flattened(itr::T) where {T}
     elem = iterate(itr)
-    (elem === nothing) && return Columns()
+    if (elem === nothing)
+        S = Core.Compiler.return_type(_first∘first, Tuple{T})
+        return default_initializer(S, (0,))
+    end
     el, st = elem
     collect_columns_flattened(itr, el, st)
 end

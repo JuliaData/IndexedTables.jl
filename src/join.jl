@@ -16,8 +16,8 @@ nullrowtype(::Type{T}, ::Type{S}) where {T, S} = type2missingtype(T, S)
 nullablerows(s::Columns{C}, ::Type{S}) where {C, S} = Columns{nullrowtype(C, S)}(fieldarrays(s))
 nullablerows(s::AbstractVector, ::Type{S}) where {S} = vec_missing(s, S)
 
-function init_key_left_right(key::AbstractVector{K}, ldata::AbstractVector{L}, rdata::AbstractVector{R}) where {K, L, R}
-    similar(arrayof(K), 0), similar(arrayof(L), 0), similar(arrayof(R), 0)
+function init_left_right(ldata::AbstractVector{L}, rdata::AbstractVector{R}) where {L, R}
+    (left = similar(arrayof(L), 0), right = similar(arrayof(R), 0))
 end
 
 _reduce(f, iter, ::Nothing) = reduce(f, iter)
@@ -27,7 +27,7 @@ _reduce(::Nothing, iter, init_group) = collect_columns(iter)
 
 # In a plain non group join with f === concat_tup, we avoid creating large structs and prefer to do things in place
 # In every step of the iteration, instead of just iterating we push the values to init
-function _join!(init, ::Val{typ}, ::Val{grp}, f, iter::GroupJoinPerm, ldata::AbstractVector{L}, rdata::AbstractVector{R};
+function _join!(I, init, ::Val{typ}, ::Val{grp}, f, iter::GroupJoinPerm, ldata::AbstractVector{L}, rdata::AbstractVector{R};
     missingtype=Missing, init_group=nothing, accumulate=nothing) where {typ, grp, L, R}
 
     lkey, rkey = parent(iter.left), parent(iter.right)
@@ -51,13 +51,20 @@ function _join!(init, ::Val{typ}, ::Val{grp}, f, iter::GroupJoinPerm, ldata::Abs
         riter = rnullable && isempty(ridxs) ? (nullrow(R, missingtype),) : (rdata[rperm[i]] for i in ridxs)
         if init === nothing
             joint_iter = (f(l, r) for (r, l) in Iterators.product(riter, liter))
-            res = grp ? _reduce(accumulate, joint_iter, init_group) : joint_iter
-            return key => res
+            if grp
+                push!(I, key)
+                return _reduce(accumulate, joint_iter, init_group)
+            else
+                for _ in 1:length(joint_iter)
+                    push!(I, key)
+                end
+                return joint_iter
+            end
         else
             Base.foreach(Iterators.product(riter, liter)) do (r, l)
-                push!(init[1], key)
-                push!(init[2], l)
-                push!(init[3], r)
+                push!(I, key)
+                push!(init.left, l)
+                push!(init.right, r)
             end
             return
         end
@@ -65,12 +72,13 @@ function _join!(init, ::Val{typ}, ::Val{grp}, f, iter::GroupJoinPerm, ldata::Abs
     filtered_iter = Iterators.filter(filter_func, iter)
     if init !== nothing
         Base.foreach(getkeyiter, filtered_iter)
-        key, left, right = init
+        left, right = init
         data = Columns(concat_tup(columns(left), columns(right)))
-        return Columns(key => data)
+        return Columns(I => data)
     else
-        pair_iter = (getkeyiter(idxs) for idxs in filtered_iter)
-        return grp === true ? collect_columns(pair_iter) : collect_columns_flattened(pair_iter)
+        data_iter = (getkeyiter(idxs) for idxs in filtered_iter)
+        data = grp ? collect_columns(data_iter) : collect_columns_flattened(data_iter)
+        return Columns(I => data)
     end
 end
 
@@ -174,12 +182,12 @@ function Base.join(f, left::Dataset, right::Dataset;
     KT = map_params(promote_type, eltype(lkey), eltype(rkey))
     lkey = Columns{KT}(fieldarrays(lkey))
     rkey = Columns{KT}(fieldarrays(rkey))
+    I = similar(arrayof(KT), 0)
     join_iter = GroupJoinPerm(GroupPerm(lkey, lperm), GroupPerm(rkey, rperm))
-    init = !group && f === concat_tup ? init_key_left_right(lkey, ldata, rdata) : nothing
+    init = !group && f === concat_tup ? init_left_right(ldata, rdata) : nothing
     typ, grp = Val{how}(), Val{group}()
-    res = _join!(init, typ, grp, f, join_iter, ldata, rdata;
+    res = _join!(I, init, typ, grp, f, join_iter, ldata, rdata;
         missingtype=missingtype, init_group=init_group, accumulate=accumulate)
-    isempty(res) && return res
     I, data = res.first, res.second
     if group && left isa IndexedTable && !(data isa Columns)
         data = Columns(groups=data)
