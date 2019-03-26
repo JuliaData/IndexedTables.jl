@@ -523,15 +523,15 @@ function _broadcast_trailing(f, B::NDSparse, C::NDSparse, B_common)
     lI, rI = B.index, C.index
     lD, rD = B.data, C.data
     ll, rr = length(lI), length(rI)
-
     iter = GroupJoinPerm(GroupPerm(B_common, Base.OneTo(ll)), GroupPerm(rI, Base.OneTo(rr)))
     filt = Iterators.filter(((_, ridxs),) -> !isempty(ridxs), iter)
+    I = similar(lI, 0)
     function step((lidxs, ridxs),)
         @inbounds Ck = rD[first(ridxs)]
-        @inbounds (lI[i] => f(lD[i], Ck) for i in lidxs)
+        @inbounds ((pushrow!(I, lI, i); f(lD[i], Ck)) for i in lidxs)
     end
-    res = collect_columns_flattened(step(idxs) for idxs in filt)
-    NDSparse(res.first, res.second, copy=false, presorted=true)
+    vals = collect_columns_flattened(step(idxs) for idxs in filt)
+    NDSparse(I, vals, copy=false, presorted=true)
 end
 
 function _bcast_loop(f::Function, B::NDSparse, C::NDSparse, B_common, B_perm)
