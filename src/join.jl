@@ -521,10 +521,11 @@ end
 # sometimes repeating values from the right argument.
 function _broadcast_trailing(f, B::NDSparse, C::NDSparse)
     lI, rI = B.index, C.index
+    lI_short = rows(lI, ntuple(identity, ncols(rI)))
     lD, rD = B.data, C.data
     ll, rr = length(lI), length(rI)
 
-    iter = GroupJoinPerm(GroupPerm(lI, Base.OneTo(ll)), GroupPerm(rI, Base.OneTo(rr)))
+    iter = GroupJoinPerm(GroupPerm(lI_short, Base.OneTo(ll)), GroupPerm(rI, Base.OneTo(rr)))
     filt = Iterators.filter(((_, ridxs),) -> !isempty(ridxs), iter)
     function step((lidxs, ridxs),)
         Ck = rD[first(ridxs)]
