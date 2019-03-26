@@ -50,15 +50,12 @@ function _join!(I, init, ::Val{typ}, ::Val{grp}, f, iter::GroupJoinPerm, ldata::
         liter = lnullable && isempty(lidxs) ? (nullrow(L, missingtype),) : (ldata[lperm[i]] for i in lidxs)
         riter = rnullable && isempty(ridxs) ? (nullrow(R, missingtype),) : (rdata[rperm[i]] for i in ridxs)
         if init === nothing
-            joint_iter = (f(l, r) for (r, l) in Iterators.product(riter, liter))
             if grp
                 push!(I, key)
+                joint_iter = (f(l, r) for (r, l) in Iterators.product(riter, liter))
                 return _reduce(accumulate, joint_iter, init_group)
             else
-                for _ in 1:length(joint_iter)
-                    push!(I, key)
-                end
-                return joint_iter
+                return ((push!(I, key); f(l, r)) for (r, l) in Iterators.product(riter, liter))
             end
         else
             Base.foreach(Iterators.product(riter, liter)) do (r, l)
