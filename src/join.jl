@@ -519,87 +519,54 @@ end
 # broadcast over trailing dimensions, i.e. C's dimensions are a prefix
 # of B's. this is an easy case since it's just an inner join plus
 # sometimes repeating values from the right argument.
-function _broadcast_trailing!(f, A::NDSparse, B::NDSparse, C::NDSparse)
-    I = A.index
-    data = A.data
+function _broadcast_trailing(f, B::NDSparse, C::NDSparse)
     lI, rI = B.index, C.index
     lD, rD = B.data, C.data
     ll, rr = length(lI), length(rI)
 
-    i = j = 1
-
-    while i <= ll && j <= rr
-        c = rowcmp(lI, i, rI, j)
-        if c == 0
-            while true
-                pushrow!(I, lI, i)
-                push!(data, f(lD[i], rD[j]))
-                i += 1
-                (i <= ll && rowcmp(lI, i, rI, j)==0) || break
-            end
-            j += 1
-        elseif c < 0
-            i += 1
-        else
-            j += 1
-        end
+    iter = GroupJoinPerm(GroupPerm(lI, Base.OneTo(ll)), GroupPerm(rI, Base.OneTo(rr)))
+    filt = Iterators.filter(((_, ridxs),) -> !isempty(ridxs), iter)
+    function step((lidxs, ridxs),)
+        Ck = rD[first(ridxs)]
+        (lI[i] => f(lD[i], Ck) for i in lidxs)
     end
-
-    return A
+    res = collect_columns_flattened(step(idxs) for idxs in filt)
+    NDSparse(res.first, res.second, copy=false, presorted=true)
 end
 
-function _bcast_loop!(f::Function, dA, B::NDSparse, C::NDSparse, B_common, B_perm)
+function _bcast_loop(f::Function, B::NDSparse, C::NDSparse, B_common, B_perm)
     m, n = length(B_perm), length(C)
-    jlo = klo = 1
     iperm = zeros(Int, m)
-    cnt = 0
     idxperm = Int32[]
-    @inbounds while jlo <= m && klo <= n
-        pjlo = B_perm[jlo]
-        x = rowcmp(B_common, pjlo, C.index, klo)
-        x < 0 && (jlo += 1; continue)
-        x > 0 && (klo += 1; continue)
-        jhi = jlo + 1
-        while jhi <= m && roweq(B_common, B_perm[jhi], pjlo)
-            jhi += 1
-        end
-        Ck = C.data[klo]
-        for ji = jlo:jhi-1
-            j = B_perm[ji]
-            # the output has the same indices as B, except with some missing.
-            # invperm(B_perm) would put the indices we're using back into their
-            # original sort order, so we build up that inverse permutation in
-            # `iperm`, leaving some 0 gaps to be filtered out later.
-            cnt += 1
-            iperm[j] = cnt
-            push!(idxperm, j)
-            push!(dA, f(B.data[j], Ck))
-        end
-        jlo, klo = jhi, klo+1
+    C_perm = Base.OneTo(n)
+    iter = GroupJoinPerm(GroupPerm(B_common, B_perm), GroupPerm(C.index, C_perm))
+    function step((bidxs, cidxs))
+        Ck = C.data[first(cidxs)]
+        ((push!(idxperm, j); iperm[j] = length(idxperm); f(B.data[B_perm[j]], Ck)) for i in bidxs)
     end
-    B.index[idxperm], filter!(i->i!=0, iperm)
+    vals = collect_columns_flattened(step(idxs) for idxs in iter)
+    B.index[idxperm], filter!(i->i!=0, iperm), vals
 end
 
-# broadcast C over B, into A. assumes A and B have same dimensions and ndims(B) >= ndims(C)
-function _broadcast!(f::Function, A::NDSparse, B::NDSparse, C::NDSparse; dimmap=nothing)
-    flush!(A); flush!(B); flush!(C)
-    empty!(A)
+# broadcast C over B. assumes ndims(B) >= ndims(C)
+function _broadcast(f::Function, B::NDSparse, C::NDSparse; dimmap=nothing)
+    flush!(B); flush!(C)
     if dimmap === nothing
-        C_inds = match_indices(A, C)
+        C_inds = match_indices(B, C)
     else
         C_inds = dimmap
     end
     C_dims = ntuple(identity, ndims(C))
     if C_inds[1:ndims(C)] == C_dims
-        return _broadcast_trailing!(f, A, B, C)
+        return _broadcast_trailing(f, B, C)
     end
-    common = filter(i->C_inds[i] > 0, 1:ndims(A))
+    common = filter(i->C_inds[i] > 0, 1:ndims(B))
     C_common = C_inds[common]
     B_common_cols = Columns(getsubfields(columns(B.index), common))
     B_perm = sortperm(B_common_cols)
     if C_common == C_dims
-        idx, iperm = _bcast_loop!(f, values(A), B, C, B_common_cols, B_perm)
-        A = NDSparse(idx, values(A), copy=false, presorted=true)
+        idx, iperm, vals = _bcast_loop(f, B, C, B_common_cols, B_perm)
+        A = NDSparse(idx, vals, copy=false, presorted=true)
         if !issorted(A.index)
             permute!(A.index, iperm)
             copyto!(A.data, A.data[iperm])
@@ -640,13 +607,10 @@ names and types.
     broadcast(*, a, b, dimmap=(0,1))
 """
 function broadcast(f::Function, A::NDSparse, B::NDSparse; dimmap=nothing)
-    out_T = _promote_op(f, eltype(A), eltype(B))
     if ndims(B) > ndims(A)
-        out = NDSparse(similar(B.index, 0), similar(arrayof(out_T), 0))
-        _broadcast!((x,y)->f(y,x), out, B, A, dimmap=dimmap)
+        _broadcast((x,y)->f(y,x), B, A, dimmap=dimmap)
     else
-        out = NDSparse(similar(A.index, 0), similar(arrayof(out_T), 0))
-        _broadcast!(f, out, A, B, dimmap=dimmap)
+        _broadcast(f, A, B, dimmap=dimmap)
     end
 end
 
