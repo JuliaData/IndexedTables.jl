@@ -570,7 +570,7 @@ function _broadcast(f::Function, B::NDSparse, C::NDSparse; dimmap=nothing)
         A = NDSparse(idx, vals, copy=false, presorted=true)
         if !issorted(A.index)
             fastpermute!(A.index, iperm)
-            fastpermute!(A.data, A.data[iperm])
+            fastpermute!(A.data, iperm)
         end
     else
         # TODO
