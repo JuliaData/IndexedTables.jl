@@ -71,11 +71,11 @@ function _join!(I, init, ::Val{typ}, ::Val{grp}, f, iter::GroupJoinPerm, ldata::
         Base.foreach(iterate_value_push_key, filtered_iter)
         left, right = init
         data = Columns(concat_tup(columns(left), columns(right)))
-        return Columns(I => data)
+        return I, data
     else
         data_iter = (iterate_value_push_key(idxs) for idxs in filtered_iter)
         data = grp ? collect_columns(data_iter) : collect_columns_flattened(data_iter)
-        return Columns(I => data)
+        return I, data
     end
 end
 
@@ -183,9 +183,8 @@ function Base.join(f, left::Dataset, right::Dataset;
     join_iter = GroupJoinPerm(GroupPerm(lkey, lperm), GroupPerm(rkey, rperm))
     init = !group && f === concat_tup ? init_left_right(ldata, rdata) : nothing
     typ, grp = Val{how}(), Val{group}()
-    res = _join!(I, init, typ, grp, f, join_iter, ldata, rdata;
+    I, data = _join!(I, init, typ, grp, f, join_iter, ldata, rdata;
         missingtype=missingtype, init_group=init_group, accumulate=accumulate)
-    I, data = res.first, res.second
     if group && left isa IndexedTable && !(data isa Columns)
         data = Columns(groups=data)
     end
