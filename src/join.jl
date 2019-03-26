@@ -528,8 +528,8 @@ function _broadcast_trailing(f, B::NDSparse, C::NDSparse)
     iter = GroupJoinPerm(GroupPerm(lI_short, Base.OneTo(ll)), GroupPerm(rI, Base.OneTo(rr)))
     filt = Iterators.filter(((_, ridxs),) -> !isempty(ridxs), iter)
     function step((lidxs, ridxs),)
-        Ck = rD[first(ridxs)]
-        (lI[i] => f(lD[i], Ck) for i in lidxs)
+        @inbounds Ck = rD[first(ridxs)]
+        @inbounds (lI[i] => f(lD[i], Ck) for i in lidxs)
     end
     res = collect_columns_flattened(step(idxs) for idxs in filt)
     NDSparse(res.first, res.second, copy=false, presorted=true)
@@ -543,8 +543,8 @@ function _bcast_loop(f::Function, B::NDSparse, C::NDSparse, B_common, B_perm)
     iter = GroupJoinPerm(GroupPerm(B_common, B_perm), GroupPerm(C.index, C_perm))
     filt = Iterators.filter(((_, ridxs),) -> !isempty(ridxs), iter)
     function step((bidxs, cidxs))
-        Ck = C.data[first(cidxs)]
-        ((push!(idxperm, j); iperm[j] = length(idxperm); f(B.data[B_perm[j]], Ck)) for j in bidxs)
+        @inbounds Ck = C.data[first(cidxs)]
+        @inbounds ((pj = B_perm[j]; push!(idxperm, pj); iperm[pj] = length(idxperm); f(B.data[pj], Ck)) for j in bidxs)
     end
     vals = collect_columns_flattened(step(idxs) for idxs in filt)
     B.index[idxperm], filter!(i->i!=0, iperm), vals
