@@ -641,30 +641,15 @@ renamecol(t, args...) = @cols rename!(t, args...)
 @inline init_first(f::OnlineStat, x) = (g=copy(f); fit!(g, x); g)
 @inline init_first(f::Tup, x::Tup) = map(init_first, f, x)
 
-# Initialize type of output, functions to apply, input and output vectors
+# Initialize functions to apply and input vectors
 
-function reduced_type(f, x, isvec, key = nothing)
-    if key !== nothing
-        _promote_op(f, eltype(key), typeof(x))
-    elseif isvec
-        _promote_op(f, typeof(x))
-    else
-        _promote_op((a,b)->_apply(f, init_first(f, a), b),
-                    eltype(x), eltype(x))
-    end
-end
-
-function init_inputs(f, x, gettype, isvec) # normal functions
-    f, x, gettype(f, x, isvec)
+function init_inputs(f, x, isvec) # normal functions
+    f, x
 end
 
 nicename(f::Function) = typeof(f).name.mt.name
 nicename(f) = Symbol(last(split(string(f), ".")))
 nicename(o::OnlineStat) = Symbol(typeof(o).name.name)
-
-function mapped_type(f, x, isvec)
-    _promote_op(f, eltype(x))
-end
 
 init_funcs(f, isvec) = init_funcs((f,), isvec)
 
@@ -697,21 +682,19 @@ function init_funcs(f::Tup, isvec)
     NamedTuple{(ns...,)}((fs...,)), ss
 end
 
-function init_inputs(f::Tup, input, gettype, isvec)
+function init_inputs(f::Tup, input, isvec)
     if isa(f, NamedTuple)
-        return init_inputs((map(Pair, fieldnames(typeof(f)), f)...,), input, gettype, isvec)
+        return init_inputs((map(Pair, fieldnames(typeof(f)), f)...,), input, isvec)
     end
     fs, selectors = init_funcs(f, isvec)
 
     xs = map(s->s === nothing ? input : rows(input, s), selectors)
 
-    output_eltypes = map((f,x) -> gettype(f, x, isvec), fs, xs)
-
     ns = fieldnames(typeof(fs))
     NT = namedtuple(ns...)
 
-    # functions, input, output_eltype
-    NT((fs...,)), rows(NT((xs...,))), NT{Tuple{output_eltypes...}}
+    # functions and input
+    NT((fs...,)), rows(NT((xs...,)))
 end
 
 ### utils

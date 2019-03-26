@@ -34,13 +34,13 @@ function reduce(f, t::IndexedTable; select=valuenames(t), kws...)
 end
 
 function _reduce_select(f, t::Dataset, select)
-    fs, input, T = init_inputs(f, rows(t, select), reduced_type, false)
+    fs, input = init_inputs(f, rows(t, select), false)
     acc = init_first(fs, input[1])
     _reduce(fs, input, acc, 2)
 end
 
 function _reduce_select_init(f, t::Dataset, select, v0)
-    fs, input, T = init_inputs(f, rows(t, select), reduced_type, false)
+    fs, input = init_inputs(f, rows(t, select), false)
     _reduce(fs, input, v0, 1)
 end
 
@@ -110,7 +110,7 @@ function groupreduce(f, t::Dataset, by=pkeynames(t);
     end
     perm, key = sortpermby(t, by, cache=cache, return_keys=true)
 
-    fs, input, T = init_inputs(f, data, reduced_type, false)
+    fs, input = init_inputs(f, data, false)
 
     name = isa(t, IndexedTable) ? namedtuple(nicename(f)) : nothing
     iter = igroupreduce(fs, key, input, perm, name=name)
@@ -185,7 +185,7 @@ function groupby(f, t::Dataset, by=pkeynames(t);
         by = (by,)
     end
 
-    fs, input, S = init_inputs(f, data, reduced_type, true)
+    fs, input = init_inputs(f, data, true)
 
     if by == ()
         res = usekey ? _apply_with_key(fs, (), input, identity) : _apply_with_key(fs, input, identity)
