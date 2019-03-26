@@ -540,11 +540,12 @@ function _bcast_loop(f::Function, B::NDSparse, C::NDSparse, B_common, B_perm)
     idxperm = Int32[]
     C_perm = Base.OneTo(n)
     iter = GroupJoinPerm(GroupPerm(B_common, B_perm), GroupPerm(C.index, C_perm))
+    filt = Iterators.filter(((_, ridxs),) -> !isempty(ridxs), iter)
     function step((bidxs, cidxs))
         Ck = C.data[first(cidxs)]
-        ((push!(idxperm, j); iperm[j] = length(idxperm); f(B.data[B_perm[j]], Ck)) for i in bidxs)
+        ((push!(idxperm, j); iperm[j] = length(idxperm); f(B.data[B_perm[j]], Ck)) for j in bidxs)
     end
-    vals = collect_columns_flattened(step(idxs) for idxs in iter)
+    vals = collect_columns_flattened(step(idxs) for idxs in filt)
     B.index[idxperm], filter!(i->i!=0, iperm), vals
 end
 

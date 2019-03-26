@@ -14,7 +14,7 @@ Collect an iterable as a `Columns` object if it iterates `Tuples` or `NamedTuple
     s2 = Iterators.filter(isodd, 1:8)
     collect_columns(s2)
 """
-collect_columns(itr) = vec(collect_structarray(itr, initializer = default_initializer))
+collect_columns(args...) = vec(collect_structarray(args..., initializer = default_initializer))
 collect_columns(s::StructVector) = s
 collect_empty_columns(itr) = collect_empty_structarray(itr, initializer = default_initializer)
 
@@ -29,12 +29,14 @@ function collect_columns_flattened(itr)
 end
 
 function collect_columns_flattened(itr, el, st)
-    while isempty(el)
+    fr = iterate(el)
+    while fr === nothing
         elem = iterate(itr, st)
         elem === nothing && return collect_empty_columns(el)
         el, st = elem
+        fr = iterate(el)
     end
-    dest = collect_columns(el)
+    dest = collect_columns(el, fr)
     collect_columns_flattened!(dest, itr, el, st)
 end
 
@@ -49,12 +51,14 @@ function collect_columns_flattened!(dest, itr, el, st)
 end
 
 function collect_columns_flattened(itr, el::Pair, st)
-    while isempty(el.second)
+    fr = iterate(el.second)
+    while fr === nothing
         elem = iterate(itr, st)
         elem === nothing && return collect_empty_columns(el.first => i for i in el.second)
         el, st = elem
+        fr = iterate(el.second)
     end
-    dest_data = collect_columns(el.second)
+    dest_data = collect_columns(el.second, fr)
     dest_key = collect_columns(el.first for i in dest_data)
     collect_columns_flattened!(Columns(dest_key => dest_data), itr, el, st)
 end
