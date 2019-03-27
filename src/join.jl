@@ -27,6 +27,7 @@ _reduce(::Nothing, iter, init_group) = collect_columns(iter)
 
 # In a plain non group join with f === concat_tup, we avoid creating large structs and prefer to do things in place
 # In every step of the iteration, instead of just iterating we push the values to init
+# Even in the general case, type of keys is known, so we push to I while iterating data
 function _join!(I, init, ::Val{typ}, ::Val{grp}, f, iter::GroupJoinPerm, ldata::AbstractVector{L}, rdata::AbstractVector{R};
     missingtype=Missing, init_group=nothing, accumulate=nothing) where {typ, grp, L, R}
 
@@ -71,11 +72,11 @@ function _join!(I, init, ::Val{typ}, ::Val{grp}, f, iter::GroupJoinPerm, ldata::
         Base.foreach(iterate_value_push_key, filtered_iter)
         left, right = init
         data = Columns(concat_tup(columns(left), columns(right)))
-        return I, data
+        return data
     else
         data_iter = (iterate_value_push_key(idxs) for idxs in filtered_iter)
         data = grp ? collect_columns(data_iter) : collect_columns_flattened(data_iter)
-        return I, data
+        return data
     end
 end
 
@@ -179,11 +180,11 @@ function Base.join(f, left::Dataset, right::Dataset;
     KT = map_params(promote_type, eltype(lkey), eltype(rkey))
     lkey = Columns{KT}(fieldarrays(lkey))
     rkey = Columns{KT}(fieldarrays(rkey))
-    I = similar(arrayof(KT), 0)
     join_iter = GroupJoinPerm(GroupPerm(lkey, lperm), GroupPerm(rkey, rperm))
     init = !group && f === concat_tup ? init_left_right(ldata, rdata) : nothing
     typ, grp = Val{how}(), Val{group}()
-    I, data = _join!(I, init, typ, grp, f, join_iter, ldata, rdata;
+    I = similar(arrayof(KT), 0)
+    data = _join!(I, init, typ, grp, f, join_iter, ldata, rdata;
         missingtype=missingtype, init_group=init_group, accumulate=accumulate)
     if group && left isa IndexedTable && !(data isa Columns)
         data = Columns(groups=data)
