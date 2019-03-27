@@ -52,16 +52,16 @@ function _join!(I, init, ::Val{typ}, ::Val{grp}, f, iter::GroupJoinPerm, ldata::
         if init === nothing
             if grp
                 push!(I, key)
-                joint_iter = (f(l, r) for (l, r) in product(liter, riter))
+                joint_iter = (f(l::L, r::R) for (l, r) in product(liter, riter))
                 return _reduce(accumulate, joint_iter, init_group)
             else
-                return ((push!(I, key); f(l, r)) for (l, r) in product(liter, riter))
+                return ((push!(I, key); f(l::L, r::R)) for (l, r) in product(liter, riter))
             end
         else
             Base.foreach(product(liter, riter)) do (l, r)
                 push!(I, key)
-                push!(init.left, l)
-                push!(init.right, r)
+                push!(init.left, l::L)
+                push!(init.right, r::R)
             end
             return
         end
