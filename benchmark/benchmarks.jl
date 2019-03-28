@@ -2,7 +2,7 @@ using PkgBenchmark
 using IndexedTables
 using IntervalSets: (..)
 
-srand(666)
+Random.seed!(666)
 
 @benchgroup "construction" begin
     N = 10000

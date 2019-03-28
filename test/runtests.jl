@@ -5,10 +5,6 @@ using Test, IndexedTables, OnlineStats, WeakRefStrings, Tables, Random, Dates,
 using IndexedTables: excludecols, sortpermby, primaryperm, best_perm_estimate, hascolumns,
     collect_columns_flattened
 
-if VERSION < v"1.0-"
-    select = IndexedTables.select
-end
-
 include("test_tables.jl")
 include("test_missing.jl")
 include("test_join.jl")
