@@ -266,9 +266,6 @@ function isshared(x)
     end
 end
 
-compact_mem(x) = x
-compact_mem(x::StringArray{String}) = convert(StringArray{WeakRefString{UInt8}}, x)
-
 function getsubfields(n::NamedTuple, fields)
     fns = fieldnames(typeof(n))
     NamedTuple{(fns[fields]...,)}(n)

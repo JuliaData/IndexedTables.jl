@@ -696,7 +696,3 @@ function init_inputs(f::Tup, input, isvec)
     # functions and input
     NT((fs...,)), rows(NT((xs...,)))
 end
-
-### utils
-
-compact_mem(x::Columns) = Columns(map(compact_mem, columns(x)))
