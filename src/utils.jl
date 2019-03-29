@@ -169,16 +169,6 @@ Base.@pure function strip_unionall(T)
     end
 end
 
-Base.@pure function _promote_op(f, ::Type{S}) where S
-    t = Core.Compiler.return_type(f, Tuple{S})
-    strip_unionall(t)
-end
-
-Base.@pure function _promote_op(f, ::Type{S}, ::Type{T}) where {S,T}
-    t = Core.Compiler.return_type(f, Tuple{S, T})
-    strip_unionall(t)
-end
-
 @inline _map(f, p::Pair) = f(p.first) => f(p.second)
 @inline _map(f, args...) = map(f, args...)
 

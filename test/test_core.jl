@@ -76,6 +76,10 @@ let a = NDSparse([12,21,32], [52,41,34], [11,53,150]), b = NDSparse([12,23,32], 
     @test sum(map(-, c, c)) == 0
 
     @test map(iseven, a) == NDSparse([12,21,32], [52,41,34], [false,false,true])
+
+    # 97
+    x = ndsparse((t=[0.01, 0.05],), (x=[1,2], y=[3,4],))
+    @test map(p->(r = sum(p),), x).data == Columns(([4,6],), names=[:r])
 end
 
 

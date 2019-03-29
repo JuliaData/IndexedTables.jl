@@ -33,32 +33,3 @@ let x = rand(3), y = rand(3), v = rand(3), w = rand(3)
     @test vcat((Columns((x,y))), Columns((v,w))) == Columns((vcat(x,v), vcat(y,w)))
     @test vcat(Columns(x=x,y=y), Columns(x=v,y=w)) == Columns(x=vcat(x,v), y=vcat(y,w))
 end
-
-import IndexedTables: _promote_op
-
-let
-    f = x -> 1/x
-    @test _promote_op(f, Int) == Float64
-
-    f = x -> (x,1/x)
-    @test _promote_op(f, Int) == Tuple{Int, Float64}
-
-    foo(i) = [1, 1//2, "x"][i]
-    f = x -> (x,foo(x))
-    @test _promote_op(f, Int) == Tuple{Int, Any}
-
-    bar(i) = Union{Int, String}[1, "x"][i]
-    g = x -> (x,bar(x))
-    @test _promote_op(g, Int) == Tuple{Int, Any}
-
-    h = x -> rand(Bool) ? (x=1,) : (y=2,)
-    @test _promote_op(h, Int) <: NamedTuple
-
-    #101
-    s = (1,)
-    @test _promote_op(i -> Tuple(getfield(i, j) for j in s), Tuple{Int}) == Any
-
-    # 97
-    x = ndsparse((t=[0.01, 0.05],), (x=[1,2], y=[3,4],))
-    @test map(p->(r = sum(p),), x).data == Columns(([4,6],), names=[:r])
-end
