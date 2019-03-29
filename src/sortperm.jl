@@ -38,7 +38,7 @@ function sortpermby(t, by; cache=false, return_keys=false)
         return return_keys ? (partial_perm, pool(rows(t, by))) : partial_perm
     end
 
-    byrows = pool((t, by))
+    byrows = pool(rows(t, by))
     bycols = columns(byrows)
     perm = if matched_cols > 0
         nxtcol = bycols[matched_cols+1]
