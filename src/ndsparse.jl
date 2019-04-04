@@ -398,20 +398,12 @@ function aggregate!(f, x::NDSparse)
     idxs, data = x.index, x.data
     n = length(idxs)
     newlen = 0
-    i1 = 1
-    while i1 <= n
-        val = data[i1]
-        i = i1+1
-        while i <= n && roweq(idxs, i, i1)
-            val = f(val, data[i])
-            i += 1
-        end
+    for ii in GroupPerm(pool(idxs), Base.OneTo(n))
         newlen += 1
-        if newlen != i1
-            copyrow!(idxs, newlen, i1)
+        if newlen != last(ii)
+            copyrow!(idxs, newlen, last(ii))
+            @inbounds data[newlen] = reduce(f, data[i] for i in ii)
         end
-        data[newlen] = val
-        i1 = i
     end
     resize!(idxs, newlen)
     resize!(data, newlen)
