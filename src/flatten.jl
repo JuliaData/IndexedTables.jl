@@ -151,22 +151,16 @@ function _mapslices_itable!(f, output, x, iter, iterdims, start)
     NDSparse(I,D)
 end
 
-function _flatten!(others, vecvec, out_others, out_vecvec)
-    for i in 1:length(others)
-        vec = vecvec[i]
-        try
-            for x in vec
-                push!(out_vecvec, x)
-                pushrow!(out_others, others, i)
-            end
-        catch err
-            # FIXME: this is slow!
-            if err isa MethodError && err.f === iterate
-                push!(out_vecvec, vec)
-                pushrow!(out_others, others, i)
-            end
-        end
+function _flatten(others::AbstractVector, vecvec::AbstractVector)
+    out_others= similar(others, 0)
+    n = length(vecvec)
+    function iterate_value_push_key(i)
+        v = vecvec[i]
+        ((pushrow!(out_others, others, i); el) for el in v)
     end
+
+    out_vecvec = collect_columns_flattened(iterate_value_push_key(i) for i in Base.OneTo(n))
+    return out_others, out_vecvec
 end
 
 """
@@ -194,10 +188,8 @@ function flatten(t::IndexedTable, col=length(columns(t)); pkey=nothing)
     order_vecvec = Int[colindex(t, col)...]
 
     others = rows(t, everythingbut)
-    out_others = similar(others, 0)
-    out_vecvec = similar(arrayof(eltype(eltype(vecvec))), 0)
 
-    _flatten!(others, vecvec, out_others, out_vecvec)
+    out_others, out_vecvec = _flatten(others, vecvec)
 
     cols = Any[columns(out_others)...]
     cs = columns(out_vecvec)
