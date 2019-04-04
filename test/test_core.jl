@@ -1168,8 +1168,8 @@ end
     @test flatten(x, :y) == table([1,1,2,2], [3,4,7,8], [5,6,9,10], names=[:x,:a, :b])
     x = table([1,2], [(2i for i in 1:3 if isodd(i)), (5, nothing)])
     @test flatten(x) == table(([1,1,2,2], [2,6,5,nothing]))
-    @test @inferred _iterable_val([1, 2])
-    @test !(@inferred _iterable_val(:a))
+    @test @inferred IndexedTables.isiterable_val([1, 2])
+    @test !(@inferred IndexedTables.isiterable_val(:a))
 
     t = table([1,1,2,2], [3,4,5,6], names=[:x,:y])
     @test groupby((:normy => x->Iterators.repeated(mean(x), length(x)),),
