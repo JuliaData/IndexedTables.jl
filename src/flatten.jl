@@ -163,10 +163,14 @@ function _flatten(others::AbstractVector, vecvec::AbstractVector)
     return out_others, out_vecvec
 end
 
+@generated function isiterable_val(::T) where {T}
+    Base.isiterable(T) ? true : false
+end
+
 """
     flatten(t::Table, col=length(columns(t)))
 
-Flatten `col` column which may contain a vector of vectors while repeating the other fields.
+Flatten `col` column which may contain a vector of iterables while repeating the other fields.
 If column argument is not provided, default to last column.
 
 # Examples:
@@ -181,7 +185,7 @@ If column argument is not provided, default to last column.
 """
 function flatten(t::IndexedTable, col=length(columns(t)); pkey=nothing)
     vecvec = rows(t, col)
-    hasmethod(iterate, (eltype(vecvec),)) || return t
+    all(isiterable_val, vecvec) || return t
     everythingbut = excludecols(t, col)
 
     order_others = Int[colindex(t, everythingbut)...]
