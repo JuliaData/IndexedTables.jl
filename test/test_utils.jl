@@ -33,3 +33,22 @@ let x = rand(3), y = rand(3), v = rand(3), w = rand(3)
     @test vcat((Columns((x,y))), Columns((v,w))) == Columns((vcat(x,v), vcat(y,w)))
     @test vcat(Columns(x=x,y=y), Columns(x=v,y=w)) == Columns(x=vcat(x,v), y=vcat(y,w))
 end
+
+@testset "compact_mem" begin
+    v = Columns(a=rand(10), b = fill("string", 10))
+    v_pooled = IndexedTables.replace_storage(v) do c
+        isbitstype(eltype(c)) ? c : convert(PooledArrays.PooledArray, c)
+    end
+    @test eltype(v) == eltype(v_pooled)
+    @test all(v.a .== v_pooled.a)
+    @test all(v.b .== v_pooled.b)
+    @test !isa(v_pooled.a, PooledArrays.PooledArray)
+    @test isa(v_pooled.b, PooledArrays.PooledArray)
+    @test v_pooled == IndexedTables.compact_mem(v)
+    s = WeakRefStrings.StringArray(["a", "b", "c"])
+    @test IndexedTables.compact_mem(s) isa PooledArrays.PooledArray{String}
+    @test IndexedTables.compact_mem(s)[1] == "a"
+    @test IndexedTables.compact_mem(s)[2] == "b"
+    @test IndexedTables.compact_mem(s)[3] == "c"
+    @test IndexedTables.compact_mem(IndexedTables.compact_mem(s)) == IndexedTables.compact_mem(s)
+end
