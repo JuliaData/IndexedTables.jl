@@ -76,7 +76,7 @@ astuple(n::NamedTuple) = Tuple(n)
 
 # optimized sortperm: pool non isbits types before calling sortperm_fast or sortperm_by
 
-sortperm_fast(x) = sortperm(pool(x))
+sortperm_fast(x) = sortperm(compact_mem(x))
 
 function append_n!(X, val, n)
     l = length(X)
@@ -266,3 +266,10 @@ getsubfields(t::Tuple, fields) = t[fields]
 
 product(itr) = itr
 product(itrs...) = Base.Generator(reverse, Iterators.product(reverse(itrs)...))
+
+# pool non isbits types
+
+compact_mem(v::PooledArray) = v
+compact_mem(v::AbstractArray{T}) where {T} = isbitstype(T) ? v : PooledArray(v)
+compact_mem(v::StringArray{String}) =
+    map(String, PooledArray(convert(StringArray{WeakRefString{UInt8}}, v)))

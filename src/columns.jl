@@ -696,3 +696,6 @@ function init_inputs(f::Tup, input, isvec)
     # functions and input
     NT((fs...,)), rows(NT((xs...,)))
 end
+
+# utils
+compact_mem(v::Columns) = replace_storage(compact_mem, v)

@@ -398,7 +398,7 @@ function aggregate!(f, x::NDSparse)
     idxs, data = x.index, x.data
     n = length(idxs)
     newlen = 0
-    for ii in GroupPerm(pool(idxs), Base.OneTo(n))
+    for ii in GroupPerm(compact_mem(idxs), Base.OneTo(n))
         newlen += 1
         if newlen != last(ii)
             copyrow!(idxs, newlen, last(ii))
