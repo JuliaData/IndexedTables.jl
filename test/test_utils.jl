@@ -52,3 +52,15 @@ end
     @test IndexedTables.compact_mem(s)[3] == "c"
     @test IndexedTables.compact_mem(IndexedTables.compact_mem(s)) == IndexedTables.compact_mem(s)
 end
+
+@testset "refs" begin
+    a = WeakRefStrings.StringVector(["a", "b", "c"])
+    b = PooledArrays.PooledArray(["1", "2", "3"])
+    c = [:a, :b, :c]
+    s = Columns(a=a, b=b, c=c)
+    ref = IndexedTables.refs(s)
+    @test ref[1].a isa WeakRefStrings.WeakRefString{UInt8}
+    @test ref[1].b isa Integer
+    Base.permute!!(ref, sortperm(s))
+    @test issorted(s)
+end
