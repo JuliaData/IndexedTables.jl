@@ -98,7 +98,7 @@ function table(::Val{:serial}, cols::Tup;
             if copy
                 cs = cs[perm]
             else
-                cs = permute!(cs, perm)
+                Base.permute!!(refs(cs), perm)
             end
         elseif copy
             cs = copyto!(similar(cs), cs)
@@ -345,7 +345,7 @@ Sort rows of `t` by `by` in place. All of `Base.sort` keyword arguments can be u
 """
 function sort!(t::IndexedTable, by...; kwargs...)
     isempty(t.pkey) || error("Tables with primary keys can't be sorted in place")
-    permute!(rows(t), sortperm(rows(t, by...); kwargs...))
+    Base.permute!!(refs(rows(t)), sortperm(rows(t, by...); kwargs...))
     t
 end
 

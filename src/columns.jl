@@ -698,4 +698,5 @@ function init_inputs(f::Tup, input, isvec)
 end
 
 # utils
+refs(v::Columns) = Columns(map(refs, fieldarrays(v)))
 compact_mem(v::Columns) = replace_storage(compact_mem, v)

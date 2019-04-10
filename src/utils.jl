@@ -267,9 +267,17 @@ getsubfields(t::Tuple, fields) = t[fields]
 product(itr) = itr
 product(itrs...) = Base.Generator(reverse, Iterators.product(reverse(itrs)...))
 
+# refs
+
+refs(v::PooledArray) = v.refs
+refs(v::AbstractArray) = v
+function refs(v::StringArray{T}) where {T}
+    S = Union{WeakRefString{UInt8}, typeintersect(T, Missing)}
+    convert(StringArray{S}, v)
+end
+
 # pool non isbits types
 
 compact_mem(v::PooledArray) = v
 compact_mem(v::AbstractArray{T}) where {T} = isbitstype(T) ? v : PooledArray(v)
-compact_mem(v::StringArray{String}) =
-    map(String, PooledArray(convert(StringArray{WeakRefString{UInt8}}, v)))
+compact_mem(v::StringArray{T}) where {T} = map(t -> convert(T, t), PooledArray(refs(v)))
