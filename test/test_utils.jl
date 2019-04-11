@@ -37,20 +37,23 @@ end
 @testset "compact_mem" begin
     v = Columns(a=rand(10), b = fill("string", 10))
     v_pooled = IndexedTables.replace_storage(v) do c
-        isbitstype(eltype(c)) ? c : convert(PooledArrays.PooledArray, c)
+        isbitstype(eltype(c)) ? c : convert(PooledArray, c)
     end
     @test eltype(v) == eltype(v_pooled)
     @test all(v.a .== v_pooled.a)
     @test all(v.b .== v_pooled.b)
-    @test !isa(v_pooled.a, PooledArrays.PooledArray)
-    @test isa(v_pooled.b, PooledArrays.PooledArray)
+    @test !isa(v_pooled.a, PooledArray)
+    @test isa(v_pooled.b, PooledArray)
     @test v_pooled == IndexedTables.compact_mem(v)
     s = WeakRefStrings.StringArray(["a", "b", "c"])
-    @test IndexedTables.compact_mem(s) isa PooledArrays.PooledArray{String}
+    @test IndexedTables.compact_mem(s) isa PooledArray{String}
     @test IndexedTables.compact_mem(s)[1] == "a"
     @test IndexedTables.compact_mem(s)[2] == "b"
     @test IndexedTables.compact_mem(s)[3] == "c"
     @test IndexedTables.compact_mem(IndexedTables.compact_mem(s)) == IndexedTables.compact_mem(s)
+    s = WeakRefStrings.StringArray(["a", missing, "c"])
+    @test IndexedTables.compact_mem(s) isa PooledArray{Union{String, Missing}}
+    @test all(isequal.(s, IndexedTables.compact_mem(s)))
 end
 
 @testset "refs" begin
@@ -60,7 +63,14 @@ end
     s = Columns(a=a, b=b, c=c)
     ref = IndexedTables.refs(s)
     @test ref[1].a isa WeakRefStrings.WeakRefString{UInt8}
-    @test ref[1].b isa Integer
+    @test all(isequal.(ref.a, a))
+    @test ref[1].b isa UInt8
+    @test isequal(ref.b, UInt8.([1, 2, 3]))
     Base.permute!!(ref, sortperm(s))
     @test issorted(s)
+
+    a = WeakRefStrings.StringVector(["a", missing, "c"])
+    refa = IndexedTables.refs(a)
+    @test refa isa WeakRefStrings.StringArray{Union{Missing, WeakRefStrings.WeakRefString{UInt8}}}
+    @test all(isequal.(a, refa))
 end
