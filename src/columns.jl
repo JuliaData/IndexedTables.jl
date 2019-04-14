@@ -347,6 +347,7 @@ rows(cols::Tup) = Columns(cols)
 
 rows(t, which...) = rows(columns(t, which...))
 
+# Replace empty Columns object with one of correct length and eltype
 replace_placeholder(t, ::Columns{Tuple{}}) = fill(Tuple(), length(t))
 replace_placeholder(t, ::Columns{NamedTuple{(), Tuple{}}}) = fill(NamedTuple(), length(t))
 replace_placeholder(t, cols) = cols
