@@ -52,4 +52,10 @@
         @test isequal(join(a, b, how=:outer, lkey=:id, rkey=:id), t_outer)
         @test isequal(join(a, b, how=:outer, lkey=:id, rkey=:id, missingtype=DataValue), t_outer2)
     end
+    @testset "empty" begin
+        t1 = table((key = ["a","b","c"], ))
+        t2 = table((key = ["a","b"], value = [1,2]))
+        res = join(t1, t2, how = :left, lkey = :key, rkey = :key)
+        @test isequal(res, table((key = ["a","b","c"], value = [1,2,missing])))
+    end
 end

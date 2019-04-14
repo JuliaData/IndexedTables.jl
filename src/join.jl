@@ -177,6 +177,9 @@ function Base.join(f, left::Dataset, right::Dataset;
         (how == :inner) || (rdata = nullablerows(rdata, missingtype))
     end
 
+    ldata = replace_placeholder(left, ldata)
+    rdata = replace_placeholder(right, rdata)
+
     KT = map_params(promote_type, eltype(lkey), eltype(rkey))
     lkey = Columns{KT}(fieldarrays(lkey))
     rkey = Columns{KT}(fieldarrays(rkey))

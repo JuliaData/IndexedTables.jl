@@ -347,6 +347,10 @@ rows(cols::Tup) = Columns(cols)
 
 rows(t, which...) = rows(columns(t, which...))
 
+replace_placeholder(t, ::Columns{Tuple{}}) = fill(Tuple(), length(t))
+replace_placeholder(t, ::Columns{NamedTuple{(), Tuple{}}}) = fill(NamedTuple(), length(t))
+replace_placeholder(t, cols) = cols
+
 _cols_tuple(xs::Columns) = columns(xs)
 _cols_tuple(xs::AbstractArray) = (xs,)
 concat_cols(xs, ys) = rows(concat_tup(_cols_tuple(xs), _cols_tuple(ys)))
