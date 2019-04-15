@@ -424,7 +424,7 @@ function Base.haskey(d::ColDict, key)
     _colindex(d.names, key, 0) != 0
 end
 
-function Base.insert!(d::ColDict, index, key, col)
+function Base.insert!(d::ColDict, index::Integer, (key, col)::Pair)
     if haskey(d, key)
         error("Key $key already exists. Use dict[key] = col instead of inserting.")
     else
@@ -438,20 +438,29 @@ function Base.insert!(d::ColDict, index, key, col)
     end
 end
 
-function insertafter!(d::ColDict, i, key, col)
-    k = _colindex(d.names, i, 0)
-    if k == 0
-        error("$i not found. Cannot insert column after $i")
+function Base.insert!(d::ColDict, index::Integer, newcols)
+    for new::Pair in newcols
+        insert!(d, index, new)
+        index += 1
     end
-    insert!(d, k+1, key, col)
 end
 
-function insertbefore!(d::ColDict, i, key, col)
+Base.insert!(d::ColDict, index::Integer, newcols::Pair...) = insert!(d, index, newcols)
+
+function insertafter!(d::ColDict, i, args...)
     k = _colindex(d.names, i, 0)
     if k == 0
         error("$i not found. Cannot insert column after $i")
     end
-    insert!(d, k, key, col)
+    insert!(d, k+1, args...)
+end
+
+function insertbefore!(d::ColDict, i, args...)
+    k = _colindex(d.names, i, 0)
+    if k == 0
+        error("$i not found. Cannot insert column after $i")
+    end
+    insert!(d, k, args...)
 end
 
 function rename!(d::ColDict, (col, newname)::Pair)
@@ -533,56 +542,64 @@ transform(t, args...) = @cols transform!(t, args...)
 @deprecate popcol(t) select(t, Not(ncols(t)))
 
 """
-    insertcol(t, position::Integer, name, x)
+    insertcols(t, position::Integer, map::Pair...)
 
-Insert a column `x` named `name` at `position`. Returns a new table.
-
-# Example
-
-    t = table([0.01, 0.05], [2,1], [3,4], names=[:t, :x, :y], pkey=:t)
-    insertcol(t, 2, :w, [0,1])
-"""
-insertcol(t, i::Integer, name, x) = @cols insert!(t, i, name, x)
-
-"""
-    insertcolafter(t, after, name, col)
-
-Insert a column `col` named `name` after `after`. Returns a new table.
+For each pair `name => col` in `map`, insert a column `col` named `name` starting at `position`.
+Returns a new table.
 
 # Example
 
     t = table([0.01, 0.05], [2,1], [3,4], names=[:t, :x, :y], pkey=:t)
-    insertcolafter(t, :t, :w, [0,1])
+    insertcol(t, 2, :w => [0,1])
 """
-insertcolafter(t, after, name, x) = @cols insertafter!(t, after, name, x)
+insertcols(t, i::Integer, args...) = @cols insert!(t, i, args...)
+
+@deprecate insertcol(t, i, name, x) insertcols(t, i, name => x)
 
 """
-    insertcolbefore(t, before, name, col)
+    insertcolsafter(t, after, map::Pair...)
 
-Insert a column `col` named `name` before `before`. Returns a new table.
+For each pair `name => col` in `map`, insert a column `col` named `name` after `after`.
+Returns a new table.
 
 # Example
 
     t = table([0.01, 0.05], [2,1], [3,4], names=[:t, :x, :y], pkey=:t)
-    insertcolbefore(t, :x, :w, [0,1])
+    insertcolsafter(t, :t, :w => [0,1])
 """
-insertcolbefore(t, before, name, x) = @cols insertbefore!(t, before, name, x)
+insertcolsafter(t, after, args...) = @cols insertafter!(t, after, args...)
+
+@deprecate insertcolafter(t, i, name, x) insertcolsafter(t, i, name => x)
 
 """
-    renamecol(t, col, newname)
+insertcolsbefore(t, before, map::Pair...)
 
-Set `newname` as the new name for column `col` in `t`. Returns a new table.
+For each pair `name => col` in `map`, insert a column `col` named `name` before `before`.
+Returns a new table.
 
-    renamecol(t, map::Pair...)
+# Example
 
-Rename multiple columns at a time.
+    t = table([0.01, 0.05], [2,1], [3,4], names=[:t, :x, :y], pkey=:t)
+    insertcolsbefore(t, :x, :w => [0,1])
+"""
+insertcolsbefore(t, before, args...) = @cols insertbefore!(t, before, args...)
+
+@deprecate insertcolbefore(t, i, name, x) insertcolsbefore(t, i, name => x)
+
+"""
+    renamecols(t, map::Pair...)
+
+For each pair `col => newname` in `map`, set `newname` as the new name for column `col` in `t`.
+Returns a new table.
 
 # Example
 
     t = table([0.01, 0.05], [2,1], names=[:t, :x])
-    renamecol(t, :t, :time)
+    renamecols(t, :t => :time)
 """
-renamecol(t, args...) = @cols rename!(t, args...)
+renamecols(t, args...) = @cols rename!(t, args...)
+
+@deprecate renamecol(t, args...) renamecols(t, args...)
 
 ## Utilities for mapping and reduction with many functions / OnlineStats
 

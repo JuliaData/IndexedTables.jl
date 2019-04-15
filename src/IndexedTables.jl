@@ -31,10 +31,10 @@ export
     # functions
     aggregate!, antijoin, asofjoin, collect_columns, colnames,
     column, columns, convertdim, dimlabels, flatten, flush!, groupby, groupjoin,
-    groupreduce, innerjoin, insertafter!, insertbefore!, insertcol, insertcolafter,
-    insertcolbefore, leftgroupjoin, leftjoin, map_rows, naturalgroupjoin, naturaljoin,
+    groupreduce, innerjoin, insertafter!, insertbefore!, insertcols, insertcolsafter,
+    insertcolsbefore, leftgroupjoin, leftjoin, map_rows, naturalgroupjoin, naturaljoin,
     ncols, ndsparse, outergroupjoin, outerjoin, pkeynames, pkeys,
-    reducedim_vec, reindex, renamecol, rows, select, selectkeys, selectvalues,
+    reducedim_vec, reindex, renamecols, rows, select, selectkeys, selectvalues,
     stack, summarize, table, transform, unstack, update!, where, dropmissing, dropna
 
 const Tup = Union{Tuple,NamedTuple}
