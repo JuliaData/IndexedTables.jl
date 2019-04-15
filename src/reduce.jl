@@ -267,9 +267,9 @@ the data.
 `name` optionally specifies a new name for the translated dimension.
 """
 function convertdim(x::NDSparse, d::DimName, xlat; agg=nothing, vecagg=nothing, name=nothing, select=valuenames(x))
-    ks = setcol(pkeys(x), d, d=>xlat)
+    ks = transform(pkeys(x), d => d => xlat)
     if name !== nothing
-        ks = renamecol(ks, d, name)
+        ks = renamecols(ks, d => name)
     end
 
     if vecagg !== nothing
