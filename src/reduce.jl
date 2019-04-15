@@ -269,7 +269,7 @@ the data.
 function convertdim(x::NDSparse, d::DimName, xlat; agg=nothing, vecagg=nothing, name=nothing, select=valuenames(x))
     ks = transform(pkeys(x), d => d => xlat)
     if name !== nothing
-        ks = renamecols(ks, d => name)
+        ks = rename(ks, d => name)
     end
 
     if vecagg !== nothing

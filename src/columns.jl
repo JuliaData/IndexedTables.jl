@@ -587,7 +587,7 @@ insertcolsbefore(t, before, args...) = @cols insertbefore!(t, before, args...)
 @deprecate insertcolbefore(t, i, name, x) insertcolsbefore(t, i, name => x)
 
 """
-    renamecols(t, map::Pair...)
+    rename(t, map::Pair...)
 
 For each pair `col => newname` in `map`, set `newname` as the new name for column `col` in `t`.
 Returns a new table.
@@ -595,11 +595,11 @@ Returns a new table.
 # Example
 
     t = table([0.01, 0.05], [2,1], names=[:t, :x])
-    renamecols(t, :t => :time)
+    rename(t, :t => :time)
 """
-renamecols(t, args...) = @cols rename!(t, args...)
+rename(t, args...) = @cols rename!(t, args...)
 
-@deprecate renamecol(t, args...) renamecols(t, args...)
+@deprecate renamecol(t, args...) rename(t, args...)
 
 ## Utilities for mapping and reduction with many functions / OnlineStats
 

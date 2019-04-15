@@ -602,12 +602,12 @@ end
     t = table([0.01, 0.05], [2, 1], [3, 4], names=[:t, :x, :y], pkey=:t)
     @test insertcolsbefore(t, :x, :w => [0, 1]) == table([0.01, 0.05], [0, 1], [2, 1], [3, 4], names=Symbol[:t, :w, :x, :y])
     t = table([0.01, 0.05], [2, 1], names=[:t, :x])
-    @test renamecols(t, :t => :time) == table([0.01, 0.05], [2, 1], names=Symbol[:time, :x])
-    @test_throws ErrorException renamecols(t, :tt => :time)
-    @test renamecols(t, :t => :time) == renamecols(t, :t => :time)
-    @test renamecols(t, :t => :time, :x => :position) ==
+    @test rename(t, :t => :time) == table([0.01, 0.05], [2, 1], names=Symbol[:time, :x])
+    @test_throws ErrorException rename(t, :tt => :time)
+    @test rename(t, :t => :time) == rename(t, :t => :time)
+    @test rename(t, :t => :time, :x => :position) ==
         table([0.01, 0.05], [2, 1], names=Symbol[:time, :position]) ==
-        renamecols(t, (:t => :time, :x => :position))
+        rename(t, (:t => :time, :x => :position))
 end
 
 @testset "map" begin
@@ -931,7 +931,7 @@ using OnlineStats
     b = table(Columns(a=[1, 1, 2], b=[3, 2, 2], c=[4, 5, 2]), pkey=(1,2))
 
     @test groupreduce(min, a, select=3) == a
-    @test groupreduce(min, b, select=3) == renamecols(b, :c => :min)
+    @test groupreduce(min, b, select=3) == rename(b, :c => :min)
     @test_throws ArgumentError groupreduce(+, b, [:x, :y]) # issue JuliaDB.jl#100
     t = table([1, 1, 1, 2, 2, 2], [1, 1, 2, 2, 1, 1], [1, 2, 3, 4, 5, 6], names=[:x, :y, :z], pkey=(:x, :y))
     @test groupreduce(+, t, :x, select=:z) == table([1, 2], [6, 15], names=Symbol[:x, :+])
@@ -1178,7 +1178,7 @@ end
     @test groupby((:normy => x->Iterators.repeated(mean(x), length(x)),),
                   t, :x, select=:y, flatten=true) == table([1,1,2,2], [3.5,3.5,5.5,5.5], names=[:x, :normy])
     t=table([1,1,1,2,2,2], [1,1,2,1,1,2], [1,2,3,4,5,6], names=[:x,:y,:z], pkey=[1,2]);
-    @test groupby(identity, t, (:x, :y), select=:z, flatten = true) == renamecols(t, :z => :identity)
+    @test groupby(identity, t, (:x, :y), select=:z, flatten = true) == rename(t, :z => :identity)
     @test groupby(identity, t, (:x, :y), select=:z, flatten = true).pkey == [1,2]
     # If return type is non iterable, return the same as non flattened
     @test groupby(i -> (y = :y,), t, :x, flatten=true) == groupby(i -> (y = :y,), t, :x, flatten=false)

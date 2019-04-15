@@ -34,7 +34,7 @@ export
     groupreduce, innerjoin, insertafter!, insertbefore!, insertcols, insertcolsafter,
     insertcolsbefore, leftgroupjoin, leftjoin, map_rows, naturalgroupjoin, naturaljoin,
     ncols, ndsparse, outergroupjoin, outerjoin, pkeynames, pkeys,
-    reducedim_vec, reindex, renamecols, rows, select, selectkeys, selectvalues,
+    reducedim_vec, reindex, rename, rows, select, selectkeys, selectvalues,
     stack, summarize, table, transform, unstack, update!, where, dropmissing, dropna
 
 const Tup = Union{Tuple,NamedTuple}
