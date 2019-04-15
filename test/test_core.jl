@@ -601,6 +601,20 @@ end
     @test insertcolsafter(t, :t, :w => [0, 1]) == table([0.01, 0.05], [0, 1], [2, 1], [3, 4], names=Symbol[:t, :w, :x, :y])
     t = table([0.01, 0.05], [2, 1], [3, 4], names=[:t, :x, :y], pkey=:t)
     @test insertcolsbefore(t, :x, :w => [0, 1]) == table([0.01, 0.05], [0, 1], [2, 1], [3, 4], names=Symbol[:t, :w, :x, :y])
+
+    t = table([0.01, 0.05], [2, 1], [3, 4], names=[:t, :x, :y], pkey=:t)
+    @test insertcols(t, 2, :w => [0, 1], :z => [2, 3]) ==
+        table([0.01, 0.05], [0, 1], [2, 3], [2, 1], [3, 4], names=Symbol[:t, :w, :z, :x, :y]) ==
+        insertcols(t, 2, :w => [0, 1], :z => [2, 3])
+    t = table([0.01, 0.05], [2, 1], [3, 4], names=[:t, :x, :y], pkey=:t)
+    @test insertcolsafter(t, :t, :w => [0, 1], :z => [2, 3]) ==
+        table([0.01, 0.05], [0, 1], [2, 3], [2, 1], [3, 4], names=Symbol[:t, :w, :z, :x, :y]) ==
+        insertcolsafter(t, :t, (:w => [0, 1], :z => [2, 3]))
+    t = table([0.01, 0.05], [2, 1], [3, 4], names=[:t, :x, :y], pkey=:t)
+    @test insertcolsbefore(t, :x, :w => [0, 1], :z => [2, 3]) ==
+        table([0.01, 0.05], [0, 1], [2, 3], [2, 1], [3, 4], names=Symbol[:t, :w, :z, :x, :y]) ==
+        insertcolsbefore(t, :x, (:w => [0, 1], :z => [2, 3]))
+
     t = table([0.01, 0.05], [2, 1], names=[:t, :x])
     @test rename(t, :t => :time) == table([0.01, 0.05], [2, 1], names=Symbol[:time, :x])
     @test_throws ErrorException rename(t, :tt => :time)
