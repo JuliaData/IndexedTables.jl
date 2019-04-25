@@ -100,28 +100,28 @@ end
 
 @testset "collectpairs" begin
     v = (i=>i+1 for i in 1:3)
-    @test collect_columns(v) == Columns([1,2,3]=>[2,3,4])
+    @test collect_columns(v) == columnspair([1,2,3], [2,3,4])
     @test eltype(collect_columns(v)) == Pair{Int, Int}
 
     v = (i == 1 ? (1.2 => i+1) : (i => i+1) for i in 1:3)
-    @test collect_columns(v) == Columns(Real[1.2,2,3]=>[2,3,4])
+    @test collect_columns(v) == columnspair(Real[1.2,2,3], [2,3,4])
     @test eltype(collect_columns(v)) == Pair{Real, Int}
 
     v = ((a=i,) => (b="a$i",) for i in 1:3)
-    @test collect_columns(v) == Columns(Columns((a = [1,2,3],))=>Columns((b = ["a1","a2","a3"],)))
+    @test collect_columns(v) == columnspair(Columns((a = [1,2,3],)),Columns((b = ["a1","a2","a3"],)))
     @test eltype(collect_columns(v)) == Pair{NamedTuple{(:a,), Tuple{Int}}, NamedTuple{(:b,), Tuple{String}}}
 
     v = (i == 1 ? (a="1",) => (b="a$i",) : (a=i,) => (b="a$i",) for i in 1:3)
-    @test collect_columns(v) == Columns(Columns((a = ["1",2,3],))=>Columns((b = ["a1","a2","a3"],)))
+    @test collect_columns(v) == columnspair(Columns((a = ["1",2,3],)), Columns((b = ["a1","a2","a3"],)))
     @test eltype(collect_columns(v)) == Pair{NamedTuple{(:a,), Tuple{Any}}, NamedTuple{(:b,), Tuple{String}}}
 
     # empty
     v = ((a=i,) => (b="a$i",) for i in 0:-1)
-    @test collect_columns(v) == Columns(Columns((a = Int[],))=>Columns((b = String[],)))
+    @test collect_columns(v) == columnspair(Columns((a = Int[],)), Columns((b = String[],)))
     @test eltype(collect_columns(v)) == Pair{NamedTuple{(:a,), Tuple{Int}}, NamedTuple{(:b,), Tuple{String}}}
 
     v = Iterators.filter(t -> t.first.a == 4, ((a=i,) => (b="a$i",) for i in 1:3))
-    @test collect_columns(v) == Columns(Columns((a = Int[],))=>Columns((b = String[],)))
+    @test collect_columns(v) == columnspair(Columns((a = Int[],)), Columns((b = String[],)))
     @test eltype(collect_columns(v)) == Pair{NamedTuple{(:a,), Tuple{Int}}, NamedTuple{(:b,), Tuple{String}}}
 
     t = table(collect_columns((b = 1,) => (a = i,) for i in (2, missing, 3)))
@@ -130,7 +130,7 @@ end
 
 @testset "collectflattened" begin
     t = [(:a => [1, 2]), (:b => [1, 3])]
-    @test collect_columns_flattened(t) == Columns([:a, :a, :b, :b] => [1, 2, 1, 3])
+    @test collect_columns_flattened(t) == columnspair([:a, :a, :b, :b], [1, 2, 1, 3])
     t = ([(a = 1,), (a = 2,)], [(a = 1.1,), (a = 2.2,)])
     @test collect_columns_flattened(t) == Columns(a = Real[1, 2, 1.1, 2.2])
     @test eltype(collect_columns_flattened(t)) == NamedTuple{(:a,), Tuple{Real}}

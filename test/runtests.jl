@@ -3,7 +3,7 @@ using Test, IndexedTables, OnlineStats, WeakRefStrings, Tables, Random, Dates,
     TableTraits, IteratorInterfaceExtensions, Serialization, DataValues
 
 using IndexedTables: excludecols, sortpermby, primaryperm, best_perm_estimate, hascolumns,
-    collect_columns_flattened, transform
+    collect_columns_flattened, transform, columnspair
 
 include("test_tables.jl")
 include("test_missing.jl")

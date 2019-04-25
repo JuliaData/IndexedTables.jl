@@ -10,7 +10,7 @@
     @test map_rows(i -> (exp = exp(i), log = log(i)), 1:5) == Columns((exp = exp.(1:5), log = log.(1:5)))
     @test map_rows(tuple, 1:3, ["a","b","c"]) == Columns(([1,2,3], ["a","b","c"]))
 
- c = Columns(Columns((a=[1,2,3],)) => Columns((b=["a","b","c"],)))
+ c = columnspair(Columns((a=[1,2,3],)), Columns((b=["a","b","c"],)))
     @test columns(c).first == Columns((a=[1,2,3],))
     @test columns(c).second == Columns((b=["a","b","c"],))
     @test colnames(c) == ((:a,) => (:b,))
@@ -18,17 +18,17 @@
     @test ncols(c) == (1 => 1)
     @test eltype(c) == typeof((a=1,)=>(b="a",))
     @test c[1] == ((a=1,) => (b="a",))
-    @test c[1:2] ==  Columns(Columns((a=[1,2],)) => Columns((b=["a","b"],)))
-    @test view(c, 1:2) == Columns(Columns((a=view([1,2,3],1:2),))=>Columns((b=view(["a","b","c"],1:2),)))
+    @test c[1:2] ==  columnspair(Columns((a=[1,2],)), Columns((b=["a","b"],)))
+    @test view(c, 1:2) == columnspair(Columns((a=view([1,2,3],1:2),)),Columns((b=view(["a","b","c"],1:2),)))
     d = deepcopy(c)
     d[1] = (a=2,) => (b="aa",)
     @test d[1] == ((a=2,) => (b="aa",))
     d = deepcopy(c)
     push!(d, (a=4,) => (b="d",))
-    @test d == Columns(Columns((a=[1,2,3,4],)) => Columns((b=["a","b","c","d"],)))
+    @test d == columnspair(Columns((a=[1,2,3,4],)), Columns((b=["a","b","c","d"],)))
     e = vcat(d, d)
     append!(d, d)
-    @test d == Columns(Columns((a=[1,2,3,4,1,2,3,4],)) => Columns((b=["a","b","c","d","a","b","c","d"],)))
+    @test d == columnspair(Columns((a=[1,2,3,4,1,2,3,4],)), Columns((b=["a","b","c","d","a","b","c","d"],)))
     @test d == e
     empty!(d)
     @test d == c[Int[]]
@@ -41,11 +41,11 @@
     @test issorted(c)
     @test sortperm(c) == [1,2,3]
     permute!(c, [2,3, 1])
-    @test c == Columns(Columns((a=[2,3,1],)) => Columns((b=["b","c","a"],)))
-    f = Columns(Columns(([1, 1, 2, 2],)) => ["b", "a", "c", "d"])
+    @test c == columnspair(Columns((a=[2,3,1],)), Columns((b=["b","c","a"],)))
+    f = columnspair(Columns(([1, 1, 2, 2],)), ["b", "a", "c", "d"])
     @test IndexedTables._strip_pair(f) == Columns(([1, 1, 2, 2], ["b", "a", "c", "d"]))
     @test sortperm(f) == [2, 1, 3, 4]
-    @test sort(f) == Columns(Columns(([1, 1, 2, 2],)) => ["a", "b", "c", "d"])
+    @test sort(f) == columnspair(Columns(([1, 1, 2, 2],)), ["a", "b", "c", "d"])
     @test !issorted(f)
 #end
 
@@ -1121,7 +1121,7 @@ end
 
     a = [1,2,3]
     b = ["a","b","c"]
-    v = Columns(Pair(a, b))
+    v = columnspair(a, b)
     @test convert(NDSparse, a, b) == convert(NDSparse, v) == ndsparse(v) == ndsparse(a, b)
 end
 
