@@ -108,7 +108,7 @@ end
     @test eltype(collect_columns(v)) == Pair{Real, Int}
 
     v = ((a=i,) => (b="a$i",) for i in 1:3)
-    @test collect_columns(v) == columnspair(Columns((a = [1,2,3],)),Columns((b = ["a1","a2","a3"],)))
+    @test collect_columns(v) == columnspair(Columns((a = [1,2,3],)), Columns((b = ["a1","a2","a3"],)))
     @test eltype(collect_columns(v)) == Pair{NamedTuple{(:a,), Tuple{Int}}, NamedTuple{(:b,), Tuple{String}}}
 
     v = (i == 1 ? (a="1",) => (b="a$i",) : (a=i,) => (b="a$i",) for i in 1:3)

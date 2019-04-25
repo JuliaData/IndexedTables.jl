@@ -19,7 +19,7 @@
     @test eltype(c) == typeof((a=1,)=>(b="a",))
     @test c[1] == ((a=1,) => (b="a",))
     @test c[1:2] ==  columnspair(Columns((a=[1,2],)), Columns((b=["a","b"],)))
-    @test view(c, 1:2) == columnspair(Columns((a=view([1,2,3],1:2),)),Columns((b=view(["a","b","c"],1:2),)))
+    @test view(c, 1:2) == columnspair(Columns((a=view([1,2,3],1:2),)), Columns((b=view(["a","b","c"],1:2),)))
     d = deepcopy(c)
     d[1] = (a=2,) => (b="aa",)
     @test d[1] == ((a=2,) => (b="aa",))
