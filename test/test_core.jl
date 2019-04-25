@@ -1,5 +1,6 @@
 
 
+    columnspair(a::AbstractVector{S}, b::AbstractVector{T}) where {S, T} = Columns{Pair{S, T}}((a, b))
     c = Columns(([1,1,1,2,2], [1,2,4,3,5]))
     d = Columns(([1,1,2,2,2], [1,3,1,4,5]))
     e = Columns(([1,1,1], sort([rand(),0.5,rand()])))
