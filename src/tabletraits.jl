@@ -1,4 +1,5 @@
 TableTraits.isiterabletable(x::Dataset) = true
+IteratorInterfaceExtensions.isiterable(x::Dataset) = true
 
 function IteratorInterfaceExtensions.getiterator(source::NDSparse)
     return rows(source)
@@ -46,11 +47,9 @@ function table(rows::AbstractArray{T}; copy=false, kwargs...) where {T<:Union{Tu
 end
 
 function table(iter; copy=false, kw...)
-    if TableTraits.isiterable(iter)
-        table(collect_columns(IteratorInterfaceExtensions.getiterator(iter)); copy=copy, kw...)
-    elseif Tables.istable(typeof(iter))
+    try
         table(Tables.columntable(iter); copy=copy, kw...)
-    else
-        throw(ArgumentError("input satisfies neither IterableTables.jl nor Tables.jl"))
+    catch e
+        throw(ArgumentError("can't convert input to a table"))
     end
 end
