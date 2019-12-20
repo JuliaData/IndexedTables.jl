@@ -17,10 +17,7 @@ Collect an iterable as a `Columns` object if it iterates `Tuples` or `NamedTuple
 collect_columns(v) = vec(collect_structarray(v, initializer = default_initializer))
 collect_columns(s::StructVector) = s
 
-_first(x) = first(x)
-_first(p::Pair) = p.first => first(p.second)
-
-_append!!(v, itr) = grow_to_structarray!(v, itr)
+_append!!(v, itr) = append!!(v, itr)
 _append!!(v::StructArray{NamedTuple{(),Tuple{}}}, itr) = collect_columns(itr)
 
 collect_columns_flattened(itr) = reduce(_append!!, itr, init = Columns())
