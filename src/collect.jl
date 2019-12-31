@@ -1,4 +1,8 @@
-const default_initializer = ArrayInitializer(t -> t<:Union{Tuple, NamedTuple, Pair}, (T, sz) -> similar(arrayof(T), sz))
+to_length(n::Integer) = n
+to_length(t::Tuple{Vararg{Integer}}) = prod(t)
+to_length(t::Tuple{Vararg{AbstractUnitRange}}) = prod(map(length, t))
+
+default_initializer(::Type{T}, sz) where {T} = similar(arrayof(T), to_length(sz))
 
 """
     collect_columns(itr)
