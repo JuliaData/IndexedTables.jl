@@ -15,6 +15,8 @@ import DataValues: DataValue, DataValueArray, isna
 
 import DataAPI: Between, All
 
+using InvertedIndices: Not
+
 import Base:
     show, eltype, length, getindex, setindex!, ndims, map, convert, keys, values,
     ==, broadcast, empty!, copy, similar, sum, merge, merge!, mapslices,
