@@ -1,6 +1,6 @@
 name = "IndexedTables"
 uuid = "6deec6e2-d858-57c5-ab9b-e6ca5bd20e43"
-version = "0.12.4"
+version = "0.12.5"
 
 [deps]
 DataAPI = "9a962f9c-6df0-11e9-0e5d-c546b8b5ee8a"
