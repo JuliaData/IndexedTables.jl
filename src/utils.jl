@@ -107,7 +107,7 @@ Base.@pure function arrayof(S)
     if T == Union{}
         Vector{Union{}}
     elseif T<:Tuple
-        coltypes = staticschema(Tuple{map(arrayof, fieldtypes(T))...})
+        coltypes = Tuple{map(arrayof, fieldtypes(T))...}
         Columns{T, coltypes, index_type(coltypes)}
     elseif T<:NamedTuple
         if fieldcount(T) == 0

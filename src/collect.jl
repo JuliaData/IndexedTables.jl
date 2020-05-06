@@ -1,4 +1,8 @@
-const default_initializer = ArrayInitializer(t -> t<:Union{Tuple, NamedTuple, Pair}, (T, sz) -> similar(arrayof(T), sz))
+to_length(n::Integer) = n
+to_length(t::Tuple{Vararg{Integer}}) = prod(t)
+to_length(t::Tuple{Vararg{AbstractUnitRange}}) = prod(map(length, t))
+
+default_initializer(::Type{T}, sz) where {T} = similar(arrayof(T), to_length(sz))
 
 """
     collect_columns(itr)
@@ -14,71 +18,9 @@ Collect an iterable as a `Columns` object if it iterates `Tuples` or `NamedTuple
     s2 = Iterators.filter(isodd, 1:8)
     collect_columns(s2)
 """
-collect_columns(args...) = vec(collect_structarray(args..., initializer = default_initializer))
-collect_columns(s::StructVector) = s
-collect_empty_columns(itr) = collect_empty_structarray(itr, initializer = default_initializer)
+collect_columns(v) = vec(collect_structarray(v, initializer = default_initializer))
 
-grow_to_columns!(args...) = grow_to_structarray!(args...)
-collect_to_columns!(args...) = collect_to_structarray!(args...)
+_append!!(v, itr) = append!!(v, itr)
+_append!!(v::StructArray{NamedTuple{(),Tuple{}}}, itr) = collect_columns(itr)
 
-_first(x) = first(x)
-_first(p::Pair) = p.first => first(p.second)
-
-function collect_columns_flattened(itr::T) where {T}
-    elem = iterate(itr)
-    if (elem === nothing)
-        S = Core.Compiler.return_type(_first∘first, Tuple{T})
-        return default_initializer(S, (0,))
-    end
-    el, st = elem
-    collect_columns_flattened(itr, el, st)
-end
-
-function collect_columns_flattened(itr, el, st)
-    fr = iterate(el)
-    while fr === nothing
-        elem = iterate(itr, st)
-        elem === nothing && return collect_empty_columns(el)
-        el, st = elem
-        fr = iterate(el)
-    end
-    dest = collect_columns(el, fr)
-    collect_columns_flattened!(dest, itr, el, st)
-end
-
-function collect_columns_flattened!(dest, itr, el, st)
-    while true
-        elem = iterate(itr, st)
-        elem === nothing && break
-        el, st = elem
-        dest = grow_to_columns!(dest, el)
-    end
-    return dest
-end
-
-function collect_columns_flattened(itr, el::Pair, st)
-    fr = iterate(el.second)
-    while fr === nothing
-        elem = iterate(itr, st)
-        elem === nothing && return collect_empty_columns(el.first => i for i in el.second)
-        el, st = elem
-        fr = iterate(el.second)
-    end
-    dest_data = collect_columns(el.second, fr)
-    dest_key = collect_columns(el.first for i in dest_data)
-    init = Columns{Pair{eltype(dest_key), eltype(dest_data)}}((dest_key, dest_data))
-    collect_columns_flattened!(init, itr, el, st)
-end
-
-function collect_columns_flattened!(dest::Columns{<:Pair}, itr, el::Pair, st)
-    dest_key, dest_data = columns(dest)
-    while true
-        elem = iterate(itr, st)
-        elem === nothing && break
-        el, st = elem
-        n = length(dest_data)
-        dest_data = grow_to_columns!(dest_data, el.second)
-        dest_key = grow_to_columns!(dest_key, el.first for i in (n+1):length(dest_data))
-    end
-    return Columns{Pair{eltype(dest_key), eltype(dest_data)}}((dest_key, dest_data))
-end
+collect_columns_flattened(itr) = foldl(_append!!, itr, init = Columns())

@@ -4,10 +4,7 @@
 
     # test inferrability with constant eltype
     itr = [(a = 1, b = 2), (a = 1, b = 2), (a = 1, b = 12)]
-    el, st = iterate(itr)
-    dest = similar(IndexedTables.arrayof(typeof(el)), 3)
-    dest[1] = el
-    @inferred IndexedTables.collect_to_columns!(dest, itr, 2, st)
+    @inferred collect_columns(itr)
 
     v = [(a = 1, b = 2), (a = 1.2, b = 3)]
     @test collect_columns(v) == Columns((a = Real[1, 1.2], b = Int[2, 3]))
@@ -129,11 +126,7 @@ end
 end
 
 @testset "collectflattened" begin
-    t = [(:a => [1, 2]), (:b => [1, 3])]
-    @test collect_columns_flattened(t) == columnspair([:a, :a, :b, :b], [1, 2, 1, 3])
     t = ([(a = 1,), (a = 2,)], [(a = 1.1,), (a = 2.2,)])
     @test collect_columns_flattened(t) == Columns(a = Real[1, 2, 1.1, 2.2])
     @test eltype(collect_columns_flattened(t)) == NamedTuple{(:a,), Tuple{Real}}
-    t = [(:a => table(1:2, ["a", "b"])), (:b => table(3:4, ["c", "d"]))]
-    @test table(collect_columns_flattened(t)) == table([:a, :a, :b, :b], 1:4, ["a", "b", "c", "d"], pkey = 1)
 end
