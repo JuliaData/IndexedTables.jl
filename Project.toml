@@ -1,6 +1,6 @@
 name = "IndexedTables"
 uuid = "6deec6e2-d858-57c5-ab9b-e6ca5bd20e43"
-version = "0.12.4"
+version = "0.13.0"
 
 [deps]
 DataAPI = "9a962f9c-6df0-11e9-0e5d-c546b8b5ee8a"
@@ -11,6 +11,7 @@ OnlineStatsBase = "925886fa-5bf2-5e8e-b522-a9147a512338"
 PooledArrays = "2dfb63ee-cc39-5dd5-95bd-886bf059d720"
 SparseArrays = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
 Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
+StatsBase = "2913bbd2-ae8a-5f71-8c99-4fb6c76f3a91"
 StructArrays = "09ab397b-f2b6-538f-b94a-2f83cf4a842a"
 TableTraits = "3783bdb8-4a98-5b6b-af9a-565f29a5fe9c"
 TableTraitsUtils = "382cd787-c1b6-5bf2-a167-d5b971a19bda"
@@ -24,18 +25,18 @@ IteratorInterfaceExtensions = "0.1.1, 1"
 OnlineStatsBase = ">= 0.9.1"
 PooledArrays = "0.4.1, 0.5"
 StructArrays = "0.4"
-Tables = "0.2.4"
 TableTraits = "0.3, 0.4, 1"
 TableTraitsUtils = "0.2.1, 0.3, 0.4, 1"
+Tables = "0.2.4"
 WeakRefStrings = "0.5.7, 0.6"
 julia = "1"
 
 [extras]
 Dates = "ade2ca70-3891-5945-98fb-dc099432e06a"
+LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 OnlineStats = "a15396b6-48d5-5d58-9928-6d29437db91e"
 Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
 Serialization = "9e88b42a-f829-5b0c-bbe9-9e923198166b"
-LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 [targets]
