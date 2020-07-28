@@ -246,7 +246,6 @@ column(c, x) = columns(c)[colindex(c, x)]
 end
 
 column(t, a::AbstractArray) = a
-column(t, a::Pair{Symbol, <:AbstractArray}) = column(t, a[2])
 column(t, a::Pair{Symbol, <:Any}) = column(t, a[2]) # :newname => selector
 column(t, a::Pair{<:Any, <:Base.Callable}) = map(a[2], rows(t, a[1]))
 column(t, a::Pair{Symbol, <:Base.Callable}) = map(a[2], rows(t, a[1])) # need a tiebreaker for above two
