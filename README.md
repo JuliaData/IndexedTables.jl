@@ -1,8 +1,13 @@
-| JuliaDB docs | Build | Coverage |
-|--------------|-------|----------|
-| [![](https://img.shields.io/badge/docs-stable-blue.svg)](https://juliadata.github.io/JuliaDB.jl/stable/) [![](https://img.shields.io/badge/docs-latest-blue.svg)](https://juliadata.github.io/JuliaDB.jl/latest/) | [![Build Status](https://travis-ci.org/JuliaData/IndexedTables.jl.svg?branch=master)](https://travis-ci.org/JuliaData/IndexedTables.jl)| [![codecov.io](https://codecov.io/github/JuliaData/IndexedTables.jl/coverage.svg?branch=master)](http://codecov.io/github/JuliaData/IndexedTables.jl?branch=master) |
-
 # IndexedTables.jl
+
+[![](https://img.shields.io/badge/docs-stable-blue.svg)](https://juliadata.github.io/JuliaDB.jl/stable/)
+[![](https://img.shields.io/badge/docs-latest-blue.svg)](https://juliadata.github.io/JuliaDB.jl/latest/)
+[![CI](https://github.com/JuliaData/IndexedTables.jl/workflows/CI/badge.svg)](https://github.com/JuliaData/IndexedTables.jl/actions?query=workflow%3ACI)
+[![codecov](https://codecov.io/gh/JuliaData/IndexedTables.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/JuliaData/IndexedTables.jl)
+[![deps](https://juliahub.com/docs/IndexedTables/deps.svg)](https://juliahub.com/ui/Packages/IndexedTables/YIs33?t=2)
+[![version](https://juliahub.com/docs/IndexedTables/version.svg)](https://juliahub.com/ui/Packages/IndexedTables/YIs33)
+[![pkgeval](https://juliahub.com/docs/IndexedTables/pkgeval.svg)](https://juliahub.com/ui/Packages/IndexedTables/YIs33)
+
 
 **IndexedTables** provides tabular data structures where some of the columns form a sorted index.
 It provides the backend to [JuliaDB](https://github.com/JuliaData/JuliaDB.jl), but can
