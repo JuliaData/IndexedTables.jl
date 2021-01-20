@@ -6,8 +6,8 @@ using OnlineStatsBase: OnlineStat, fit!
 
 using StructArrays: StructVector, StructArray, fieldarrays,
     refine_perm!, collect_structarray,
-    append!!, replace_storage, GroupPerm, GroupJoinPerm,
-    roweq, rowcmp, index_type
+    append!!, replace_storage, GroupPerm,
+    roweq, index_type
 
 import Tables, TableTraits, IteratorInterfaceExtensions, TableTraitsUtils
 
