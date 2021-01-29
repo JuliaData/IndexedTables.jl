@@ -74,3 +74,15 @@ end
     @test refa isa WeakRefStrings.StringArray{Union{Missing, WeakRefStrings.WeakRefString{UInt8}}}
     @test all(isequal.(a, refa))
 end
+
+@testset "rowcmp" begin
+    a = ["a", "b", "a", "a"]
+    b = PooledArrays.PooledArray(["x", "y", "z", "x"])
+    s = Columns((a, b))
+    a = ["a", "c", "z", "a"]
+    b = PooledArrays.PooledArray(["p", "y", "a", "x"])
+    t = Columns((a, b))
+    @test IndexedTables.rowcmp(s, 4, t, 4) == 0
+    @test IndexedTables.rowcmp(s, 1, t, 1) == 1
+    @test IndexedTables.rowcmp(s, 2, t, 3) == -1
+end

@@ -59,3 +59,16 @@
         @test isequal(res, table((key = ["a","b","c"], value = [1,2,missing])))
     end
 end
+
+@testset "groupjoin iterator" begin
+    a = [1, 2, 1, 1, 0, 9, -100]
+    b = [-2, 12, 1, 1, 0, 11, 9]
+    itr = IndexedTables.GroupJoinPerm(a, b)
+    @test Base.IteratorSize(itr) == Base.SizeUnknown()
+    @test Base.IteratorEltype(itr) == Base.HasEltype()
+    @test eltype(itr) == Tuple{UnitRange{Int}, UnitRange{Int}}
+    s = collect_columns(itr)
+    as, bs = columns(s)
+    @test as == [1:1, 1:0, 2:2, 3:5, 6:6, 7:7, 1:0, 1:0]
+    @test bs == [1:0, 1:1, 2:2, 3:4, 1:0, 5:5, 6:6, 7:7]
+end
