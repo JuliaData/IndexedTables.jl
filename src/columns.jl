@@ -141,26 +141,6 @@ map_rows(f, iter) = collect_columns(f(i) for i in iter)
 ## Special selectors to simplify column selector
 
 """
-    Not(cols)
-
-Select the complementary of the selection in `cols`. To exclude several columns
-at the same time, use a `Tuple`. Use `Not(All(args...))` to exclude the union of
-several selections.
-
-# Examples
-
-    t = table([1,1,2,2], [1,2,1,2], [1,2,3,4], names=[:a,:b,:c], pkey = (:a, :b))
-    select(t, Not(:a))
-    select(t, Not((:a, :b)))
-    select(t, Not(All(:a, (:a, :b))))
-"""
-struct Not{T}
-    cols::T
-end
-
-@deprecate Not(args...) Not(All(args...))
-
-"""
     Keys()
 
 Select the primary keys.
@@ -178,7 +158,7 @@ hascolumns(t, s) = true
 hascolumns(t, s::Symbol) = s in colnames(t)
 hascolumns(t, s::Int) = s in 1:length(columns(t))
 hascolumns(t, s::Tuple) = all(hascolumns(t, x) for x in s)
-hascolumns(t, s::Not) = hascolumns(t, s.cols)
+hascolumns(t, s::Not) = hascolumns(t, s.skip)
 hascolumns(t, s::Between) = hascolumns(t, s.first) && hascolumns(t, s.last)
 hascolumns(t, s::All) = all(hascolumns(t, x) for x in s.cols)
 hascolumns(t, s::Type) = any(x -> eltype(x) <: s, columns(t))
@@ -186,7 +166,7 @@ hascolumns(t, s::Type) = any(x -> eltype(x) <: s, columns(t))
 lowerselection(t, s)                     = s
 lowerselection(t, s::Union{Int, Symbol}) = colindex(t, s)
 lowerselection(t, s::Tuple)              = map(x -> lowerselection(t, x), s)
-lowerselection(t, s::Not)                = excludecols(t, lowerselection(t, s.cols))
+lowerselection(t, s::Not)                = excludecols(t, lowerselection(t, s.skip))
 lowerselection(t, s::Keys)               = lowerselection(t, IndexedTables.pkeynames(t))
 lowerselection(t, s::Between)            = Tuple(colindex(t, s.first):colindex(t, s.last))
 lowerselection(t, s::Function)           = colindex(t, Tuple(filter(s, collect(colnames(t)))))
