@@ -648,7 +648,7 @@ end
 
     t3 = map(x->ntuple(identity, x.x), t)
     @test isa(t3.data, Vector)
-    @test eltype(t3.data) == Tuple{Int64,Int64,Int64,Int64,Vararg{Int64,N} where N}
+    @test eltype(t3.data) == Tuple{Int,Int,Int,Int,Vararg{Int,N} where N}
 
     y = [1, 1//2, "x"]
     function foo(x)
