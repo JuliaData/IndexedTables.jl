@@ -207,10 +207,10 @@ function _colindex(fnames::Union{Tuple, AbstractArray}, col, default=nothing)
         return 0
     elseif isa(col, Tuple)
         return 0
-    elseif isa(col, Pair{Symbol, <:Pair}) # recursive pairs
-        return _colindex(fnames, col[2])
-    elseif isa(col, Pair{<:Any, <:Any})
+    elseif isa(col, Pair{<:Any, <:Base.Callable}) # selector => mapfn
         return _colindex(fnames, col[1])
+    elseif isa(col, Pair{Symbol, <:Any}) # :newname => selector
+        return _colindex(fnames, col[2])
     elseif isa(col, AbstractArray)
         return 0
     end
@@ -226,9 +226,9 @@ column(c, x) = columns(c)[colindex(c, x)]
 end
 
 column(t, a::AbstractArray) = a
-column(t, a::Pair{Symbol, <:AbstractArray}) = column(t, a[2])
-column(t, a::Pair{Symbol, <:Pair}) = rows(t, a[2]) # renaming a selection
-column(t, a::Pair{<:Any, <:Any}) = map(a[2], rows(t, a[1]))
+column(t, a::Pair{Symbol, <:Any}) = column(t, a[2]) # :newname => selector
+column(t, a::Pair{<:Any, <:Base.Callable}) = map(a[2], rows(t, a[1]))
+column(t, a::Pair{Symbol, <:Base.Callable}) = map(a[2], rows(t, a[1])) # need a tiebreaker for above two
 column(t, s::SpecialSelector) = rows(t, lowerselection(t, s))
 
 function columns(c, sel::Union{Tuple, SpecialSelector})

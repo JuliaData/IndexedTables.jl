@@ -5,7 +5,7 @@ using PooledArrays, SparseArrays, Statistics, WeakRefStrings
 using OnlineStatsBase: OnlineStat, fit!
 
 using StructArrays: StructVector, StructArray, fieldarrays,
-    staticschema, ArrayInitializer, refine_perm!, collect_structarray,
+    refine_perm!, collect_structarray,
     append!!, replace_storage, GroupPerm, GroupJoinPerm,
     roweq, rowcmp, index_type
 
@@ -16,6 +16,7 @@ import DataValues: DataValue, DataValueArray, isna
 import DataAPI: Between, All
 
 using InvertedIndices: Not
+import StatsBase: transform
 
 import Base:
     show, eltype, length, getindex, setindex!, ndims, map, convert, keys, values,

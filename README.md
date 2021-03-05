@@ -1,11 +1,11 @@
 | JuliaDB docs | Build | Coverage |
 |--------------|-------|----------|
-| [![](https://img.shields.io/badge/docs-stable-blue.svg)](https://juliacomputing.github.io/JuliaDB.jl/stable/) [![](https://img.shields.io/badge/docs-latest-blue.svg)](https://juliacomputing.github.io/JuliaDB.jl/latest/) | [![Build Status](https://travis-ci.org/JuliaComputing/IndexedTables.jl.svg?branch=master)](https://travis-ci.org/JuliaComputing/IndexedTables.jl)| [![codecov.io](https://codecov.io/github/JuliaComputing/IndexedTables.jl/coverage.svg?branch=master)](http://codecov.io/github/JuliaComputing/IndexedTables.jl?branch=master) |
+| [![](https://img.shields.io/badge/docs-stable-blue.svg)](https://juliadata.github.io/JuliaDB.jl/stable/) [![](https://img.shields.io/badge/docs-latest-blue.svg)](https://juliadata.github.io/JuliaDB.jl/latest/) | [![Build Status](https://travis-ci.org/JuliaData/IndexedTables.jl.svg?branch=master)](https://travis-ci.org/JuliaData/IndexedTables.jl)| [![codecov.io](https://codecov.io/github/JuliaData/IndexedTables.jl/coverage.svg?branch=master)](http://codecov.io/github/JuliaData/IndexedTables.jl?branch=master) |
 
 # IndexedTables.jl
 
 **IndexedTables** provides tabular data structures where some of the columns form a sorted index.
-It provides the backend to [JuliaDB](https://github.com/JuliaComputing/JuliaDB.jl), but can
+It provides the backend to [JuliaDB](https://github.com/JuliaData/JuliaDB.jl), but can
 be used on its own for efficient in-memory data processing and analytics.
 
 ## Data Structures 

@@ -784,6 +784,8 @@ end
     @test select(tbl, (:x, :t, :z => [3, 4])) == table([2, 1], [0.01, 0.05], [3, 4], names=Symbol[:x, :t, :z])
     @test select(tbl, (:x, :t, :minust => (:t => (-)))) == table([2, 1], [0.01, 0.05], [-0.01, -0.05], names=Symbol[:x, :t, :minust])
     @test select(tbl, (:x, :t, :vx => ((:x, :t) => (p->p.x / p.t)))) == table([2, 1], [0.01, 0.05], [200.0, 20.0], names=Symbol[:x, :t, :vx])
+    @test select(tbl, (:x, :yy => :y)) == table([2, 1], [3, 4], names=Symbol[:x, :yy])
+    @test select(tbl, (:x, :yy => :y => (p->p.+1))) == table([2, 1], [4, 5], names=Symbol[:x, :yy])
 
     a = ndsparse(([1,1,2,2], [1,2,1,2]), [6,7,8,9])
     @test selectkeys(a, 1, agg=+) == ndsparse([1,2], [13,17])
