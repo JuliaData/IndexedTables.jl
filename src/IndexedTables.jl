@@ -15,6 +15,7 @@ import DataValues: DataValue, DataValueArray, isna
 
 import DataAPI: Between, All
 
+using InvertedIndices: Not
 import StatsBase: transform
 
 import Base:
