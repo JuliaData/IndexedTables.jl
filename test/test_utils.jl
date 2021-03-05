@@ -64,8 +64,7 @@ end
     ref = IndexedTables.refs(s)
     @test ref[1].a isa WeakRefStrings.WeakRefString{UInt8}
     @test all(isequal.(ref.a, a))
-    @test ref[1].b isa UInt8
-    @test isequal(ref.b, UInt8.([1, 2, 3]))
+    @test isequal(ref.b, ([1, 2, 3]))
     Base.permute!!(ref, sortperm(s))
     @test issorted(s)
 
