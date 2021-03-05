@@ -22,12 +22,6 @@ function vec_missing(col::StringVector{T}, ::Type{Missing}) where {T}
 end
 
 vec_missing(col, ::Type{DataValue}) = DataValueArray(col, falses(length(col)))
-# function vec_missing(col::StringArray{T}, ::Type{DataValue}) where {T}
-#     @show typeof(vec_missing(col, Missing)[end])
-#     newcol = convert(Vector{Union{Missing, T}},vec_missing(col, Missing))
-#     dump(newcol)
-#     DataValueArray(newcol, falses(length(col)))
-# end
 vec_missing(col::DataValueArray, ::Type{DataValue}) = col
 
 #-----------------------------------------------------------------------# other
@@ -41,11 +35,11 @@ end
 eltypes(::Type{Tuple{}}) = Tuple{}
 eltypes(::Type{T}) where {T<:Tuple} =
     tuple_type_cons(eltype(tuple_type_head(T)), eltypes(tuple_type_tail(T)))
-eltypes(::Type{T}) where {T<:NamedTuple} = map_params(eltype, T)
-eltypes(::Type{T}) where T <: Pair = map_params(eltypes, T)
-eltypes(::Type{T}) where T<:AbstractArray{S, N} where {S, N} = S
-astuple(::Type{T}) where {T<:NamedTuple} = fieldstupletype(T)
-astuple(::Type{T}) where {T<:Tuple} = T
+eltypes(::Type{T}) where {T <: NamedTuple} = map_params(eltype, T)
+eltypes(::Type{T}) where {T <: Pair} = map_params(eltypes, T)
+eltypes(::Type{T}) where {T <: AbstractArray{S, N}} where {S, N} = S
+astuple(::Type{T}) where {T <: NamedTuple} = fieldstupletype(T)
+astuple(::Type{T}) where {T <: Tuple} = T
 
 # sizehint, making sure to return first argument
 _sizehint!(a::Array{T,1}, n::Integer) where {T} = (sizehint!(a, n); a)
@@ -106,10 +100,10 @@ Base.@pure function arrayof(S)
     T = strip_unionall(S)
     if T == Union{}
         Vector{Union{}}
-    elseif T<:Tuple
+    elseif T <: Tuple
         coltypes = Tuple{map(arrayof, fieldtypes(T))...}
         Columns{T, coltypes, index_type(coltypes)}
-    elseif T<:NamedTuple
+    elseif T <: NamedTuple
         if fieldcount(T) == 0
             coltypes = NamedTuple{(), Tuple{}}
             Columns{NamedTuple{(), Tuple{}}, coltypes, index_type(coltypes)}
@@ -117,9 +111,9 @@ Base.@pure function arrayof(S)
             coltypes = NamedTuple{fieldnames(T), Tuple{map(arrayof, fieldtypes(T))...}}
             Columns{T, coltypes, index_type(coltypes)}
         end
-    elseif (T<:Union{Missing,String,WeakRefString} && Missing<:T) || T<:Union{String, WeakRefString}
+    elseif (T <: Union{Missing, String, WeakRefString} && Missing <: T) || T <: Union{String, WeakRefString}
         StringArray{T, 1}
-    elseif T<:Pair
+    elseif T <: Pair
         coltypes = NamedTuple{(:first, :second), Tuple{map(arrayof, T.parameters)...}}
         Columns{T, coltypes, index_type(coltypes)}
     elseif T <: DataValue
@@ -148,14 +142,14 @@ Base.@pure function strip_unionall(T)
         return Any
     elseif T == Tuple
         return Any
-    elseif T<:Tuple
-        if any(x->x <: Vararg, fieldtypes(T))
+    elseif T <: Tuple
+        if any(x-> Base.isvarargtype(x), fieldtypes(T))
             # we only keep known-length tuples
             return Any
         else
             return Tuple{strip_unionall_params(T)...}
         end
-    elseif T<:NamedTuple
+    elseif T <: NamedTuple
         if isa(T, Union)
             return promote_union(T)
         else

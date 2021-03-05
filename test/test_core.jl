@@ -425,9 +425,6 @@ end
     @test vcat(Columns(x=[1]), Columns(x=[1.0])) == Columns(x=[1,1.0])
     @test vcat(Columns(x=PooledArray(["x"])), Columns(x=["y"])) == Columns(x=["x", "y"])
 
-    @test summary(c) == "5-element Columns{Tuple{$Int,$Int}}"
-
-
 @testset "Getindex" begin
     cs = Columns(x=[1.2, 3.4], y=[3,4])
     t = table(cs, copy=false, pkey=:x)
@@ -651,7 +648,7 @@ end
 
     t3 = map(x->ntuple(identity, x.x), t)
     @test isa(t3.data, Vector)
-    @test eltype(t3.data) == Tuple{Int64,Int64,Int64,Int64,Vararg{Int64,N} where N}
+    @test eltype(t3.data) == Tuple{Int,Int,Int,Int,Vararg{Int,N} where N}
 
     y = [1, 1//2, "x"]
     function foo(x)
