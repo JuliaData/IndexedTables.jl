@@ -96,4 +96,4 @@ julia> t2["Boston", Date(2016, 7, 6)]
 
 ## Get started
 
-For more information, check out the [JuliaDB Documentation](http://juliadb.org/latest/index.html).
+For more information, check out the [JuliaDB Documentation](https://juliadata.github.io/JuliaDB.jl/latest/).
