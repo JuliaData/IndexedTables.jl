@@ -134,7 +134,7 @@ function map(f, t::Dataset; select=nothing, copy=false, kwargs...)
 end
 
 
-missing_indxs(v::Vector) = findall(!_ismissing, v)
+missing_indxs(v::AbstractVector) = findall(!_ismissing, v)
 
 function missing_indxs(t::StructArray)
     indxs = collect(1:length(t))
