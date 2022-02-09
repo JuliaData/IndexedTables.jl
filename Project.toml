@@ -31,7 +31,7 @@ StructArrays = "0.4.1"
 TableTraits = "0.3, 0.4, 1"
 TableTraitsUtils = "0.2.1, 0.3, 0.4, 1"
 Tables = "0.2.4, 1"
-WeakRefStrings = "0.5.7, 0.6"
+WeakRefStrings = "0.5.7, 0.6, 1"
 julia = "1"
 
 [extras]
