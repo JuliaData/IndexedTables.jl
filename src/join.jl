@@ -477,7 +477,7 @@ end
 Merge rows of `a` with rows of `b` and remain ordered by the primary key(s).  `a` and `b` must
 have the same column names.
 
-    merge(a::NDSparse, a::NDSparse; agg)
+    merge(a::NDSparse, b::NDSparse; agg)
 
 Merge rows of `a` with rows of `b`.  To keep unique keys, the value from `b` takes priority.
 A provided function `agg` will aggregate values from `a` and `b` that have the same key(s).
