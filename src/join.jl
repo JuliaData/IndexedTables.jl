@@ -644,7 +644,7 @@ function _broadcast(f::Function, B::NDSparse, C::NDSparse; dimmap=nothing)
         A = NDSparse(idx, vals, copy=false, presorted=true)
         if !issorted(A.index)
             copyto!(A.data, A.data[iperm])
-            Base.permute!!(refs(A.index), iperm)
+            permute!(refs(A.index), iperm)
         end
     else
         # TODO
