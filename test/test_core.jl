@@ -194,7 +194,7 @@ let a = rand(5,5,5)
 end
 
 for a in (rand(2,2), rand(3,5))
-    nd = convert(NDSparse, a)
+    local nd = convert(NDSparse, a)
     @test nd == convert(NDSparse, sparse(a))
     for (I,d) in zip(nd.index, nd.data)
         @test a[I...] == d
@@ -567,7 +567,7 @@ end
     t = table([0.01, 0.05], [2, 1], [3, 4], names=[:t, :x, :y], pkey=(:t,:x))
     @test select(t, Not(:t)) == table([1, 2], [4,3], names=Symbol[:x, :y])
     @test select(t, Not(ncols(t))) == table([0.01, 0.05], [2, 1], names=Symbol[:t, :x])
-    @test select(t, Not(All(:x, :y))) == table([0.01, 0.05], names=Symbol[:t]) == select(t, Not((:x, :y)))
+    @test select(t, Not(Cols(:x, :y))) == table([0.01, 0.05], names=Symbol[:t]) == select(t, Not((:x, :y)))
     @test transform(t, :z => [1 // 2, 3 // 4]) == table([0.01, 0.05], [2, 1], [3, 4], [1//2, 3//4], names=Symbol[:t, :x, :y, :z])
 
     # 99
@@ -648,7 +648,7 @@ end
 
     t3 = map(x->ntuple(identity, x.x), t)
     @test isa(t3.data, Vector)
-    @test eltype(t3.data) == Tuple{Int,Int,Int,Int,Vararg{Int,N} where N}
+    @test eltype(t3.data) == Tuple{Int,Int,Int,Int,Vararg{Int}}
 
     y = [1, 1//2, "x"]
     function foo(x)
@@ -795,9 +795,9 @@ end
     @test select(t, Keys()) == select(t, (:x,))
     @test select(t, (Keys(), :y)) == select(t, ((:x,), :y))
     @test select(t, Not(Keys())) == select(t, Not(:x)) == select(t, (:y, :z))
-    @test select(t, Not(All(Keys(), :y))) == select(t, Not(All(:x, :y))) == select(t, (:z,))
-    @test select(t, All(Keys(), :y)) == select(t, (:x, :y))
-    @test select(t, All()) == t
+    @test select(t, Not(Cols(Keys(), :y))) == select(t, Not(Cols(:x, :y))) == select(t, (:z,))
+    @test select(t, Cols(Keys(), :y)) == select(t, (:x, :y))
+    @test select(t, Cols()) == t
     @test select(t, Between(:x, :z)) == select(t, (:x, :y, :z))
     @test select(t, i -> i == :y) == select(t, (:y,))
     @test select(t, r"x|z") == select(t, (:x, :z))
@@ -807,9 +807,9 @@ end
     @test rows(t, Keys()) == rows(t, (:x,))
     @test rows(t, (Keys(), :y)) == rows(t, ((:x,), :y))
     @test rows(t, Not(Keys())) == rows(t, Not(:x)) == rows(t, (:y, :z))
-    @test rows(t, Not(All(Keys(), :y))) == rows(t, Not(All(:x, :y))) == rows(t, (:z,))
-    @test rows(t, All(Keys(), :y)) == rows(t, (:x, :y))
-    @test rows(t, All()) == rows(t)
+    @test rows(t, Not(Cols(Keys(), :y))) == rows(t, Not(Cols(:x, :y))) == rows(t, (:z,))
+    @test rows(t, Cols(Keys(), :y)) == rows(t, (:x, :y))
+    @test rows(t, Cols()) == rows(t)
     @test rows(t, Between(:x, :z)) == rows(t, (:x, :y, :z))
     @test rows(t, i -> i == :y) == rows(t, (:y,))
     @test rows(t, r"x|z") == rows(t, (:x, :z))
@@ -817,9 +817,9 @@ end
     @test columns(t, Keys()) == columns(t, (:x,))
     @test columns(t, (Keys(), :y)) == columns(t, ((:x,), :y))
     @test columns(t, Not(Keys())) == columns(t, Not(:x)) == columns(t, (:y, :z))
-    @test columns(t, Not(All(Keys(), :y))) == columns(t, Not(All(:x, :y))) == columns(t, (:z,))
-    @test columns(t, All(Keys(), :y)) == columns(t, (:x, :y))
-    @test columns(t, All()) == columns(t)
+    @test columns(t, Not(Cols(Keys(), :y))) == columns(t, Not(Cols(:x, :y))) == columns(t, (:z,))
+    @test columns(t, Cols(Keys(), :y)) == columns(t, (:x, :y))
+    @test columns(t, Cols()) == columns(t)
     @test columns(t, Between(:x, :z)) == columns(t, (:x, :y, :z))
     @test columns(t, i -> i == :y) == columns(t, (:y,))
     @test columns(t, r"x|z") == columns(t, (:x, :z))
@@ -832,9 +832,9 @@ end
     @test hascolumns(t, Keys())
     @test hascolumns(t, (Keys(), :y))
     @test hascolumns(t, Not(Keys()))
-    @test !hascolumns(t, Not(All(Keys(), :xx)))
-    @test hascolumns(t, All(Keys(), :y))
-    @test hascolumns(t, All())
+    @test !hascolumns(t, Not(Cols(Keys(), :xx)))
+    @test hascolumns(t, Cols(Keys(), :y))
+    @test hascolumns(t, Cols())
     @test hascolumns(t, Between(:x, :z))
     @test !hascolumns(t, Between(:x, :xx))
     @test hascolumns(t, i -> i == :y)
@@ -959,7 +959,7 @@ using OnlineStats
     @test groupreduce(+, t, :x, select=:z) == table([1, 2], [6, 15], names=Symbol[:x, :+])
     @test groupreduce(+, t, (:x, :y), select=:z) == table([1, 1, 2, 2], [1, 2, 1, 2], [3, 3, 11, 4], names=Symbol[:x, :y, :+])
     @test groupreduce((+, min, max), t, (:x, :y), select=:z) == table([1, 1, 2, 2], [1, 2, 1, 2], [3, 3, 11, 4], [1, 3, 5, 4], [2, 3, 6, 4], names=Symbol[:x, :y, :+, :min, :max])
-    @test groupreduce((+, min, max), t, All(:x, :y), select=:z) == groupreduce((+, min, max), t, (:x, :y), select=:z)
+    @test groupreduce((+, min, max), t, Cols(:x, :y), select=:z) == groupreduce((+, min, max), t, (:x, :y), select=:z)
     @test groupreduce((zsum = (+), zmin = min, zmax = max), t, (:x, :y), select=:z) == table([1, 1, 2, 2], [1, 2, 1, 2], [3, 3, 11, 4], [1, 3, 5, 4], [2, 3, 6, 4], names=Symbol[:x, :y, :zsum, :zmin, :zmax])
     @test groupreduce((xsum = :z => +, negysum = (:y => -) => +), t, :x) == table([1, 2], [6, 15], [-4, -4], names=Symbol[:x, :xsum, :negysum])
     t = NDSparse([1, 1, 1, 1, 2, 2],
