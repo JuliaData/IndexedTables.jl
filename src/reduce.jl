@@ -28,7 +28,7 @@ can be:
 """
 function reduce(f, t::IndexedTable; select=valuenames(t), kws...)
     if haskey(kws, :init)
-        return _reduce_select_init(f, t, select, kws.data.init)
+        return _reduce_select_init(f, t, select, values(kws).init)
     end
     _reduce_select(f, t, select)
 end
@@ -313,7 +313,7 @@ function Base.reduce(f, x::NDSparse; kws...)
         if haskey(kws, :select) || haskey(kws, :init)
             throw(ArgumentError("select and init keyword arguments cannot be used with dims"))
         end
-        dims = kws.data.dims
+        dims = values(kws).dims
         if dims isa Symbol
             dims = [dims]
         end
@@ -325,7 +325,7 @@ function Base.reduce(f, x::NDSparse; kws...)
     else
         select = get(kws, :select, valuenames(x))
         if haskey(kws, :init)
-            return _reduce_select_init(f, x, select, kws.data.init)
+            return _reduce_select_init(f, x, select, values(kws).init)
         end
         return _reduce_select(f, x, select)
     end

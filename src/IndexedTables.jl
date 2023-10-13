@@ -13,7 +13,7 @@ import Tables, TableTraits, IteratorInterfaceExtensions, TableTraitsUtils
 
 import DataValues: DataValue, DataValueArray, isna
 
-import DataAPI: Between, All
+import DataAPI: Between, Cols
 
 using InvertedIndices: Not
 import StatsBase: transform
@@ -33,7 +33,7 @@ export
     # macros
     @cols,
     # types
-    AbstractNDSparse, All, ApplyColwise, Between, ColDict, Columns, IndexedTable,
+    AbstractNDSparse, ApplyColwise, Between, ColDict, Cols, Columns, IndexedTable,
     Keys, NDSparse, NextTable, Not,
     # functions
     aggregate!, antijoin, asofjoin, collect_columns, colnames,
