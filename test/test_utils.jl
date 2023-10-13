@@ -65,7 +65,7 @@ end
     @test ref[1].a isa WeakRefStrings.WeakRefString{UInt8}
     @test all(isequal.(ref.a, a))
     @test isequal(ref.b, ([1, 2, 3]))
-    Base.permute!!(ref, sortperm(s))
+    permute!(ref, sortperm(s))
     @test issorted(s)
 
     a = WeakRefStrings.StringVector(["a", missing, "c"])
