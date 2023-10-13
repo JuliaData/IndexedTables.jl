@@ -31,7 +31,7 @@ Base.@pure colnames(t::Columns) = fieldnames(eltype(t))
 Base.@pure colnames(t::Columns{<:Pair}) = colnames(t.first) => colnames(t.second)
 
 """
-    columns(itr, select::Selection = All())
+    columns(itr, select::Selection = Cols())
 
 Select one or more columns from an iterable of rows as a tuple of vectors.
 
@@ -152,7 +152,7 @@ Select the primary keys.
 """
 struct Keys; end
 
-const SpecialSelector = Union{Not, All, Keys, Between, Function, Regex, Type}
+const SpecialSelector = Union{Not, Cols, Keys, Between, Function, Regex, Type}
 
 hascolumns(t, s) = true
 hascolumns(t, s::Symbol) = s in colnames(t)
@@ -160,7 +160,7 @@ hascolumns(t, s::Int) = s in 1:length(columns(t))
 hascolumns(t, s::Tuple) = all(hascolumns(t, x) for x in s)
 hascolumns(t, s::Not) = hascolumns(t, s.skip)
 hascolumns(t, s::Between) = hascolumns(t, s.first) && hascolumns(t, s.last)
-hascolumns(t, s::All) = all(hascolumns(t, x) for x in s.cols)
+hascolumns(t, s::Cols) = all(hascolumns(t, x) for x in s.cols)
 hascolumns(t, s::Type) = any(x -> eltype(x) <: s, columns(t))
 
 lowerselection(t, s)                     = s
@@ -173,7 +173,7 @@ lowerselection(t, s::Function)           = colindex(t, Tuple(filter(s, collect(c
 lowerselection(t, s::Regex)              = lowerselection(t, x -> occursin(s, string(x)))
 lowerselection(t, s::Type)               = Tuple(findall(x -> eltype(x) <: s, columns(t)))
 
-function lowerselection(t, s::All)
+function lowerselection(t, s::Cols)
     s.cols == () && return lowerselection(t, valuenames(t))
     ls = (isa(i, Tuple) ? i : (i,) for i in lowerselection(t, s.cols))
     ls |> Iterators.flatten |> union |> Tuple
@@ -275,7 +275,7 @@ function colname(c, col)
 end
 
 """
-    rows(itr, select = All())
+    rows(itr, select = Cols())
 
 Select one or more fields from an iterable of rows as a vector of their values.  Refer to
 the [`select`](@ref) function for selection options and syntax.

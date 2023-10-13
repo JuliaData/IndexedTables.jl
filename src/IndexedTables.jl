@@ -13,7 +13,7 @@ import Tables, TableTraits, IteratorInterfaceExtensions, TableTraitsUtils
 
 import DataValues: DataValue, DataValueArray, isna
 
-import DataAPI: Between, All
+import DataAPI: Between, Cols
 
 using InvertedIndices: Not
 import StatsBase: transform
@@ -24,14 +24,16 @@ import Base:
     permutedims, sort, sort!, iterate, pairs, reduce, push!, size, permute!, issorted,
     sortperm, summary, resize!, vcat, append!, copyto!, view, tail,
     tuple_type_cons, tuple_type_head, tuple_type_tail, in, convert
-
+if VERSION >= v"1.9"
+    import Base: stack
+end
 
 #-----------------------------------------------------------------------# exports
 export
     # macros
     @cols,
     # types
-    AbstractNDSparse, All, ApplyColwise, Between, ColDict, Columns, IndexedTable,
+    AbstractNDSparse, ApplyColwise, Between, ColDict, Cols, Columns, IndexedTable,
     Keys, NDSparse, NextTable, Not,
     # functions
     aggregate!, antijoin, asofjoin, collect_columns, colnames,

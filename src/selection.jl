@@ -161,7 +161,7 @@ non-missing types.  For example:
     dropmissing(t)
     dropmissing(t, (:t, :x))
 """
-function dropmissing(t::IndexedTable, sel = All())
+function dropmissing(t::IndexedTable, sel = Cols())
     selection = lowerselection(t, sel)
     indxs = missing_indxs(rows(t, selection))
     t2 = subtable(t, indxs)
@@ -170,11 +170,11 @@ function dropmissing(t::IndexedTable, sel = All())
         T = eltype(d[s])
         d[s] = convert(Vector{missingtype2type(T)}, d[s])
     end
-    
+
     table(d[], copy=false, perms=t.perms, presorted=true)
 end
 
-dropmissing(t::NDSparse, sel=All()) = ndsparse(dropmissing(table(t), sel))
+dropmissing(t::NDSparse, sel=Cols()) = ndsparse(dropmissing(table(t), sel))
 
 Base.@deprecate_binding dropna dropmissing
 
