@@ -24,7 +24,9 @@ import Base:
     permutedims, sort, sort!, iterate, pairs, reduce, push!, size, permute!, issorted,
     sortperm, summary, resize!, vcat, append!, copyto!, view, tail,
     tuple_type_cons, tuple_type_head, tuple_type_tail, in, convert
-
+if VERSION >= v"1.9"
+    import Base: stack
+end
 
 #-----------------------------------------------------------------------# exports
 export
