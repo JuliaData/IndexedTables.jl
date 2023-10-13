@@ -6,8 +6,6 @@
 [![codecov](https://codecov.io/gh/JuliaData/IndexedTables.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/JuliaData/IndexedTables.jl)
 [![deps](https://juliahub.com/docs/IndexedTables/deps.svg)](https://juliahub.com/ui/Packages/IndexedTables/YIs33?t=2)
 [![version](https://juliahub.com/docs/IndexedTables/version.svg)](https://juliahub.com/ui/Packages/IndexedTables/YIs33)
-[![pkgeval](https://juliahub.com/docs/IndexedTables/pkgeval.svg)](https://juliahub.com/ui/Packages/IndexedTables/YIs33)
-
 
 **IndexedTables** provides tabular data structures where some of the columns form a sorted index.
 It provides the backend to [JuliaDB](https://github.com/JuliaData/JuliaDB.jl), but can
