@@ -10,8 +10,8 @@ function rowcmp(tc::Tuple, i, td::Tuple, j)
 end
 
 function rowcmp(c::Columns, i, d::Columns, j)
-    tc = Tuple(fieldarrays(c))
-    td = Tuple(fieldarrays(d))
+    tc = Tuple(StructArrays.components(c))
+    td = Tuple(StructArrays.components(d))
     return rowcmp(tc, i, td, j)
 end
 
@@ -79,7 +79,7 @@ nullrow(T, M) = missing_instance(M)
 nullrowtype(::Type{T}, ::Type{S}) where {T<:Tup, S} = map_params(t -> type2missingtype(t, S), T)
 nullrowtype(::Type{T}, ::Type{S}) where {T, S} = type2missingtype(T, S)
 
-nullablerows(s::Columns{C}, ::Type{S}) where {C, S} = Columns{nullrowtype(C, S)}(fieldarrays(s))
+nullablerows(s::Columns{C}, ::Type{S}) where {C, S} = Columns{nullrowtype(C, S)}(StructArrays.components(s))
 nullablerows(s::AbstractVector, ::Type{S}) where {S} = vec_missing(s, S)
 
 function init_left_right(ldata::AbstractVector{L}, rdata::AbstractVector{R}) where {L, R}
@@ -247,8 +247,8 @@ function Base.join(f, left::Dataset, right::Dataset;
     rdata = replace_placeholder(right, rdata)
 
     KT = map_params(promote_type, eltype(lkey), eltype(rkey))
-    lkey = Columns{KT}(Tuple(fieldarrays(lkey)))
-    rkey = Columns{KT}(Tuple(fieldarrays(rkey)))
+    lkey = Columns{KT}(Tuple(StructArrays.components(lkey)))
+    rkey = Columns{KT}(Tuple(StructArrays.components(rkey)))
     join_iter = GroupJoinPerm(GroupPerm(lkey, lperm), GroupPerm(rkey, rperm))
     init = !group && f === concat_tup ? init_left_right(ldata, rdata) : nothing
     typ, grp = Val{how}(), Val{group}()
