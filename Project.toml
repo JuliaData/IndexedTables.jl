@@ -1,6 +1,6 @@
 name = "IndexedTables"
 uuid = "6deec6e2-d858-57c5-ab9b-e6ca5bd20e43"
-version = "1.0.1"
+version = "1.0.2"
 
 [deps]
 DataAPI = "9a962f9c-6df0-11e9-0e5d-c546b8b5ee8a"
@@ -27,7 +27,7 @@ IteratorInterfaceExtensions = "0.1.1, 1"
 OnlineStatsBase = "1"
 PooledArrays = "0.4.1, 0.5, 1.0"
 StatsBase = "0.32, 0.33, 0.34"
-StructArrays = "0.4.1"
+StructArrays = "0.5"
 TableTraits = "0.3, 0.4, 1"
 TableTraitsUtils = "0.2.1, 0.3, 0.4, 1"
 Tables = "0.2.4, 1"

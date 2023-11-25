@@ -4,7 +4,8 @@ using PooledArrays, SparseArrays, Statistics, WeakRefStrings
 
 using OnlineStatsBase: OnlineStat, fit!
 
-using StructArrays: StructVector, StructArray, fieldarrays,
+import StructArrays
+using StructArrays: StructVector, StructArray,
     refine_perm!, collect_structarray,
     append!!, replace_storage, GroupPerm,
     roweq, index_type
