@@ -582,7 +582,7 @@ end
     @test column(transform(t, :y => [7,8,9]), :x) === column(t, :x)
     @test t == tcopy
 
-    # seting or popping an index column causes copy
+    # setting or popping an index column causes copy
     t2 = transform(t, :x => [9,8,7])
     @test column(t2, :y) !== column(t, :y)
     @test t == tcopy
@@ -1155,7 +1155,7 @@ end
     end
     @test t==NDSparse(Columns(a_1=[1], a_2=[2], c=[2]), Columns(d=[1]))
 
-    # signleton slices
+    # singleton slices
     x=NDSparse(Columns(([1,2],)),Columns(([1,2],)))
     @test_throws ErrorException mapslices(x,()) do slice
         true
