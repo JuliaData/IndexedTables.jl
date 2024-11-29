@@ -138,7 +138,7 @@ missing_indxs(v::AbstractVector) = findall(!_ismissing, v)
 
 function missing_indxs(t::StructArray)
     indxs = collect(1:length(t))
-    for vec in getfield(t, :fieldarrays)
+    for vec in StructArrays.components(t)
         filter!(i -> !_ismissing(vec[i]), indxs)
     end
     indxs

@@ -209,7 +209,7 @@ _convert(::Type{<:Tuple}, tup::Tuple) = tup
 _convert(::Type{T}, tup::Tuple) where {T<:NamedTuple} = T(tup)
 convertkey(t::NDSparse{V,K,I}, tup::Tuple) where {V,K,I} = _convert(eltype(I), tup)
 
-ndims(t::NDSparse) = length(fieldarrays(t.index))
+ndims(t::NDSparse) = length(StructArrays.components(t.index))
 length(t::NDSparse) = (flush!(t);length(t.index))
 eltype(::Type{NDSparse{T,D,C,V}}) where {T,D,C,V} = T
 Base.keytype(::Type{NDSparse{T,D,C,V}}) where {T,D,C,V} = D

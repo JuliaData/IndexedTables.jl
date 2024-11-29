@@ -90,6 +90,18 @@ function namedtuple(fields...)
     NamedTuple{fields}
 end
 
+
+# not inferrable
+_index_type(::Type{NamedTuple{names, types}}) where {names, types} = _index_type(types)
+_index_type(::Type{Tuple{}}) = Int
+function _index_type(::Type{T}) where {T<:Tuple}
+    S, U = Base.tuple_type_head(T), Base.tuple_type_tail(T)
+    return __index_type(S, U)
+end
+_index_type(::Type{NTuple{N, S}}) where {N, S} = __index_type(S)
+__index_type(::Type{S}, ::Type{U}=Tuple{}) where {S, U} =
+    IndexStyle(S) isa IndexCartesian ? CartesianIndex{ndims(S)} : _index_type(U)
+
 """
     arrayof(T)
 
@@ -102,20 +114,20 @@ Base.@pure function arrayof(S)
         Vector{Union{}}
     elseif T <: Tuple
         coltypes = Tuple{map(arrayof, fieldtypes(T))...}
-        Columns{T, coltypes, index_type(coltypes)}
+        Columns{T, coltypes, _index_type(coltypes)}
     elseif T <: NamedTuple
         if fieldcount(T) == 0
             coltypes = NamedTuple{(), Tuple{}}
-            Columns{NamedTuple{(), Tuple{}}, coltypes, index_type(coltypes)}
+            Columns{NamedTuple{(), Tuple{}}, coltypes, _index_type(coltypes)}
         else
             coltypes = NamedTuple{fieldnames(T), Tuple{map(arrayof, fieldtypes(T))...}}
-            Columns{T, coltypes, index_type(coltypes)}
+            Columns{T, coltypes, _index_type(coltypes)}
         end
     elseif (T <: Union{Missing, String, WeakRefString} && Missing <: T) || T <: Union{String, WeakRefString}
         StringArray{T, 1}
     elseif T <: Pair
         coltypes = NamedTuple{(:first, :second), Tuple{map(arrayof, T.parameters)...}}
-        Columns{T, coltypes, index_type(coltypes)}
+        Columns{T, coltypes, _index_type(coltypes)}
     elseif T <: DataValue
         DataValueArray{eltype(T)}
     else

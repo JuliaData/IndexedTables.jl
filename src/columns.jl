@@ -51,8 +51,8 @@ available selection options and syntax.
 """
 function columns end
 
-columns(c::Columns) = fieldarrays(c)
-columns(c::Columns{<:Tuple}) = Tuple(fieldarrays(c))
+columns(c::Columns) = StructArrays.components(c)
+columns(c::Columns{<:Tuple}) = Tuple(StructArrays.components(c))
 columns(c::Columns{<:Pair}) = c.first => c.second
 
 """
@@ -75,7 +75,7 @@ summary(c::Columns{D}) where {D<:Tuple} = "$(length(c))-element Columns{$D}"
 _sizehint!(c::Columns, n::Integer) = (foreach(x->_sizehint!(x,n), columns(c)); c)
 
 function _strip_pair(c::Columns{<:Pair})
-    f, s = map(columns, fieldarrays(c))
+    f, s = map(columns, StructArrays.components(c))
     (f isa AbstractVector) && (f = (f,))
     (s isa AbstractVector) && (s = (s,))
     Columns((f..., s...))
@@ -104,15 +104,15 @@ pushrow!(to::AbstractArray, from::AbstractArray, i) = push!(to, from[i])
 @generated function row_asof(c::Columns{D,C}, i, d::Columns{D,C}, j) where {D,C}
     N = length(C.parameters)
     if N == 1
-        ex = :(!isless(getfield(fieldarrays(c),1)[i], getfield(fieldarrays(d),1)[j]))
+        ex = :(!isless(getfield(StructArrays.components(c),1)[i], getfield(StructArrays.components(d),1)[j]))
     else
-        ex = :(isequal(getfield(fieldarrays(c),1)[i], getfield(fieldarrays(d),1)[j]))
+        ex = :(isequal(getfield(StructArrays.components(c),1)[i], getfield(StructArrays.components(d),1)[j]))
     end
     for n in 2:N
         if N == n
-            ex = :(($ex) && !isless(getfield(fieldarrays(c),$n)[i], getfield(fieldarrays(d),$n)[j]))
+            ex = :(($ex) && !isless(getfield(StructArrays.components(c),$n)[i], getfield(StructArrays.components(d),$n)[j]))
         else
-            ex = :(($ex) && isequal(getfield(fieldarrays(c),$n)[i], getfield(fieldarrays(d),$n)[j]))
+            ex = :(($ex) && isequal(getfield(StructArrays.components(c),$n)[i], getfield(StructArrays.components(d),$n)[j]))
         end
     end
     ex
@@ -222,7 +222,7 @@ column(c, x) = columns(c)[colindex(c, x)]
 
 # optimized method
 @inline function column(c::Columns, x::Union{Int, Symbol})
-    getfield(fieldarrays(c), x)
+    getfield(StructArrays.components(c), x)
 end
 
 column(t, a::AbstractArray) = a
@@ -624,5 +624,5 @@ function init_inputs(f::Tup, input, isvec)
 end
 
 # utils
-refs(v::Columns) = Columns(map(refs, fieldarrays(v)))
+refs(v::Columns) = Columns(map(refs, StructArrays.components(v)))
 compact_mem(v::Columns) = replace_storage(compact_mem, v)
