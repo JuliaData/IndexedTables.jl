@@ -296,12 +296,12 @@ function showmeta(io, t::NDSparse, cnames)
     nkeys = length(columns(values(t)))
 
     print(io,"    ")
-    printstyled(io, "Dimensions", color=:underline)
+    printstyled(io, "Dimensions\n", color=:underline)
     metat = Columns(([1:nidx;], [Text(get(cnames, i, "<noname>")) for i in 1:nidx],
                      eltype.([columns(keys(t))...])))
     showtable(io, metat, cnames=["#", "colname", "type"], cstyle=fill(:bold, nc), full=true)
     print(io,"\n    ")
-    printstyled(io, "Values", color=:underline)
+    printstyled(io, "Values\n", color=:underline)
     if isa(values(t), Columns)
         metat = Columns(([nidx+1:nkeys+nidx;], [Text(get(cnames, i, "<noname>")) for i in nidx+1:nkeys+nidx],
                          eltype.(Any[columns(values(t))...])))
